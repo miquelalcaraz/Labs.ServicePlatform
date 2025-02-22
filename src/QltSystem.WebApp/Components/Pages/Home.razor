@@ -4,31 +4,30 @@
 
 
 <div class="main-content">
-    <div align="center">
-        <a href="http://www.qltsystem.com/" target="_blank">
-            <img src="images/blockdevice_256.png" name="logo"
-                 width="150" hspace="0" vspace="0" border="0" id="logo">
-        </a>
-    </div>
 
-    <div align="center">
-        <p>
-            <h1 style="font-size:3.5vw">q l t - s y s t e m</h1>
-        </p>
-    </div>
+        <RadzenStack Orientation="Orientation.Vertical" Gap="5px" JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Center" Wrap="FlexWrap.NoWrap">
+            <div>
+                <RadzenImage Path="images/blockdevice_256-custom.png" Style="height: 50%">
+                </RadzenImage>
+            </div>
+
+            <div>
+                <p>
+                    <h1 style="font-size:4vw">q l t - s y s t e m</h1>
+                </p>
+            </div>
 
 
-    <div align="center">
-        <a href="http://www.qltsystem.com/" target="_blank">
-            www.qltsystem.com
-        </a>
-    </div>
+            <div>
+                <RadzenLink Style="font-size:24px" Icon="contact_support" Path="mailto:qltsystem@qltsystem.com" Text="Contact" target="_blank" />
+            </div>
+        </RadzenStack>
 
 </div>
 <style>
     .main-content {
         position: absolute;
-        top: calc(25%);
+        top: calc(15%);
         left: calc(50% - 250px);
         overflow: hidden;
     }
