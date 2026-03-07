@@ -1,5 +1,7 @@
 ﻿using Asp.Versioning;
 
+using Core.ServiceDefaults;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;

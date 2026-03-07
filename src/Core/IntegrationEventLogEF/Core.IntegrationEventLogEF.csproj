@@ -11,8 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Core.Infrastructure\Core.Infrastructure.csproj" />
-    <ProjectReference Include="..\Core.EventBus\Core.EventBus.csproj" />
+    <ProjectReference Include="..\Infrastructure\Core.Infrastructure.csproj" />
+    <ProjectReference Include="..\EventBus\Core.EventBus.csproj" />
   </ItemGroup>
 
 </Project>
