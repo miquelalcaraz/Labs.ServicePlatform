@@ -1,0 +1,21 @@
+<Solution>
+  <Folder Name="/Core/">
+    <Project Path="src/Core.Domain/Core.Domain.csproj" />
+    <Project Path="src/Core.Infrastructure/Core.Infrastructure.csproj" />
+    <Project Path="src/Core.EventBus/Core.EventBus.csproj" />
+    <Project Path="src/Core.EventBusRabbitMQ/Core.EventBusRabbitMQ.csproj" />
+    <Project Path="src/Core.IntegrationEventLogEF/Core.IntegrationEventLogEF.csproj" />
+  </Folder>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Aspire/">
+    <Project Path="src/QltSystem.AppHost/QltSystem.AppHost.csproj" />
+    <Project Path="src/QltSystem.ServiceDefaults/QltSystem.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/">
+    <Project Path="src/QltSystem.Accounts.API/QltSystem.Accounts.API.csproj" />
+    <Project Path="src/QltSystem.Identity.API/QltSystem.Identity.API.csproj" />
+  </Folder>
+  <Folder Name="/src/WebApp/">
+    <Project Path="src/QltSystem.WebApp/QltSystem.WebApp.csproj" />
+  </Folder>
+</Solution>
