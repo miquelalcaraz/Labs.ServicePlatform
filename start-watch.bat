@@ -1,1 +1,0 @@
-dotnet watch --project ./src/QltSystem.WebApp/ run
