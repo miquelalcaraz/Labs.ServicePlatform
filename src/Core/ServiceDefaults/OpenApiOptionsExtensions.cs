@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using Microsoft.OpenApi;
 
-namespace QltSystem.ServiceDefaults
+namespace Core.ServiceDefaults
 {
     internal static class OpenApiOptionsExtensions
     {

@@ -16,13 +16,13 @@ var sqlserver = builder.AddSqlServer("sqlserver", sqlPassword, 1444)
 var accountDb = sqlserver.AddDatabase("accountDb");
 var identityDb = sqlserver.AddDatabase("identitydb");
 
-var identity = builder.AddProject<Projects.QltSystem_Identity_API>("identity")
+var identity = builder.AddProject<Projects.QltSystem_Identity>("identity")
    .WithHttpHealthCheck("/health")
     .WithReference(identityDb)
     .WaitFor(identityDb)
     .WithReference(rabbitMq).WaitFor(rabbitMq);
 
-var apiService = builder.AddProject<Projects.QltSystem_Accounts_API>("accounts")
+var apiService = builder.AddProject<Projects.Accounts_API>("accounts")
     .WithHttpHealthCheck("/health")
     .WithReference(accountDb)
     .WaitFor(accountDb)

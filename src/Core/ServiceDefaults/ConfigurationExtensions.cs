@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 
-namespace QltSystem.ServiceDefaults;
+namespace Core.ServiceDefaults;
 
 public static class ConfigurationExtensions
 {

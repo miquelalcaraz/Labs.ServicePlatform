@@ -9,8 +9,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\QltSystem.Accounts.API\QltSystem.Accounts.API.csproj" />
-		<ProjectReference Include="..\QltSystem.Identity.API\QltSystem.Identity.API.csproj" />
+		<ProjectReference Include="..\Accounts\API\Accounts.API.csproj" />
+		<ProjectReference Include="..\QltSystem.Identity\QltSystem.Identity.csproj" />
 		<ProjectReference Include="..\QltSystem.WebApp\QltSystem.WebApp.csproj" />
 	</ItemGroup>
 

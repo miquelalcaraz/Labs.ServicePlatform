@@ -15,12 +15,12 @@ using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Retry;
 
+using QltSystem.Core.EventBus.Abstractions;
+using QltSystem.Core.EventBus.Events;
+
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
-
-using QltSystem.Core.EventBus.Abstractions;
-using QltSystem.Core.EventBus.Events;
 
 namespace QltSystem.Core.EventBusRabbitMQ;
 

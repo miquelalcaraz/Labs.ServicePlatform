@@ -1,3 +1,4 @@
+using QltSystem.ServiceDefaults;
 using QltSystem.WebApp.Components;
 
 using Radzen;
@@ -10,10 +11,16 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // Add service defaults & Aspire client integrations.
+        builder.AddServiceDefaults();
+        builder.AddRedisOutputCache("cache");
+
         // Add services to the container.
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
+
         builder.Services.AddRadzenComponents();
+
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
@@ -28,9 +35,14 @@ public class Program
 
         app.UseAntiforgery();
 
+        app.UseOutputCache();
+
         app.MapStaticAssets();
+
         app.MapRazorComponents<App>()
             .AddInteractiveServerRenderMode();
+
+        app.MapDefaultEndpoints();
 
         app.Run();
     }
