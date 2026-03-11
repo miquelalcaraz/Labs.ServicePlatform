@@ -1,4 +1,4 @@
-﻿using QltSystem.Core.Infrastructure.Extensions;
+﻿using QltSystem.Core.Persistence.EF.Extensions;
 
 namespace QltSystem.Identity.Infrastructure
 {

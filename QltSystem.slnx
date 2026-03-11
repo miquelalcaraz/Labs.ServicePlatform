@@ -3,18 +3,26 @@
     <Project Path="src/Core/Domain/Core.Domain.csproj" />
     <Project Path="src/Core/EventBus/Core.EventBus.csproj" />
     <Project Path="src/Core/EventBusRabbitMQ/Core.EventBusRabbitMQ.csproj" />
-    <Project Path="src/Core/Infrastructure/Core.Infrastructure.csproj" />
     <Project Path="src/Core/IntegrationEventLogEF/Core.IntegrationEventLogEF.csproj" />
+    <Project Path="src/Core/Persistence.EF.Relational/Core.Persistence.EF.Relational.csproj" />
+    <Project Path="src/Core/Persistence.EF/Core.Persistence.EF.csproj" />
     <Project Path="src/Core/ServiceDefaults/Core.ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/QltSystem/">
-        <Project Path="src/QltSystem.AppHost/QltSystem.AppHost.csproj" />
+    <Project Path="src/QltSystem.AppHost/QltSystem.AppHost.csproj" />
     <Project Path="src/QltSystem.Identity/QltSystem.Identity.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
-  <Folder Name="/src/Services/Accounts/">
-    <Project Path="src/Accounts/API/Accounts.API.csproj" />
+  <Folder Name="/src/Services/Accounts/" />
+  <Folder Name="/src/Services/Accounts/Core/">
+    <Project Path="src/Accounts/Application/Accounts.Application.csproj" />
+    <Project Path="src/Accounts/Domain/Accounts.Domain.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/Accounts/External/">
+    <Project Path="src/Accounts/Api/Accounts.API.csproj" />
+    <Project Path="src/Accounts/Contracts/Accounts.Contracts.csproj" />
+    <Project Path="src/Accounts/Infrastructure/Accounts.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/WebApp/">
     <Project Path="src/QltSystem.WebApp/QltSystem.WebApp.csproj" />

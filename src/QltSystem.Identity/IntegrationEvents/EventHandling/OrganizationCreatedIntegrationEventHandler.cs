@@ -1,5 +1,5 @@
 ﻿using QltSystem.Core.EventBus.Abstractions;
-using QltSystem.Core.IntegrationEventLogEF.Services;
+using QltSystem.Core.EventBus.Services;
 using QltSystem.Identity.IntegrationEvents.Events;
 using QltSystem.Identity.Models;
 using QltSystem.Identity.Repositories;

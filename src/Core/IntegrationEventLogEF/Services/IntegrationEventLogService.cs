@@ -2,13 +2,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using QltSystem.Core.EventBus.Events;
+using QltSystem.Core.IntegrationEventLogEF.Configuration;
+using QltSystem.Core.Persistence.EF.Idempotency;
+using QltSystem.Core.Persistence.EF.IntegrationEventLog;
 
 namespace QltSystem.Core.IntegrationEventLogEF.Services;
 
@@ -16,25 +20,17 @@ public class IntegrationEventLogService<TContext> : IIntegrationEventLogService
     where TContext : DbContext
 {
     private readonly TContext _context;
-    private readonly Type[] _eventTypes;
+    private readonly IReadOnlyCollection<Type> _eventTypes;
+    private readonly ILogger<IIntegrationEventLogService> _logger;
 
-    public IntegrationEventLogService(TContext context)
+    public IntegrationEventLogService(TContext context, IOptions<IntegrationEventLogOptions> options, ILogger<IIntegrationEventLogService> logger)
     {
-        _context = context;
-
-        // NOTE: This reflection runs on every service instantiation.
-        // For production, consider:
-        // - Static lazy cache
-        // - Registration at startup with IServiceCollection
-        // - Source generators (.NET 6+)
-        //
-        // For learning, this approach is more explicit and easier to understand.
-        _eventTypes = Assembly.Load(Assembly.GetEntryAssembly().FullName)
-            .GetTypes()
-            .Where(t => t.Name.EndsWith(nameof(IntegrationEvent)))
-            .ToArray();
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _eventTypes = options?.Value?.EventTypes ?? throw new ArgumentNullException(nameof(options));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+    // 2. Actualizar IntegrationEventLogService
     public async Task<IEnumerable<IntegrationEventLogEntry>> RetrieveEventLogsPendingToPublishAsync(Guid transactionId)
     {
         var result = await _context.Set<IntegrationEventLogEntry>()
@@ -44,12 +40,30 @@ public class IntegrationEventLogService<TContext> : IIntegrationEventLogService
         if (result.Count != 0)
         {
             return result.OrderBy(o => o.CreationTime)
-                .Select(e => e.DeserializeJsonContent(_eventTypes.FirstOrDefault(t => t.Name == e.EventTypeShortName)));
+                .Select(e =>
+                {
+                    // Buscar por FullName en lugar de Name
+                    var eventType = _eventTypes.FirstOrDefault(t => t.FullName == e.EventTypeName);
+
+                    if (eventType == null)
+                    {
+                        _logger.LogError(
+                            "Event type '{EventTypeName}' not registered. Event {EventId} cannot be published.",
+                            e.EventTypeName,
+                            e.EventId);
+
+                        throw new InvalidOperationException(
+                            $"Event type '{e.EventTypeName}' is not registered. " +
+                            $"Add it to IntegrationEventLogOptions.RegisterEventTypes()");
+                    }
+
+                    return e.DeserializeJsonContent(eventType);
+                })
+                .ToList();
         }
 
         return [];
     }
-
     public Task SaveEventAsync(IntegrationEvent @event, IDbContextTransaction transaction)
     {
         if (transaction == null) throw new ArgumentNullException(nameof(transaction));

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Storage;
 
 using QltSystem.Core.EventBus.Events;
+using QltSystem.Core.Persistence.EF.IntegrationEventLog;
 
 namespace QltSystem.Core.IntegrationEventLogEF.Services;
 

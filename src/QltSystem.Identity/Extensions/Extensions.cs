@@ -2,9 +2,10 @@
 
 using QltSystem.Core.EventBus.Abstractions;
 using QltSystem.Core.EventBus.Extensions;
+using QltSystem.Core.EventBus.Services;
 using QltSystem.Core.EventBusRabbitMQ;
-using QltSystem.Core.Infrastructure.Extensions;
 using QltSystem.Core.IntegrationEventLogEF.Services;
+using QltSystem.Core.Persistence.EF.Extensions;
 using QltSystem.Identity.Infrastructure;
 using QltSystem.Identity.IntegrationEvents.EventHandling;
 using QltSystem.Identity.IntegrationEvents.Events;

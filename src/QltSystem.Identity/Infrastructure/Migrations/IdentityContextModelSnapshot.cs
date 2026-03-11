@@ -23,7 +23,7 @@ namespace QltSystem.Identity.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("QltSystem.Core.IntegrationEventLogEF.ProcessedIntegrationEvent", b =>
+            modelBuilder.Entity("QltSystem.Core.Persistence.EF.Idempotency.ProcessedIntegrationEvent", b =>
                 {
                     b.Property<Guid>("EventId")
                         .HasColumnType("uniqueidentifier");
