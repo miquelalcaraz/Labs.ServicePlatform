@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore;
+using Core.Persistence.EF.Relational.Configurations;
 
-using QltSystem.Core.IntegrationEventLogEF;
+using Microsoft.EntityFrameworkCore;
 
 namespace QltSystem.Identity.Infrastructure;
 

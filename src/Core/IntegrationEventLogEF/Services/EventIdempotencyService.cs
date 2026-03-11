@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using QltSystem.Core.EventBus.Services;
+using QltSystem.Core.Persistence.EF.Idempotency;
+
 
 
 namespace QltSystem.Core.IntegrationEventLogEF.Services;
@@ -18,9 +21,7 @@ public class EventIdempotencyService<TContext> : IEventIdempotencyService where 
     private readonly TContext _context;
     private readonly ILogger<IEventIdempotencyService> _logger;
 
-    public EventIdempotencyService(
-        TContext context,
-        ILogger<IEventIdempotencyService> logger)
+    public EventIdempotencyService(TContext context, ILogger<IEventIdempotencyService> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -34,10 +35,7 @@ public class EventIdempotencyService<TContext> : IEventIdempotencyService where 
 
         if (exists)
         {
-            _logger.LogInformation(
-                "Event {EventId} already processed by {HandlerName}. Skipping duplicate.",
-                eventId,
-                handlerName);
+            _logger.LogInformation("Event {EventId} already processed by {HandlerName}. Skipping duplicate.", eventId, handlerName);
         }
 
         return exists;
@@ -57,9 +55,6 @@ public class EventIdempotencyService<TContext> : IEventIdempotencyService where 
 
         await _context.SaveChangesAsync();
 
-        _logger.LogInformation(
-            "Marked event {EventId} as processed by {HandlerName}",
-            eventId,
-            handlerName);
+        _logger.LogInformation("Marked event {EventId} as processed by {HandlerName}", eventId, handlerName);
     }
 }
