@@ -12,14 +12,10 @@ using QltSystem.Accounts.Infrastructure.Persistence;
 using QltSystem.Accounts.Infrastructure.Persistence.Repositories;
 using QltSystem.Accounts.Infrastructure.Persistence.Seed;
 using QltSystem.Core.EventBus.Abstractions;
-using QltSystem.Core.EventBus.Idempotency;
-using QltSystem.Core.EventBus.Services;
+using QltSystem.Core.EventBus.Idempotency.Extensions;
+using QltSystem.Core.EventBus.TransactionalOutbox.Extensions;
 using QltSystem.Core.EventBusRabbitMQ;
-using QltSystem.Core.IntegrationEventLogEF.Behaviors;
-using QltSystem.Core.IntegrationEventLogEF.Extensions;
-using QltSystem.Core.IntegrationEventLogEF.Services;
 using QltSystem.Core.Persistence.EF.Extensions;
-using QltSystem.Core.Persistence.EF.Idempotency;
 
 namespace QltSystem.Accounts.Infrastructure.Extensions
 {
@@ -47,12 +43,14 @@ namespace QltSystem.Accounts.Infrastructure.Extensions
             // Use Core.Persistence.EF.Relational migration extensions
             services.AddMigration<AccountContext, QltDBContextSeed>();
 
-            services.AddIntegrationEventLogService<AccountContext>(options =>
+            services.AddTransactionalOutbox<AccountContext>(options =>
             {
-                options.RegisterEventTypes(typeof(Application.AssemblyReference).Assembly);
+                options.RegisterEventTypes(typeof(Contracts.AssemblyReference).Assembly);
             });
 
-            services.AddTransient<IIntegrationEventService, IntegrationEventService<AccountContext>>();
+            services.AddEventIdempotency<AccountContext>();
+
+            services.AddCommandIdempotency<AccountContext>();
 
             builder.AddRabbitMqEventBus("eventbus")
                 .AddEventBusSubscriptions();
@@ -63,11 +61,10 @@ namespace QltSystem.Accounts.Infrastructure.Extensions
             {
                 cfg.RegisterServicesFromAssemblyContaining(typeof(AssemblyReference));
                 cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
-                cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
+                cfg.AddTransactionalOutboxBehavior();
             });
 
             services.AddScoped<IOrganizationRepository, OrganizationRepository>();
-            services.AddScoped<IRequestManager, RequestManager<AccountContext>>();
 
         }
 

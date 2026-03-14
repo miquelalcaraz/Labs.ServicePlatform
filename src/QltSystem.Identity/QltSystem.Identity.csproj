@@ -19,18 +19,16 @@
 		</PackageReference>
 	</ItemGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\Accounts\Infrastructure\Accounts.Infrastructure.csproj" />
-		<ProjectReference Include="..\Core\Domain\Core.Domain.csproj" />
-		<ProjectReference Include="..\Core\IntegrationEventLogEF\Core.IntegrationEventLogEF.csproj" />
+	<ItemGroup> 
+		<ProjectReference Include="..\Accounts\Contracts\Accounts.Contracts.csproj" /> 
+		<ProjectReference Include="..\Core\Domain\Core.Domain.csproj" /> 
+		<ProjectReference Include="..\Core\EventBus.Idempotency\EventBus.Idempotency.csproj" /> 
+		<ProjectReference Include="..\Core\EventBus.TransactionalOutbox\Core.EventBus.TransactionalOutbox.csproj" />
+		<ProjectReference Include="..\Core\EventBus\Core.EventBus.csproj" />
+		<ProjectReference Include="..\Core\Persistence.EF.Relational\Core.Persistence.EF.Relational.csproj" />
+		<ProjectReference Include="..\Core\Persistence.EF\Core.Persistence.EF.csproj" />
 		<ProjectReference Include="..\Core\ServiceDefaults\Core.ServiceDefaults.csproj" />
 		<ProjectReference Include="..\Core\EventBusRabbitMQ\Core.EventBusRabbitMQ.csproj" />
-	</ItemGroup>
-
-
-
-	<ItemGroup>
-		<Folder Include="Infrastructure\" />
 	</ItemGroup>
 
 </Project>

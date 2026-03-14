@@ -32,19 +32,6 @@ public class QltDBContext : DBContextBase
         {
             modelBuilder.UseAuditLogs();
         }
-        if (_configuration.UseClientRequestIdempotency)
-        {
-            modelBuilder.UseClientRequestIdempotency();
-        }
-        if (_configuration.UseIntegrationEventLogs)
-        {
-            modelBuilder.UseIntegrationEventLogs();
-        }
-        if (_configuration.UseEventIdempotency)
-        {
-            modelBuilder.UseEventIdempotency();
-        }
-
     }
     public override bool IsUniqueConstraintViolation(DbUpdateException ex)
     {

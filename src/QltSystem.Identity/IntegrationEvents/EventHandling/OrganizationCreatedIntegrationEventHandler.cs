@@ -1,6 +1,8 @@
-﻿using QltSystem.Core.EventBus.Abstractions;
+﻿using QltSystem.Accounts.Contracts.IntegrationEvents.Events;
+using QltSystem.Core.EventBus.Abstractions;
 using QltSystem.Core.EventBus.Services;
-using QltSystem.Identity.IntegrationEvents.Events;
+using QltSystem.Core.EventBus.TransactionalOutbox.Utilities;
+using QltSystem.Identity.Infrastructure;
 using QltSystem.Identity.Models;
 using QltSystem.Identity.Repositories;
 using QltSystem.Identity.Services;
@@ -14,19 +16,22 @@ namespace QltSystem.Identity.IntegrationEvents.EventHandling
         private readonly IUserRepository _userRepository;
         private readonly IPasswordGenerator _passwordGenerator;
         private readonly IEventIdempotencyService _idempotencyService;
+        private readonly IdentityContext _context;
 
         public OrganizationCreatedIntegrationEventHandler(
             ILogger<OrganizationCreatedIntegrationEventHandler> logger,
             ITenantRepository tenantRepository,
             IUserRepository userRepository,
             IPasswordGenerator passwordGenerator,
-            IEventIdempotencyService idempotencyService)
+            IEventIdempotencyService idempotencyService,
+                IdentityContext context)
         {
             _logger = logger;
             _tenantRepository = tenantRepository;
             _userRepository = userRepository;
             _passwordGenerator = passwordGenerator;
             _idempotencyService = idempotencyService;
+            _context = context;
         }
 
         public async Task Handle(OrganizationCreatedIntegrationEvent @event)
@@ -47,22 +52,29 @@ namespace QltSystem.Identity.IntegrationEvents.EventHandling
                     @event.Id);
                 return;
             }
+            // Execute all logic within a resilient transaction
+            await ResilientTransaction.New(_context).ExecuteAsync(async () =>
+            {
+                // Create Tenant
+                var tenant = await CreateTenantAsync(@event);
 
-            // Create Tenant
-            var tenant = await CreateTenantAsync(@event);
+                // Create Admin User
+                var adminUser = await CreateAdminUserAsync(@event, tenant.Id);
 
-            // Create Admin User
-            var adminUser = await CreateAdminUserAsync(@event, tenant.Id);
+                // Mark as processed
+                await _idempotencyService.MarkAsProcessedAsync(
+                    @event.Id,
+                    handlerName,
+                    @event.GetType().Name);
 
-            // Mark as processed
-            await _idempotencyService.MarkAsProcessedAsync(
-                @event.Id,
-                handlerName,
-                @event.GetType().Name);
+                _logger.LogInformation(
+                    "Identity - Tenant {TenantId} and Admin User {UserId} created for organization {OrganizationId}",
+                    tenant.Id, adminUser.Id, @event.OrganizationId);
+            });
 
             _logger.LogInformation(
-                "Identity - Tenant {TenantId} and Admin User {UserId} created for organization {OrganizationId}",
-                tenant.Id, adminUser.Id, @event.OrganizationId);
+                "Identity - Successfully completed resilient transaction for event {EventId}",
+                @event.Id);
         }
 
         private async Task<Tenant> CreateTenantAsync(OrganizationCreatedIntegrationEvent @event)

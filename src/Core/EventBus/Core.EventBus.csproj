@@ -11,4 +11,8 @@
 		<PackageReference Include="Microsoft.Extensions.Options" Version="10.0.3" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <ProjectReference Include="..\EventBus.Contracts\Core.EventBus.Contracts.csproj" />
+	</ItemGroup>
+
 </Project>

@@ -12,7 +12,8 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\Core\Domain\Core.Domain.csproj" />
-		<ProjectReference Include="..\..\Core\EventBus\Core.EventBus.csproj" /> 
+		<ProjectReference Include="..\..\Core\EventBus\Core.EventBus.csproj" />
+		<ProjectReference Include="..\Contracts\Accounts.Contracts.csproj" /> 
 		<ProjectReference Include="..\Domain\Accounts.Domain.csproj" />
 	</ItemGroup>
 	

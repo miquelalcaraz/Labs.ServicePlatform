@@ -1,37 +1,35 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using QltSystem.Core.EventBus.Idempotency;
+using QltSystem.Core.Persistence.EF.Idempotency;
 
 namespace Core.Persistence.EF.Relational.Configurations;
 
 /// <summary>
 /// Entity Framework configuration for ClientRequest entity.
-/// Configures the table mapping and ensures unique constraint on request IDs.
+/// Configures the table mapping and ensures unique constraint on request IDs for command idempotency.
+/// This configuration is specific to relational databases.
 /// </summary>
-public static class ClientRequestConfiguration
+public class ClientRequestConfiguration : IEntityTypeConfiguration<ClientRequest>
 {
-    public static void UseClientRequestIdempotency(this ModelBuilder builder)
+    public void Configure(EntityTypeBuilder<ClientRequest> builder)
     {
-        builder.Entity<ClientRequest>(builder =>
-        {
+        builder.ToTable("ClientRequests");
 
-            builder.ToTable("ClientRequests");
+        builder.HasKey(cr => cr.Id);
 
-            builder.HasKey(cr => cr.Id);
+        builder.Property(cr => cr.Id)
+            .IsRequired();
 
-            builder.Property(cr => cr.Id)
-                .IsRequired();
+        builder.Property(cr => cr.Name)
+            .IsRequired()
+            .HasMaxLength(200);
 
-            builder.Property(cr => cr.Name)
-                .IsRequired()
-                .HasMaxLength(200);
+        builder.Property(cr => cr.Time)
+            .IsRequired();
 
-            builder.Property(cr => cr.Time)
-                .IsRequired();
-
-            // Create a unique index to enforce idempotency at the database level
-            builder.HasIndex(cr => cr.Id)
-                .IsUnique();
-        });
+        // Create a unique index to enforce idempotency at the database level
+        builder.HasIndex(cr => cr.Id)
+            .IsUnique();
     }
 }

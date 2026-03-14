@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-using QltSystem.Accounts.Application.IntegrationEvents.Events;
-
+using QltSystem.Accounts.Contracts.IntegrationEvents.Events;
 using QltSystem.Accounts.Domain.Events;
 using QltSystem.Accounts.Domain.Repositories;
 using QltSystem.Core.Domain.Messaging;
