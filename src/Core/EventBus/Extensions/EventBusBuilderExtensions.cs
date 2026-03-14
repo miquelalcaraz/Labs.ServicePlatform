@@ -6,7 +6,7 @@ using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 
 using QltSystem.Core.EventBus.Abstractions;
-using QltSystem.Core.EventBus.Events;
+using QltSystem.Core.EventBus.Contracts.Events;
 
 namespace QltSystem.Core.EventBus.Extensions;
 

@@ -23,12 +23,11 @@ namespace Core.Persistence.EF.Relational.Extensions
             Action<DbContextOptionsBuilder> dbOptions)
             where TContext : DBContextBase
         {
-            // Create and configure QltDbContextConfiguration
-            var config = new QltDbContextConfiguration();
-            configuration.Invoke(config);
+            // Get or create QltDbContextConfiguration
+            var config = services.GetOrCreateQltDbContextConfiguration();
 
-            // Register configuration as scoped
-            services.AddScoped<QltDbContextConfiguration>(sp => config);
+            // Apply configuration
+            configuration.Invoke(config);
 
             // Register the specific DbContext (NOT the base class)
             services.AddDbContext<TContext>((sp, options) =>

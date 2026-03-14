@@ -28,7 +28,8 @@
 	
 	<ItemGroup>
 		<ProjectReference Include="..\..\Core\EventBusRabbitMQ\Core.EventBusRabbitMQ.csproj" />
-		<ProjectReference Include="..\..\Core\IntegrationEventLogEF\Core.IntegrationEventLogEF.csproj" />
+		<ProjectReference Include="..\..\Core\EventBus.TransactionalOutbox\Core.EventBus.TransactionalOutbox.csproj" />
+		<ProjectReference Include="..\..\Core\EventBus.Idempotency\EventBus.Idempotency.csproj" />
 		<ProjectReference Include="..\Application\Accounts.Application.csproj" />
 		<ProjectReference Include="..\Domain\Accounts.Domain.csproj" />
 		<ProjectReference Include="..\..\Core\Persistence.EF\Core.Persistence.EF.csproj" />

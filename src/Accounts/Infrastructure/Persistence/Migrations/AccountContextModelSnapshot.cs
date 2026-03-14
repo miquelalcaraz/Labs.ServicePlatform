@@ -113,28 +113,6 @@ namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
                     b.ToTable("OrganizationContact", "accounts");
                 });
 
-            modelBuilder.Entity("QltSystem.Core.Domain.Idempotency.ClientRequest", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime>("Time")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Id")
-                        .IsUnique();
-
-                    b.ToTable("ClientRequests", "accounts");
-                });
-
             modelBuilder.Entity("QltSystem.Core.Domain.SeedWork.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -173,7 +151,29 @@ namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
                     b.ToTable("AuditLogs", "accounts");
                 });
 
-            modelBuilder.Entity("QltSystem.Core.Persistence.EF.Idempotency.ProcessedIntegrationEvent", b =>
+            modelBuilder.Entity("QltSystem.Core.EventBus.Idempotency.ClientRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("Time")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Id")
+                        .IsUnique();
+
+                    b.ToTable("ClientRequests", "accounts");
+                });
+
+            modelBuilder.Entity("QltSystem.Core.EventBus.Idempotency.Models.ProcessedIntegrationEvent", b =>
                 {
                     b.Property<Guid>("EventId")
                         .HasColumnType("uniqueidentifier");
@@ -198,7 +198,7 @@ namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
                     b.ToTable("ProcessedIntegrationEvents", "accounts");
                 });
 
-            modelBuilder.Entity("QltSystem.Core.Persistence.EF.IntegrationEventLog.IntegrationEventLogEntry", b =>
+            modelBuilder.Entity("QltSystem.Core.EventBus.TransactionalOutbox.Models.IntegrationEventLogEntry", b =>
                 {
                     b.Property<Guid>("EventId")
                         .ValueGeneratedOnAdd()
@@ -225,6 +225,10 @@ namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("EventId");
+
+                    b.HasIndex("TransactionId");
+
+                    b.HasIndex("State", "CreationTime");
 
                     b.ToTable("IntegrationEventLog", "accounts");
                 });

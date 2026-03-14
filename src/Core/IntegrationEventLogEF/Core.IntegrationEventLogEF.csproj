@@ -16,4 +16,8 @@
     <ProjectReference Include="..\Persistence.EF\Core.Persistence.EF.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\" />
+  </ItemGroup>
+
 </Project>

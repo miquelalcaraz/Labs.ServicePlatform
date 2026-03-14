@@ -5,5 +5,8 @@
 		<Nullable>enable</Nullable>
 		<RootNamespace>QltSystem.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 	</PropertyGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\..\Core\EventBus.Contracts\Core.EventBus.Contracts.csproj" />
+	</ItemGroup>
  
 </Project>

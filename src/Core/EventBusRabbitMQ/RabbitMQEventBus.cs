@@ -16,7 +16,7 @@ using Polly;
 using Polly.Retry;
 
 using QltSystem.Core.EventBus.Abstractions;
-using QltSystem.Core.EventBus.Events;
+using QltSystem.Core.EventBus.Contracts.Events;
 
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
