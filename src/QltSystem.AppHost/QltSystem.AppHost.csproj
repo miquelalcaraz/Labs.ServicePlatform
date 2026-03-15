@@ -10,14 +10,15 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\Accounts\Api\Accounts.API.csproj" />
+		<ProjectReference Include="..\Notifications\Service.Notifications.csproj" />
 		<ProjectReference Include="..\QltSystem.Identity\QltSystem.Identity.csproj" />
 		<ProjectReference Include="..\QltSystem.WebApp\QltSystem.WebApp.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.1.1" />
-		<PackageReference Include="Aspire.Hosting.Redis" Version="13.1.1" />
-		<PackageReference Include="Aspire.Hosting.SqlServer" Version="13.1.1" />
+		<PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.1.2" />
+		<PackageReference Include="Aspire.Hosting.Redis" Version="13.1.2" />
+		<PackageReference Include="Aspire.Hosting.SqlServer" Version="13.1.2" />
 	</ItemGroup>
 
 </Project>

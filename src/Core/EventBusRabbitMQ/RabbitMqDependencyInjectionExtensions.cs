@@ -1,12 +1,12 @@
 ﻿
 
 
-using System;
-
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 using QltSystem.Core.EventBus.Abstractions;
+
+using System;
 
 namespace QltSystem.Core.EventBusRabbitMQ;
 

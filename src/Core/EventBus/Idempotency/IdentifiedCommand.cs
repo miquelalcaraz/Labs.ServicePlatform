@@ -1,6 +1,6 @@
-using System;
-
 using MediatR;
+
+using System;
 
 namespace QltSystem.Core.EventBus.Idempotency;
 

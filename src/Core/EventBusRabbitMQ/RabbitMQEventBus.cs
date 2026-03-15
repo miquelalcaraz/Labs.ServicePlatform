@@ -1,12 +1,4 @@
 ﻿
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Net.Sockets;
-using System.Text;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -21,6 +13,14 @@ using QltSystem.Core.EventBus.Contracts.Events;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
+
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace QltSystem.Core.EventBusRabbitMQ;
 

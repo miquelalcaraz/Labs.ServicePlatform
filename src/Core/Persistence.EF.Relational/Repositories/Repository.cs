@@ -1,8 +1,8 @@
-﻿using System.Linq.Expressions;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 using QltSystem.Core.Domain.SeedWork;
+
+using System.Linq.Expressions;
 
 namespace Core.Persistence.EF.Relational.Repositories;
 

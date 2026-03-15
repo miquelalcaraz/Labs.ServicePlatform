@@ -1,12 +1,12 @@
 {
   "profiles": {
-    "QltSystem.Identity.API": {
+    "QltSystem.Identity": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "https://localhost:56853;http://localhost:56854"
+      "applicationUrl": "https://localhost:61113;http://localhost:61114"
     }
   }
 }

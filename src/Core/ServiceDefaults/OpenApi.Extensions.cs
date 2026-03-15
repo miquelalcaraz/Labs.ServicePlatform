@@ -1,17 +1,18 @@
 ﻿using Asp.Versioning;
 
-using Core.ServiceDefaults;
-
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
+
 using Scalar.AspNetCore;
 
-namespace QltSystem.ServiceDefaults
+namespace QltSystem.Core.ServiceDefaults
 {
+
     public static partial class Extensions
     {
         public static IApplicationBuilder UseDefaultOpenApi(this WebApplication app)
@@ -39,8 +40,9 @@ namespace QltSystem.ServiceDefaults
             return app;
         }
 
-
-        public static IHostApplicationBuilder AddDefaultOpenApi(this IHostApplicationBuilder builder, IApiVersioningBuilder? apiVersioning = default)
+        public static IHostApplicationBuilder AddDefaultOpenApi(
+            this IHostApplicationBuilder builder,
+            IApiVersioningBuilder? apiVersioning = default)
         {
             var openApi = builder.Configuration.GetSection("OpenApi");
             var identitySection = builder.Configuration.GetSection("Identity");
@@ -66,6 +68,8 @@ namespace QltSystem.ServiceDefaults
                     builder.Services.AddOpenApi(description, options =>
                     {
                         options.ApplyApiVersionInfo(openApi.GetRequiredValue("Document:Title"), openApi.GetRequiredValue("Document:Description"));
+                        options.ApplyAuthorizationChecks([.. scopes.Keys]);
+                        options.ApplySecuritySchemeDefinitions();
                         options.ApplyOperationDeprecatedStatus();
                         options.ApplyApiVersionDescription();
                     });

@@ -1,6 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using QltSystem.Core.Domain.SeedWork;
 
-using QltSystem.Core.Domain.SeedWork;
+using System.ComponentModel.DataAnnotations;
 
 namespace QltSystem.Accounts.Domain.Models.OrganizationAggregate;
 

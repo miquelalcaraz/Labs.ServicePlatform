@@ -14,22 +14,22 @@ public class UserRepository : IUserRepository
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
-    public async Task<AdminUser> CreateAsync(AdminUser user)
+    public async Task<ApplicationUser> CreateAsync(ApplicationUser user)
     {
-        _context.AdminUsers.Add(user);
+        _context.ApplicationUser.Add(user);
         await _context.SaveChangesAsync();
         return user;
     }
 
-    public async Task<AdminUser?> GetByIdAsync(Guid id)
+    public async Task<ApplicationUser?> GetByIdAsync(string id)
     {
-        return await _context.AdminUsers
+        return await _context.ApplicationUser
             .FirstOrDefaultAsync(u => u.Id == id);
     }
 
-    public async Task<IEnumerable<AdminUser>> GetByTenantIdAsync(Guid tenantId)
+    public async Task<IEnumerable<ApplicationUser>> GetByTenantIdAsync(Guid tenantId)
     {
-        return await _context.AdminUsers
+        return await _context.ApplicationUser
             .Where(u => u.TenantId == tenantId)
             .ToListAsync();
     }

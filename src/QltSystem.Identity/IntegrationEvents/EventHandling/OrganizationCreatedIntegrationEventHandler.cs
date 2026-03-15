@@ -79,27 +79,25 @@ namespace QltSystem.Identity.IntegrationEvents.EventHandling
 
         private async Task<Tenant> CreateTenantAsync(OrganizationCreatedIntegrationEvent @event)
         {
-            var tenant = new Tenant
-            {
-                Id = @event.TenantId,
-                OrganizationId = @event.OrganizationId,
-                Name = @event.Name,
-                CreatedAt = DateTime.UtcNow
-            };
+            var tenant = Tenant.Create(
+                 id: @event.TenantId,
+                 organizationId: @event.OrganizationId,
+                 name: @event.Name
+             );
 
             return await _tenantRepository.CreateAsync(tenant);
         }
 
-        private async Task<AdminUser> CreateAdminUserAsync(OrganizationCreatedIntegrationEvent @event, Guid tenantId)
+        private async Task<ApplicationUser> CreateAdminUserAsync(OrganizationCreatedIntegrationEvent @event, Guid tenantId)
         {
-            var adminUser = new AdminUser
-            {
-                Id = Guid.NewGuid(),
-                TenantId = tenantId,
-                Email = GenerateAdminEmail(@event.Name),
-                TemporaryPassword = _passwordGenerator.GenerateTemporaryPassword(),
-                CreatedAt = DateTime.UtcNow
-            };
+
+            var adminUser = ApplicationUser.CreateAsUnConfirmed(
+                 id: Guid.NewGuid(),
+                 userName: $"admin-{tenantId.ToString().Substring(0, 8)}",
+                 tenantId: tenantId,
+                 email: GenerateAdminEmail(@event.Name)
+             );
+
 
             return await _userRepository.CreateAsync(adminUser);
         }

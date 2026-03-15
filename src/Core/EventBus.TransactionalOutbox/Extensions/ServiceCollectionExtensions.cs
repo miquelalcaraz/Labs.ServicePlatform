@@ -1,6 +1,3 @@
-using System.Reflection;
-
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using QltSystem.Core.EventBus.Services;
@@ -8,6 +5,8 @@ using QltSystem.Core.EventBus.TransactionalOutbox.Configuration;
 using QltSystem.Core.EventBus.TransactionalOutbox.Services;
 using QltSystem.Core.Persistence.EF;
 using QltSystem.Core.Persistence.EF.Extensions;
+
+using System.Reflection;
 
 namespace QltSystem.Core.EventBus.TransactionalOutbox.Extensions;
 
@@ -25,14 +24,14 @@ public static class ServiceCollectionExtensions
     private static QltDbContextConfiguration GetOrCreateQltDbContextConfiguration(this IServiceCollection services)
     {
         var descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(QltDbContextConfiguration));
-        
+
         if (descriptor != null)
         {
             if (descriptor.ImplementationInstance is QltDbContextConfiguration existingConfig)
             {
                 return existingConfig;
             }
-            
+
             services.Remove(descriptor);
         }
 

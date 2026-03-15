@@ -1,7 +1,7 @@
-﻿using System.Runtime.Serialization;
-
-using QltSystem.Accounts.Domain.Models.OrganizationAggregate;
+﻿using QltSystem.Accounts.Domain.Models.OrganizationAggregate;
 using QltSystem.Core.Domain.Messaging;
+
+using System.Runtime.Serialization;
 
 
 
