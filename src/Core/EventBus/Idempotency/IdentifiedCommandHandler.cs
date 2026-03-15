@@ -1,12 +1,12 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-
 using MediatR;
 
 using Microsoft.Extensions.Logging;
 
 using QltSystem.Core.EventBus.Extensions;
+
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace QltSystem.Core.EventBus.Idempotency;
 

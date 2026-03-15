@@ -1,6 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using QltSystem.Core.EventBus.Contracts.Events;
 
-using QltSystem.Core.EventBus.Contracts.Events;
+using System.Threading.Tasks;
 
 namespace QltSystem.Core.EventBus.Abstractions;
 

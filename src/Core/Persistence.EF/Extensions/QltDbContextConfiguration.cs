@@ -1,6 +1,6 @@
-﻿using System.Reflection;
+﻿using Microsoft.Extensions.DependencyInjection;
 
-using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace QltSystem.Core.Persistence.EF.Extensions
 {

@@ -1,6 +1,7 @@
 ﻿using QltSystem.Accounts.Application.Queries;
 using QltSystem.Accounts.Infrastructure.Extensions;
 using QltSystem.Accounts.Infrastructure.Persistence.Queries;
+using QltSystem.Core.ServiceDefaults;
 
 namespace QltSystem.Accounts.Extensions
 {
@@ -9,7 +10,7 @@ namespace QltSystem.Accounts.Extensions
 
         public static IServiceCollection AddApplicationServices(this IHostApplicationBuilder builder)
         {
-            var services = builder.Services;
+            var services = builder.Services; 
 
             builder.AddInfrastructureServices();
 

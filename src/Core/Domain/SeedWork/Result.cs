@@ -1,6 +1,6 @@
-﻿using System;
+﻿using QltSystem.Core.Domain.Exceptions;
 
-using QltSystem.Core.Domain.Exceptions;
+using System;
 
 namespace QltSystem.Core.Domain.SeedWork;
 

@@ -1,6 +1,6 @@
-using System.Reflection;
-
 using QltSystem.Core.EventBus.Contracts.Events;
+
+using System.Reflection;
 
 namespace QltSystem.Core.EventBus.TransactionalOutbox.Configuration;
 

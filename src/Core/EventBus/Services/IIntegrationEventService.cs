@@ -1,7 +1,7 @@
+using QltSystem.Core.EventBus.Contracts.Events;
+
 using System;
 using System.Threading.Tasks;
-
-using QltSystem.Core.EventBus.Contracts.Events;
 
 namespace QltSystem.Core.EventBus.Services;
 

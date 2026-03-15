@@ -22,8 +22,8 @@ public class IntegrationEventLogService<TContext> : IIntegrationEventLogService
     private readonly ILogger<IIntegrationEventLogService> _logger;
 
     public IntegrationEventLogService(
-        TContext context, 
-        IOptions<IntegrationEventLogOptions> options, 
+        TContext context,
+        IOptions<IntegrationEventLogOptions> options,
         ILogger<IIntegrationEventLogService> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));

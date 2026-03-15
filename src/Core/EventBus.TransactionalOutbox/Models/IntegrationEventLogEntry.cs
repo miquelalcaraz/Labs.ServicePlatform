@@ -1,8 +1,8 @@
+using QltSystem.Core.EventBus.Contracts.Events;
+
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
-
-using QltSystem.Core.EventBus.Contracts.Events;
 
 namespace QltSystem.Core.EventBus.TransactionalOutbox.Models;
 

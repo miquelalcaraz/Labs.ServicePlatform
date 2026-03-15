@@ -1,11 +1,14 @@
 ﻿using QltSystem.Accounts.Api;
 using QltSystem.Accounts.Extensions;
-using QltSystem.ServiceDefaults;
+using QltSystem.Core.API.Extensions;
+using QltSystem.Core.ServiceDefaults;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
+builder.AddApiServiceDefaults();
 builder.AddApplicationServices();
 
 // Add services to the container.
@@ -22,7 +25,8 @@ app.UseExceptionHandler();
 
 // Register API endpoints (available in all environments)
 var accounts = app.NewVersionedApi("accounts");
-accounts.MapAccountsApiV1();
+accounts.MapAccountsApiV1()
+     .RequireAuthorization();
 
 // OpenAPI/Swagger UI only in Development
 if (app.Environment.IsDevelopment())

@@ -1,5 +1,3 @@
-using MediatR;
-
 namespace QltSystem.Core.EventBus.TransactionalOutbox.Extensions;
 
 /// <summary>

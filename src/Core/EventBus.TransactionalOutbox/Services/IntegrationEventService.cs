@@ -11,7 +11,7 @@ namespace QltSystem.Core.EventBus.TransactionalOutbox.Services;
 /// Service that combines the outbox pattern with event publishing.
 /// Coordinates saving events to the outbox and publishing them through the event bus.
 /// </summary>
-public class IntegrationEventService<TContext> : IIntegrationEventService 
+public class IntegrationEventService<TContext> : IIntegrationEventService
     where TContext : DBContextBase
 {
     private readonly IEventBus _eventBus;
