@@ -1,6 +1,7 @@
 
 using QltSystem.Core.ServiceDefaults;
 using QltSystem.WebApp.Components;
+using QltSystem.WebApp.Extensions;
 
 using Radzen;
 
@@ -21,6 +22,8 @@ public class Program
             .AddInteractiveServerComponents();
 
         builder.Services.AddRadzenComponents();
+
+        builder.AddApplicationServices();
 
         var app = builder.Build();
 

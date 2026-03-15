@@ -43,19 +43,24 @@ var accountApiService = builder.AddProject<Projects.Accounts_API>("accounts")
     .WaitFor(accountDb)
     .WithReference(rabbitMq).WaitFor(rabbitMq)
     .WaitFor(identity)
-    .WithEnvironment("Identity__Url", identityEndpoint); 
+    .WithEnvironment("Identity__Url", identityEndpoint);
 
-builder.AddProject<Projects.QltSystem_WebApp>("webfrontend")
+var webApp = builder.AddProject<Projects.QltSystem_WebApp>("webfrontend")
     .WithExternalHttpEndpoints()
     .WithHttpHealthCheck("/health")
     .WithReference(cache)
     .WaitFor(cache)
     .WithReference(accountApiService)
     .WaitFor(accountApiService)
-    .WaitFor(identity);
+    .WaitFor(identity)
+    .WithEnvironment("IdentityUrl", identityEndpoint);
+
+// Wire up the callback urls (self referencing)
+webApp.WithEnvironment("CallBackUrl", webApp.GetEndpoint(launchProfileName));
 
 // Identity has a reference to all of the apps for callback urls, this is a cyclic reference
-identity.WithEnvironment("AccountApiClient", accountApiService.GetEndpoint("http"));
+identity.WithEnvironment("WebAppClient", webApp.GetEndpoint(launchProfileName))
+    .WithEnvironment("AccountApiClient", accountApiService.GetEndpoint("http"));
 
 builder.Build().Run();
 
