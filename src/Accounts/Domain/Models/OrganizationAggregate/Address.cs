@@ -1,6 +1,6 @@
-﻿using QltSystem.Core.Domain.SeedWork;
+﻿using QltS.Core.Domain.SeedWork;
 
-namespace QltSystem.Accounts.Domain.Models.OrganizationAggregate;
+namespace QltS.Accounts.Domain.Models.OrganizationAggregate;
 
 public class Address : ValueObject
 {

@@ -1,10 +1,10 @@
-using QltSystem.Core.EventBus.Contracts.Events;
-
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 
-namespace QltSystem.Core.EventBus.TransactionalOutbox.Models;
+using QltS.Core.EventBus.Contracts.Events;
+
+namespace QltS.Core.EventBus.TransactionalOutbox.Models;
 
 /// <summary>
 /// Represents an integration event stored in the transactional outbox.

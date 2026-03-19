@@ -1,13 +1,12 @@
-using Core.Persistence.EF.Relational;
-
 using MediatR;
 
 using Microsoft.EntityFrameworkCore;
 
-using QltSystem.Core.Persistence.EF.Extensions;
-using QltSystem.Notifications.Models;
+using QltS.Core.Persistence.EF.Extensions;
+using QltS.Core.Persistence.EF.Relational;
+using QltS.Notifications.Models;
 
-namespace QltSystem.Notifications.Infrastructure;
+namespace QltS.Notifications.Infrastructure;
 
 public class NotificationsContext : QltDBContext
 {

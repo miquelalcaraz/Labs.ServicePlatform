@@ -1,23 +1,20 @@
-﻿using Core.Persistence.EF.Relational.Extensions;
-using Core.Persistence.EF.Relational.Migrations;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-using QltSystem.Accounts.Domain.Repositories;
-using QltSystem.Accounts.Infrastructure.Behaviors;
-using QltSystem.Accounts.Infrastructure.Persistence;
-using QltSystem.Accounts.Infrastructure.Persistence.Repositories;
-using QltSystem.Accounts.Infrastructure.Persistence.Seed;
-using QltSystem.Core.EventBus.Abstractions;
-using QltSystem.Core.EventBus.Idempotency.Extensions;
-using QltSystem.Core.EventBus.TransactionalOutbox.Extensions;
-using QltSystem.Core.EventBusRabbitMQ;
-using QltSystem.Core.Persistence.EF.Extensions;
+using QltS.Accounts.Domain.Repositories;
+using QltS.Accounts.Infrastructure.Persistence;
+using QltS.Accounts.Infrastructure.Persistence.Repositories;
+using QltS.Accounts.Infrastructure.Persistence.Seed;
+using QltS.Core.EventBus.Abstractions;
+using QltS.Core.EventBus.Idempotency.Extensions;
+using QltS.Core.EventBus.TransactionalOutbox.Extensions;
+using QltS.Core.EventBusRabbitMQ;
+using QltS.Core.Persistence.EF.Extensions;
+using QltS.Core.Persistence.EF.Relational.Extensions;
 
-namespace QltSystem.Accounts.Infrastructure.Extensions
+namespace QltS.Accounts.Infrastructure.Extensions
 {
     public static class Extensions
     {
@@ -27,8 +24,8 @@ namespace QltSystem.Accounts.Infrastructure.Extensions
 
             var connectionString = builder.Configuration.GetConnectionString("accountdb");
 
-            // Register AccountContext with QltSystem configuration
-            services.AddQltSystemDBContext<AccountContext>(
+            // Register AccountContext with QltS configuration
+            services.AddQltSDBContext<AccountContext>(
                 conf => conf
                     .UseIdempotency()
                     .UseAudit()
@@ -55,14 +52,7 @@ namespace QltSystem.Accounts.Infrastructure.Extensions
             builder.AddRabbitMqEventBus("eventbus")
                 .AddEventBusSubscriptions();
 
-            services.AddHttpContextAccessor();
 
-            services.AddMediatR(cfg =>
-            {
-                cfg.RegisterServicesFromAssemblyContaining(typeof(AssemblyReference));
-                cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
-                cfg.AddTransactionalOutboxBehavior();
-            });
 
             services.AddScoped<IOrganizationRepository, OrganizationRepository>();
 

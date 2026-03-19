@@ -1,4 +1,4 @@
-﻿namespace QltSystem.Accounts.Application.Queries;
+﻿namespace QltS.Accounts.Application.Queries;
 
 
 public record Organization

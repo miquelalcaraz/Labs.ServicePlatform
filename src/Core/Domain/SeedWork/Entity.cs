@@ -1,11 +1,11 @@
-﻿using MediatR;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace QltSystem.Core.Domain.SeedWork;
+using MediatR;
+
+namespace QltS.Core.Domain.SeedWork;
 
 /// <summary>
 /// Base class for all entities in the domain.

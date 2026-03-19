@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace QltSystem.Accounts.Infrastructure;
+namespace QltS.Accounts.Infrastructure;
 
 public static class AssemblyReference
 {

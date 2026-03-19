@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
+namespace QltS.Accounts.Infrastructure.Persistence.Migrations
 {
     /// <inheritdoc />
     public partial class Initial : Migration

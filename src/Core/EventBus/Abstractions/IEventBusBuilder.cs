@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace QltSystem.Core.EventBus.Abstractions;
+namespace QltS.Core.EventBus.Abstractions;
 
 
 public interface IEventBusBuilder

@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
-		<RootNamespace>QltSystem.Core.EventBus.TransactionalOutbox</RootNamespace>
+		<RootNamespace>QltS.Core.EventBus.TransactionalOutbox</RootNamespace>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<IsAotCompatible>true</IsAotCompatible>

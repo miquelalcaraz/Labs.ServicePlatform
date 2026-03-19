@@ -1,8 +1,8 @@
-﻿using QltSystem.Accounts.Domain.Events;
-using QltSystem.Accounts.Domain.Exceptions;
-using QltSystem.Core.Domain.SeedWork;
+﻿using QltS.Accounts.Domain.Events;
+using QltS.Accounts.Domain.Exceptions;
+using QltS.Core.Domain.SeedWork;
 
-namespace QltSystem.Accounts.Domain.Models.OrganizationAggregate;
+namespace QltS.Accounts.Domain.Models.OrganizationAggregate;
 
 public class Organization : Entity, IAggregateRoot
 {

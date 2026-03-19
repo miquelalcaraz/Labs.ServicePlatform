@@ -1,4 +1,4 @@
-namespace QltSystem.Core.EventBus.TransactionalOutbox.Extensions;
+namespace QltS.Core.EventBus.TransactionalOutbox.Extensions;
 
 /// <summary>
 /// Extension methods for configuring MediatR with Transactional Outbox pattern support.

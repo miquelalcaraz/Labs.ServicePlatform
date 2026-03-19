@@ -1,16 +1,17 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
-using QltSystem.Accounts.Application.Commands;
-using QltSystem.Accounts.Application.Queries;
-using QltSystem.Accounts.Domain.Models.OrganizationAggregate;
-using QltSystem.Core.Domain.SeedWork;
-using QltSystem.Core.EventBus.Idempotency;
+using QltS.Accounts.Application.Commands;
+using QltS.Accounts.Application.Queries;
+using QltS.Accounts.Domain.Models.OrganizationAggregate;
+using QltS.Core.Domain.SeedWork;
+using QltS.Core.EventBus.Extensions;
+using QltS.Core.EventBus.Idempotency;
 
-using OrganizationViewModel = QltSystem.Accounts.Application.Queries.Organization;
+using OrganizationViewModel = QltS.Accounts.Application.Queries.Organization;
 
 
-namespace QltSystem.Accounts.Api
+namespace QltS.Accounts.Api
 {
     public static class AccountsApi
     {
@@ -28,14 +29,23 @@ namespace QltSystem.Accounts.Api
             CreateOrganizationRequest request,
             [AsParameters] AccountsServices services)
         {
+
+            services.Logger.LogInformation(
+                "Sending command: {CommandName} - {IdProperty}: {CommandId}",
+                request.GetGenericTypeName(),
+                nameof(request.TaxIdNumber),
+                request.TaxIdNumber);
+
             if (requestId == Guid.Empty)
             {
+                services.Logger.LogWarning("Invalid IntegrationEvent - RequestId is missing - {@IntegrationEvent}", request);
                 return TypedResults.BadRequest("Empty GUID is not valid for request ID");
             }
 
 
-
-            var createOrganizationCommand = new CreateOrganizationCommand(
+            using (services.Logger.BeginScope(new List<KeyValuePair<string, object>> { new("IdentifiedCommandId", requestId) }))
+            {
+                var createOrganizationCommand = new CreateOrganizationCommand(
                 request.TaxIdNumber,
                 request.Name,
                 request.LegalName,
@@ -47,17 +57,27 @@ namespace QltSystem.Accounts.Api
                 request.OrganizationType,
                 request.TaxNumberType);
 
-            var identifiedCommand = new IdentifiedCommand<CreateOrganizationCommand, Result<bool>>(createOrganizationCommand, requestId);
+                var identifiedCommand = new IdentifiedCommand<CreateOrganizationCommand, Result<bool>>(createOrganizationCommand, requestId);
 
-            var result = await services.Mediator.Send(identifiedCommand);
+                var result = await services.Mediator.Send(identifiedCommand);
 
-            if (result.IsSuccess)
-            {
-                return TypedResults.Ok();
-            }
-            else
-            {
-                return TypedResults.BadRequest(result.Error.Message);
+                services.Logger.LogInformation(
+                        "Sending command: {CommandName} - {IdProperty}: {CommandId} ({@Command})",
+                        identifiedCommand.GetGenericTypeName(),
+                        nameof(identifiedCommand.Id),
+                        identifiedCommand.Id,
+                        identifiedCommand);
+
+                if (result.IsSuccess)
+                {
+                    services.Logger.LogInformation("CreateCreateOrganizationCommand succeeded - RequestId: {RequestId}", requestId);
+                    return TypedResults.Ok();
+                }
+                else
+                {
+                    services.Logger.LogWarning("CreateCreateOrganizationCommand failed - RequestId: {RequestId}", requestId);
+                    return TypedResults.BadRequest(result.Error.Message);
+                }
             }
         }
 

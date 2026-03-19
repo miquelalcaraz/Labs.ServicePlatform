@@ -1,4 +1,4 @@
-namespace QltSystem.Core.EventBus.Idempotency.Models;
+namespace QltS.Core.EventBus.Idempotency.Models;
 
 /// <summary>
 /// Tracks processed integration events to ensure idempotency.

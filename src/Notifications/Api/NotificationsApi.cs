@@ -1,4 +1,4 @@
-﻿namespace QltSystem.Notifications.Api
+﻿namespace QltS.Notifications.Api
 {
     public static class NotificationsApi
     {

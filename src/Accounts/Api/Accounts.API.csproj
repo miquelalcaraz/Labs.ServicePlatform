@@ -4,7 +4,7 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<RootNamespace>QltSystem.Accounts</RootNamespace>
+		<RootNamespace>QltS.Accounts</RootNamespace>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
@@ -17,7 +17,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\API\Core.API.csproj" />
+		<ProjectReference Include="..\..\Core\API\Core.API.csproj" />
 		<ProjectReference Include="..\..\Core\ServiceDefaults\Core.ServiceDefaults.csproj" />
 		<ProjectReference Include="..\Application\Accounts.Application.csproj" />
 		<ProjectReference Include="..\Infrastructure\Accounts.Infrastructure.csproj" />

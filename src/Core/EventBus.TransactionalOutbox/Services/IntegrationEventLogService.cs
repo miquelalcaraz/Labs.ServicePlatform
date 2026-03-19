@@ -3,11 +3,11 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-using QltSystem.Core.EventBus.Contracts.Events;
-using QltSystem.Core.EventBus.TransactionalOutbox.Configuration;
-using QltSystem.Core.EventBus.TransactionalOutbox.Models;
+using QltS.Core.EventBus.Contracts.Events;
+using QltS.Core.EventBus.TransactionalOutbox.Configuration;
+using QltS.Core.EventBus.TransactionalOutbox.Models;
 
-namespace QltSystem.Core.EventBus.TransactionalOutbox.Services;
+namespace QltS.Core.EventBus.TransactionalOutbox.Services;
 
 /// <summary>
 /// Database-backed implementation of the transactional outbox pattern.

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text.Json.Serialization;
 
-namespace QltSystem.Core.EventBus.Contracts.Events;
+namespace QltS.Core.EventBus.Contracts.Events;
 
 public record IntegrationEvent
 {

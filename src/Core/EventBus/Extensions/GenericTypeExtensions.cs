@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace QltSystem.Core.EventBus.Extensions;
+namespace QltS.Core.EventBus.Extensions;
 
 public static class GenericTypeExtensions
 {

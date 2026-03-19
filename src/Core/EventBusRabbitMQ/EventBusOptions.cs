@@ -1,4 +1,4 @@
-﻿namespace QltSystem.Core.EventBusRabbitMQ;
+﻿namespace QltS.Core.EventBusRabbitMQ;
 
 public class EventBusOptions
 {

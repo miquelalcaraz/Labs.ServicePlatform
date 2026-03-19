@@ -1,8 +1,8 @@
-using QltSystem.Notifications.Models;
-
 using System.Collections.Concurrent;
 
-namespace QltSystem.Notifications.Services
+using QltS.Notifications.Models;
+
+namespace QltS.Notifications.Services
 {
     public class EmailService : IEmailService
     {

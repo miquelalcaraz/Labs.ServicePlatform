@@ -1,19 +1,17 @@
-﻿using Core.Persistence.EF.Relational.Configurations;
-
-using MediatR;
+﻿using MediatR;
 
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
 
-using QltSystem.Core.Persistence.EF;
-using QltSystem.Core.Persistence.EF.Extensions;
+using QltS.Core.Persistence.EF.Extensions;
+using QltS.Core.Persistence.EF.Relational.Configurations;
 
-namespace Core.Persistence.EF.Relational;
+namespace QltS.Core.Persistence.EF.Relational;
 
 /// <summary>
-/// Base DbContext for all QltSystem contexts. 
+/// Base DbContext for all QltS contexts. 
 /// Provides common functionality like domain events dispatching, audit logging, and transaction management.
 /// </summary>
 public class QltDBContext : DBContextBase

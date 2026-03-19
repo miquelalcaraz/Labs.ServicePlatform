@@ -1,4 +1,4 @@
-namespace QltSystem.Core.EventBus.TransactionalOutbox.Models;
+namespace QltS.Core.EventBus.TransactionalOutbox.Models;
 
 /// <summary>
 /// Represents the state of an integration event in the outbox.

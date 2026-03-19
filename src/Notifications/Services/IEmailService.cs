@@ -1,4 +1,4 @@
-namespace QltSystem.Notifications.Services
+namespace QltS.Notifications.Services
 {
     public interface IEmailService
     {

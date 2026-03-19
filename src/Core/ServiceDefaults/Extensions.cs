@@ -10,7 +10,7 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
-namespace QltSystem.Core.ServiceDefaults;
+namespace QltS.Core.ServiceDefaults;
 
 public static partial class Extensions
 {

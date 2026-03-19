@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
-		<RootNamespace>QltSystem.Core.EventBus.Contracts</RootNamespace>
+		<RootNamespace>QltS.Core.EventBus.Contracts</RootNamespace>
 		<IsAotCompatible>true</IsAotCompatible>
 	</PropertyGroup>
 

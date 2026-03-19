@@ -1,10 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Linq.Expressions;
 
-using QltSystem.Core.Domain.SeedWork;
+using Microsoft.EntityFrameworkCore;
 
-using System.Linq.Expressions;
+using QltS.Core.Domain.SeedWork;
 
-namespace Core.Persistence.EF.Relational.Repositories;
+namespace QltS.Core.Persistence.EF.Relational.Repositories;
 
 /// <summary>
 /// Generic repository implementation that works with any DbContext.

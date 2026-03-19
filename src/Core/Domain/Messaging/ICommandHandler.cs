@@ -1,8 +1,8 @@
 ﻿using MediatR;
 
-using QltSystem.Core.Domain.SeedWork;
+using QltS.Core.Domain.SeedWork;
 
-namespace QltSystem.Core.Domain.Messaging;
+namespace QltS.Core.Domain.Messaging;
 
 public interface ICommandHandler<TCommand> : IRequestHandler<TCommand, Result>
     where TCommand : ICommand

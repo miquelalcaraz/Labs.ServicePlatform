@@ -3,7 +3,7 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<RootNamespace>QltSystem.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+		<RootNamespace>QltS.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 	</PropertyGroup>
 	<ItemGroup>
 	  <Compile Remove="Idempotency\**" />
@@ -29,7 +29,7 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\Core\EventBusRabbitMQ\Core.EventBusRabbitMQ.csproj" />
 		<ProjectReference Include="..\..\Core\EventBus.TransactionalOutbox\Core.EventBus.TransactionalOutbox.csproj" />
-		<ProjectReference Include="..\..\Core\EventBus.Idempotency\EventBus.Idempotency.csproj" />
+		<ProjectReference Include="..\..\Core\EventBus.Idempotency\Core.EventBus.Idempotency.csproj" />
 		<ProjectReference Include="..\Application\Accounts.Application.csproj" />
 		<ProjectReference Include="..\Domain\Accounts.Domain.csproj" />
 		<ProjectReference Include="..\..\Core\Persistence.EF\Core.Persistence.EF.csproj" />

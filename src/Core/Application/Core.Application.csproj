@@ -1,17 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<RootNamespace>QltSystem.Core.Application</RootNamespace>
+		<RootNamespace>QltS.Core.Application</RootNamespace>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="MediatR" Version="14.0.0" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.3" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />
+		<PackageReference Include="FluentValidation" Version="12.1.1" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\Domain\Core.Domain.csproj" />
-		<ProjectReference Include="..\EventBus\Core.EventBus.csproj" />
 	</ItemGroup>
 </Project>

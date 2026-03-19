@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace Core.Persistence.EF.Relational;
+namespace QltS.Core.Persistence.EF.Relational;
 
 public static class AssemblyReference
 {

@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-using QltSystem.Core.Domain.SeedWork;
+using QltS.Core.Domain.SeedWork;
 
-namespace Core.Persistence.EF.Relational.Configurations;
+namespace QltS.Core.Persistence.EF.Relational.Configurations;
 
 internal static class AuditLogConfiguration
 {

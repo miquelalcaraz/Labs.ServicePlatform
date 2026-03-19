@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace QltSystem.Core.EventBus.TransactionalOutbox.Utilities;
+namespace QltS.Core.EventBus.TransactionalOutbox.Utilities;
 
 /// <summary>
 /// Helper class for executing actions within a resilient database transaction.

@@ -1,10 +1,10 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
 
-using QltSystem.Core.Domain.SeedWork;
+using QltS.Core.Domain.SeedWork;
 
 
-namespace QltSystem.Core.Persistence.EF.Audit;
+namespace QltS.Core.Persistence.EF.Audit;
 
 public static class AuditLogsExtension
 {

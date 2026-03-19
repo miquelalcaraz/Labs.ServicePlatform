@@ -1,8 +1,8 @@
-using QltSystem.Core.EventBus.Contracts.Events;
-
 using System.Reflection;
 
-namespace QltSystem.Core.EventBus.TransactionalOutbox.Configuration;
+using QltS.Core.EventBus.Contracts.Events;
+
+namespace QltS.Core.EventBus.TransactionalOutbox.Configuration;
 
 /// <summary>
 /// Configuration options for IntegrationEventLogService.

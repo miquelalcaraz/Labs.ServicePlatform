@@ -1,14 +1,14 @@
 ﻿
-using Microsoft.Extensions.DependencyInjection;
-
-using QltSystem.Core.EventBus.Abstractions;
-using QltSystem.Core.EventBus.Contracts.Events;
-
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 
-namespace QltSystem.Core.EventBus.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+using QltS.Core.EventBus.Abstractions;
+using QltS.Core.EventBus.Contracts.Events;
+
+namespace QltS.Core.EventBus.Extensions;
 
 public static class EventBusBuilderExtensions
 {

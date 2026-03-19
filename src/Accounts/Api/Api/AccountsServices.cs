@@ -1,22 +1,22 @@
 ﻿using MediatR;
 
-using QltSystem.Accounts.Application.Queries;
-using QltSystem.Core.API.Apis;
-using QltSystem.Core.API.Services;
+using QltS.Accounts.Application.Queries;
+using QltS.Core.API.Apis;
+using QltS.Core.Application.Services;
 
 
-namespace QltSystem.Accounts.Api
+namespace QltS.Accounts.Api
 {
     public class AccountsServices(
                     IMediator mediator,
-                    IIdentityService identityService,
-                    ILogger<AccountsServices> logger,
+                    IUserHttpContext identityService,
+                    ILogger<ApiServices> logger,
                     IOrganizationQueries queries
-        ) //: ApiServices(mediator, identityService, logger)
+        ) : ApiServices(mediator, identityService, logger)
     {
-        public IMediator Mediator { get; set; } = mediator;
-        public ILogger<AccountsServices> Logger { get; } = logger;
-        public IIdentityService IdentityService { get; } = identityService;
+        //public IMediator Mediator { get; set; } = mediator;
+        //public ILogger<AccountsServices> Logger { get; } = logger;
+        //public IUserHttpContext IdentityService { get; } = identityService;
         public IOrganizationQueries Queries { get; } = queries;
 
     }

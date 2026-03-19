@@ -1,12 +1,12 @@
-﻿using QltSystem.Accounts.Contracts.IntegrationEvents.Events;
-using QltSystem.Core.EventBus.Abstractions;
-using QltSystem.Core.EventBus.Services;
-using QltSystem.Core.EventBus.TransactionalOutbox.Utilities;
-using QltSystem.Notifications.Infrastructure;
-using QltSystem.Notifications.Repositories;
-using QltSystem.Notifications.Services;
+﻿using QltS.Accounts.Contracts.IntegrationEvents.Events;
+using QltS.Core.EventBus.Abstractions;
+using QltS.Core.EventBus.Services;
+using QltS.Core.EventBus.TransactionalOutbox.Utilities;
+using QltS.Notifications.Infrastructure;
+using QltS.Notifications.Repositories;
+using QltS.Notifications.Services;
 
-namespace QltSystem.Notifications.IntegrationEvents.EventHandling
+namespace QltS.Notifications.IntegrationEvents.EventHandling
 {
     public class OrganizationCreatedIntegrationEventHandler : IIntegrationEventHandler<OrganizationCreatedIntegrationEvent>
     {

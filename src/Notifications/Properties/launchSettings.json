@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "QltSystem.Notifications.API": {
+    "QltS.Notifications.API": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {

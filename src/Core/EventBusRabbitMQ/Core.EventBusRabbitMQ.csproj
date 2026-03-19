@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <RootNamespace>QltSystem.Core.EventBusRabbitMQ</RootNamespace>
+    <RootNamespace>QltS.Core.EventBusRabbitMQ</RootNamespace>
     <IsAotCompatible>true</IsAotCompatible>
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
   </PropertyGroup>

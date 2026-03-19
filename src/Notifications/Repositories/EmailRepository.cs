@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 
-using QltSystem.Notifications.Infrastructure;
-using QltSystem.Notifications.Models;
+using QltS.Notifications.Infrastructure;
+using QltS.Notifications.Models;
 
-namespace QltSystem.Notifications.Repositories;
+namespace QltS.Notifications.Repositories;
 
 public class EmailRepository : IEmailRepository
 {

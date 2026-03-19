@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace QltSystem.Notifications.Infrastructure.Migrations
+namespace QltS.Notifications.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class Initial : Migration

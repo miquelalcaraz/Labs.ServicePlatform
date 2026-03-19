@@ -1,11 +1,11 @@
 using Microsoft.Extensions.Logging;
 
-using QltSystem.Core.EventBus.Abstractions;
-using QltSystem.Core.EventBus.Contracts.Events;
-using QltSystem.Core.EventBus.Services;
-using QltSystem.Core.Persistence.EF;
+using QltS.Core.EventBus.Abstractions;
+using QltS.Core.EventBus.Contracts.Events;
+using QltS.Core.EventBus.Services;
+using QltS.Core.Persistence.EF;
 
-namespace QltSystem.Core.EventBus.TransactionalOutbox.Services;
+namespace QltS.Core.EventBus.TransactionalOutbox.Services;
 
 /// <summary>
 /// Service that combines the outbox pattern with event publishing.

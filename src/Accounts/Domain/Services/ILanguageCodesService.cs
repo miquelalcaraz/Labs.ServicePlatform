@@ -1,6 +1,6 @@
-﻿using QltSystem.Core.Domain.SeedWork;
+﻿using QltS.Core.Domain.SeedWork;
 
-namespace QltSystem.Accounts.Domain.Services
+namespace QltS.Accounts.Domain.Services
 {
     public interface ILanguageCodesService
     {

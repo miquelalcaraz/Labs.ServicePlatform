@@ -1,4 +1,4 @@
-﻿namespace QltSystem.Core.Domain.SeedWork;
+﻿namespace QltS.Core.Domain.SeedWork;
 
 public interface IAggregateRoot { }
 

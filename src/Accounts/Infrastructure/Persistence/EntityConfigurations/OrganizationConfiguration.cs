@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using QltSystem.Accounts.Domain.Models.OrganizationAggregate;
+using QltS.Accounts.Domain.Models.OrganizationAggregate;
 
-namespace QltSystem.Accounts.Infrastructure.Persistence.EntityConfigurations;
+namespace QltS.Accounts.Infrastructure.Persistence.EntityConfigurations;
 
 internal sealed class OrganizationConfiguration : IEntityTypeConfiguration<Organization>
 {

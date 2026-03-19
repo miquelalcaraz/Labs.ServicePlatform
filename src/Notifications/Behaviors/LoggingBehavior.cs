@@ -1,8 +1,8 @@
 ﻿using MediatR;
 
-using QltSystem.Core.EventBus.Extensions;
+using QltS.Core.EventBus.Extensions;
 
-namespace QltSystem.Notifications.Behaviors
+namespace QltS.Notifications.Behaviors
 {
     public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : IRequest<TResponse>
     {

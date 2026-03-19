@@ -1,13 +1,12 @@
-using Core.Persistence.EF.Relational;
-
 using MediatR;
 
 using Microsoft.EntityFrameworkCore;
 
-using QltSystem.Accounts.Domain.Models.OrganizationAggregate;
-using QltSystem.Core.Persistence.EF.Extensions;
+using QltS.Accounts.Domain.Models.OrganizationAggregate;
+using QltS.Core.Persistence.EF.Extensions;
+using QltS.Core.Persistence.EF.Relational;
 
-namespace QltSystem.Accounts.Infrastructure.Persistence
+namespace QltS.Accounts.Infrastructure.Persistence
 {
     /// <summary>
     /// Database context for Accounts bounded context.

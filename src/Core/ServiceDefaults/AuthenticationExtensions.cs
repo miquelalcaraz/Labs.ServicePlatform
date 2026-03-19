@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.JsonWebTokens;
 
-namespace QltSystem.Core.ServiceDefaults;
+namespace QltS.Core.ServiceDefaults;
 
 public static class AuthenticationExtensions
 {

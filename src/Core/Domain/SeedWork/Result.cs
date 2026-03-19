@@ -1,8 +1,8 @@
-﻿using QltSystem.Core.Domain.Exceptions;
+﻿using System;
 
-using System;
+using QltS.Core.Domain.Exceptions;
 
-namespace QltSystem.Core.Domain.SeedWork;
+namespace QltS.Core.Domain.SeedWork;
 
 public class Result
 {

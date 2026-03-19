@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 
-using QltSystem.Core.EventBus.Idempotency;
+using QltS.Core.EventBus.Idempotency;
 
-namespace QltSystem.Core.Persistence.EF.Idempotency.Extensions;
+namespace QltS.Core.Persistence.EF.Idempotency.Extensions;
 
 /// <summary>
 /// Internal extension methods for registering command idempotency services.

@@ -23,10 +23,10 @@ Add package reference to your service project:
 ### 1. Register Services
 
 ```csharp
-using QltSystem.Core.EventBus.Idempotency.Extensions;
+using QltS.Core.EventBus.Idempotency.Extensions;
 
 // Register your DbContext
-services.AddQltSystemDBContext<YourContext>(config =>
+services.AddQltSDBContext<YourContext>(config =>
 {
     config.RegisterModelsFromAssembly(typeof(YourContext).Assembly);
 }, dbOptions =>
@@ -38,12 +38,12 @@ services.AddQltSystemDBContext<YourContext>(config =>
 services.AddEventIdempotency<YourContext>();
 ```
 
-**Note**: Registration order doesn't matter. You can call `AddEventIdempotency` before or after `AddQltSystemDBContext`.
+**Note**: Registration order doesn't matter. You can call `AddEventIdempotency` before or after `AddQltSDBContext`.
 
 ### 2. Use in Event Handlers
 
 ```csharp
-using QltSystem.Core.EventBus.Services;
+using QltS.Core.EventBus.Services;
 
 public class OrganizationCreatedHandler : IIntegrationEventHandler<OrganizationCreatedEvent>
 {
@@ -121,6 +121,6 @@ Simply don't add the package reference or call `AddEventIdempotency`. No idempot
 
 ```csharp
 // Logging service example - duplicates are acceptable
-services.AddQltSystemDBContext<LoggingContext>(config => { ... });
+services.AddQltSDBContext<LoggingContext>(config => { ... });
 // No AddEventIdempotency call - no idempotency tracking
 ```

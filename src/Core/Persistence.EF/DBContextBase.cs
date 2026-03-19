@@ -3,15 +3,15 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
-using QltSystem.Core.Domain.SeedWork;
-using QltSystem.Core.Persistence.EF.Audit;
+using QltS.Core.Domain.SeedWork;
+using QltS.Core.Persistence.EF.Audit;
 
-using QltSystem.Core.Persistence.EF.Extensions;
+using QltS.Core.Persistence.EF.Extensions;
 
-namespace QltSystem.Core.Persistence.EF;
+namespace QltS.Core.Persistence.EF;
 
 /// <summary>
-/// Base DbContext for all QltSystem contexts.
+/// Base DbContext for all QltS contexts.
 /// Provides common functionality like domain events dispatching, audit logging, and transaction management.
 /// </summary>
 public abstract class DBContextBase : DbContext, IUnitOfWork

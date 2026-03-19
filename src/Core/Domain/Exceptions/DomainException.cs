@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace QltSystem.Core.Domain.Exceptions;
+namespace QltS.Core.Domain.Exceptions;
 
 public class DomainException : Exception
 {

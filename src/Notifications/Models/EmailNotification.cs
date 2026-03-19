@@ -1,4 +1,4 @@
-namespace QltSystem.Notifications.Models
+namespace QltS.Notifications.Models
 {
     public class EmailNotification
     {

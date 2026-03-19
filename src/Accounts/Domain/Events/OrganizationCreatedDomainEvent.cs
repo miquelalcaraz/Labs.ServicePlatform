@@ -1,6 +1,6 @@
-﻿using QltSystem.Core.Domain.Messaging;
+﻿using QltS.Core.Domain.Messaging;
 
-namespace QltSystem.Accounts.Domain.Events
+namespace QltS.Accounts.Domain.Events
 {
     public record OrganizationCreatedDomainEvent(
         Guid TenantId,

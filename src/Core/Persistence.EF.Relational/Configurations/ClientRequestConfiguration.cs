@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using QltSystem.Core.Persistence.EF.Idempotency;
+using QltS.Core.Persistence.EF.Idempotency;
 
-namespace Core.Persistence.EF.Relational.Configurations;
+namespace QltS.Core.Persistence.EF.Relational.Configurations;
 
 /// <summary>
 /// Entity Framework configuration for ClientRequest entity.

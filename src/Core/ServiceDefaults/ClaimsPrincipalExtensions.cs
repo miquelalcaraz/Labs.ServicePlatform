@@ -1,6 +1,6 @@
 ﻿using System.Security.Claims;
 
-namespace QltSystem.Core.ServiceDefaults;
+namespace QltS.Core.ServiceDefaults;
 
 public static class ClaimsPrincipalExtensions
 {

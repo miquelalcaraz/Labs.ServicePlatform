@@ -1,10 +1,9 @@
 using Microsoft.Extensions.DependencyInjection;
 
-using QltSystem.Core.Persistence.EF;
-using QltSystem.Core.Persistence.EF.Extensions;
-using QltSystem.Core.Persistence.EF.Idempotency.Extensions;
+using QltS.Core.Persistence.EF.Extensions;
+using QltS.Core.Persistence.EF.Idempotency.Extensions;
 
-namespace Core.Persistence.EF.Relational.Extensions;
+namespace QltS.Core.Persistence.EF.Relational.Extensions;
 
 /// <summary>
 /// Extension methods for command idempotency in relational databases.

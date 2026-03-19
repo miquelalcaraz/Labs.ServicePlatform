@@ -1,14 +1,14 @@
-using Microsoft.Extensions.DependencyInjection;
-
-using QltSystem.Core.EventBus.Services;
-using QltSystem.Core.EventBus.TransactionalOutbox.Configuration;
-using QltSystem.Core.EventBus.TransactionalOutbox.Services;
-using QltSystem.Core.Persistence.EF;
-using QltSystem.Core.Persistence.EF.Extensions;
-
 using System.Reflection;
 
-namespace QltSystem.Core.EventBus.TransactionalOutbox.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+
+using QltS.Core.EventBus.Services;
+using QltS.Core.EventBus.TransactionalOutbox.Configuration;
+using QltS.Core.EventBus.TransactionalOutbox.Services;
+using QltS.Core.Persistence.EF;
+using QltS.Core.Persistence.EF.Extensions;
+
+namespace QltS.Core.EventBus.TransactionalOutbox.Extensions;
 
 /// <summary>
 /// Extension methods for registering transactional outbox services with DI container.

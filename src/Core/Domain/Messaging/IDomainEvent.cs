@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace QltSystem.Core.Domain.Messaging;
+namespace QltS.Core.Domain.Messaging;
 
 public interface IDomainEvent : INotification { }
 

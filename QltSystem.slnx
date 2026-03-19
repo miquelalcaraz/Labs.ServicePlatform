@@ -1,12 +1,14 @@
 <Solution>
   <Folder Name="/Core/">
-    <Project Path="src/API/Core.API.csproj" />
+    <Project Path="src/Core/API/Core.API.csproj" />
+    <Project Path="src/Core/Application/Core.Application.csproj" />
     <Project Path="src/Core/Domain/Core.Domain.csproj" />
     <Project Path="src/Core/EventBus.Contracts/Core.EventBus.Contracts.csproj" />
-    <Project Path="src/Core/EventBus.Idempotency/EventBus.Idempotency.csproj" />
+    <Project Path="src/Core/EventBus.Idempotency/Core.EventBus.Idempotency.csproj" />
     <Project Path="src/Core/EventBus.TransactionalOutbox/Core.EventBus.TransactionalOutbox.csproj" />
     <Project Path="src/Core/EventBus/Core.EventBus.csproj" />
     <Project Path="src/Core/EventBusRabbitMQ/Core.EventBusRabbitMQ.csproj" />
+    <Project Path="src/Core/Infrastructure/Core.Infrastructure.csproj" />
     <Project Path="src/Core/IntegrationEventLogEF/Core.IntegrationEventLogEF.csproj" />
     <Project Path="src/Core/Persistence.EF.Relational/Core.Persistence.EF.Relational.csproj" />
     <Project Path="src/Core/Persistence.EF/Core.Persistence.EF.csproj" />
@@ -14,8 +16,8 @@
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/QltSystem/">
-    <Project Path="src/QltSystem.AppHost/QltSystem.AppHost.csproj" />
-    <Project Path="src/QltSystem.Identity/QltSystem.Identity.csproj" />
+    <Project Path="src/QltS.AppHost/QltS.AppHost.csproj" />
+    <Project Path="src/QltS.Identity/QltS.Identity.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
   <Folder Name="/src/Services/Accounts/" />
@@ -32,6 +34,6 @@
     <Project Path="src/Notifications/Service.Notifications.csproj" />
   </Folder>
   <Folder Name="/src/WebApp/">
-    <Project Path="src/QltSystem.WebApp/QltSystem.WebApp.csproj" />
+    <Project Path="src/QltS.BackOffice/WebApp/QltS.BackOffice.WebApp.csproj" />
   </Folder>
 </Solution>

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace QltSystem.Core.Domain.SeedWork;
+namespace QltS.Core.Domain.SeedWork;
 
 public abstract class ValueObject
 {

@@ -1,10 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using QltSystem.Notifications.Models;
+using QltS.Notifications.Models;
 
 
-namespace QltSystem.Notifications.Infrastructure.EntityConfigurations;
+namespace QltS.Notifications.Infrastructure.EntityConfigurations;
 
 internal sealed class EmailNotificationConfiguration : IEntityTypeConfiguration<EmailNotification>
 {

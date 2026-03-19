@@ -1,9 +1,8 @@
-﻿using Core.Persistence.EF.Relational.Repositories;
+﻿using QltS.Accounts.Domain.Models.OrganizationAggregate;
+using QltS.Accounts.Domain.Repositories;
+using QltS.Core.Persistence.EF.Relational.Repositories;
 
-using QltSystem.Accounts.Domain.Models.OrganizationAggregate;
-using QltSystem.Accounts.Domain.Repositories;
-
-namespace QltSystem.Accounts.Infrastructure.Persistence.Repositories
+namespace QltS.Accounts.Infrastructure.Persistence.Repositories
 {
     public class OrganizationRepository : Repository<Organization>, IOrganizationRepository
     {

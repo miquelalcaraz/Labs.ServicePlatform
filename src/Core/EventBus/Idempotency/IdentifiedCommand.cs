@@ -1,8 +1,8 @@
-using MediatR;
-
 using System;
 
-namespace QltSystem.Core.EventBus.Idempotency;
+using MediatR;
+
+namespace QltS.Core.EventBus.Idempotency;
 
 /// <summary>
 /// Wraps a command with a unique identifier for idempotency purposes.

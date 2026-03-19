@@ -1,8 +1,8 @@
-﻿using QltSystem.Core.EventBus.Contracts.Events;
+﻿using System.Threading.Tasks;
 
-using System.Threading.Tasks;
+using QltS.Core.EventBus.Contracts.Events;
 
-namespace QltSystem.Core.EventBus.Abstractions;
+namespace QltS.Core.EventBus.Abstractions;
 
 public interface IIntegrationEventHandler<in TIntegrationEvent> : IIntegrationEventHandler
     where TIntegrationEvent : IntegrationEvent

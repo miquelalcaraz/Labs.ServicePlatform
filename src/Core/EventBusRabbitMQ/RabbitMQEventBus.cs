@@ -1,19 +1,4 @@
 ﻿
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-
-using Polly;
-using Polly.Retry;
-
-using QltSystem.Core.EventBus.Abstractions;
-using QltSystem.Core.EventBus.Contracts.Events;
-
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
-using RabbitMQ.Client.Exceptions;
-
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Net.Sockets;
@@ -22,7 +7,22 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace QltSystem.Core.EventBusRabbitMQ;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+using Polly;
+using Polly.Retry;
+
+using QltS.Core.EventBus.Abstractions;
+using QltS.Core.EventBus.Contracts.Events;
+
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
+
+namespace QltS.Core.EventBusRabbitMQ;
 
 public sealed class RabbitMQEventBus(
     ILogger<RabbitMQEventBus> logger,
@@ -30,7 +30,7 @@ public sealed class RabbitMQEventBus(
     IOptions<EventBusOptions> options,
     IOptions<EventBusSubscriptionInfo> subscriptionOptions) : IEventBus, IDisposable, IHostedService
 {
-    private const string ExchangeName = "QltSystem_event_bus";
+    private const string ExchangeName = "QltS_event_bus";
 
     private readonly ResiliencePipeline _pipeline = CreateResiliencePipeline(options.Value.RetryCount);
 

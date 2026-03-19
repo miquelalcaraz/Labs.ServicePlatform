@@ -1,6 +1,6 @@
-﻿using QltSystem.Core.Persistence.EF.Extensions;
+﻿using QltS.Core.Persistence.EF.Extensions;
 
-namespace QltSystem.Notifications.Infrastructure
+namespace QltS.Notifications.Infrastructure
 {
     public class NotificationsContextSeed : IDbSeeder<NotificationsContext>
     {

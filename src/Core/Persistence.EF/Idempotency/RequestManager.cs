@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-using QltSystem.Core.EventBus.Idempotency;
+using QltS.Core.EventBus.Idempotency;
 
-namespace QltSystem.Core.Persistence.EF.Idempotency;
+namespace QltS.Core.Persistence.EF.Idempotency;
 
 /// <summary>
 /// Generic implementation of request manager for command idempotency.

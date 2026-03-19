@@ -1,7 +1,7 @@
-﻿using QltSystem.Core.Persistence.EF;
-using QltSystem.Core.Persistence.EF.Extensions;
+﻿using QltS.Core.Persistence.EF;
+using QltS.Core.Persistence.EF.Extensions;
 
-namespace QltSystem.Accounts.Infrastructure.Persistence.Seed
+namespace QltS.Accounts.Infrastructure.Persistence.Seed
 {
     public class QltDBContextSeed : IDbSeeder<DBContextBase>
     {

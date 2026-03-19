@@ -3,11 +3,11 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-using QltSystem.Core.EventBus.Extensions;
-using QltSystem.Core.EventBus.Services;
-using QltSystem.Core.Persistence.EF;
+using QltS.Core.EventBus.Extensions;
+using QltS.Core.EventBus.Services;
+using QltS.Core.Persistence.EF;
 
-namespace QltSystem.Core.EventBus.TransactionalOutbox.Behaviors;
+namespace QltS.Core.EventBus.TransactionalOutbox.Behaviors;
 
 /// <summary>
 /// Generic transaction behavior that wraps command execution in a database transaction.

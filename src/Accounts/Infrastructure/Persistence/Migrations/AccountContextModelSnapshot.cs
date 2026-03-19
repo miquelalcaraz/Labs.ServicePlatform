@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using QltSystem.Accounts.Infrastructure.Persistence;
+using QltS.Accounts.Infrastructure.Persistence;
 
 #nullable disable
 
-namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
+namespace QltS.Accounts.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AccountContext))]
     partial class AccountContextModelSnapshot : ModelSnapshot
@@ -23,7 +23,7 @@ namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("QltSystem.Accounts.Domain.Models.OrganizationAggregate.Organization", b =>
+            modelBuilder.Entity("QltS.Accounts.Domain.Models.OrganizationAggregate.Organization", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -72,7 +72,7 @@ namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
                     b.ToTable("Organization", "accounts");
                 });
 
-            modelBuilder.Entity("QltSystem.Accounts.Domain.Models.OrganizationAggregate.OrganizationContact", b =>
+            modelBuilder.Entity("QltS.Accounts.Domain.Models.OrganizationAggregate.OrganizationContact", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -113,7 +113,7 @@ namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
                     b.ToTable("OrganizationContact", "accounts");
                 });
 
-            modelBuilder.Entity("QltSystem.Core.Domain.SeedWork.AuditLog", b =>
+            modelBuilder.Entity("QltS.Core.Domain.SeedWork.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -151,7 +151,7 @@ namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
                     b.ToTable("AuditLogs", "accounts");
                 });
 
-            modelBuilder.Entity("QltSystem.Core.EventBus.Idempotency.ClientRequest", b =>
+            modelBuilder.Entity("QltS.Core.EventBus.Idempotency.ClientRequest", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -173,7 +173,7 @@ namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
                     b.ToTable("ClientRequests", "accounts");
                 });
 
-            modelBuilder.Entity("QltSystem.Core.EventBus.Idempotency.Models.ProcessedIntegrationEvent", b =>
+            modelBuilder.Entity("QltS.Core.EventBus.Idempotency.Models.ProcessedIntegrationEvent", b =>
                 {
                     b.Property<Guid>("EventId")
                         .HasColumnType("uniqueidentifier");
@@ -198,7 +198,7 @@ namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
                     b.ToTable("ProcessedIntegrationEvents", "accounts");
                 });
 
-            modelBuilder.Entity("QltSystem.Core.EventBus.TransactionalOutbox.Models.IntegrationEventLogEntry", b =>
+            modelBuilder.Entity("QltS.Core.EventBus.TransactionalOutbox.Models.IntegrationEventLogEntry", b =>
                 {
                     b.Property<Guid>("EventId")
                         .ValueGeneratedOnAdd()
@@ -233,9 +233,9 @@ namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
                     b.ToTable("IntegrationEventLog", "accounts");
                 });
 
-            modelBuilder.Entity("QltSystem.Accounts.Domain.Models.OrganizationAggregate.Organization", b =>
+            modelBuilder.Entity("QltS.Accounts.Domain.Models.OrganizationAggregate.Organization", b =>
                 {
-                    b.OwnsOne("QltSystem.Accounts.Domain.Models.OrganizationAggregate.Address", "Address", b1 =>
+                    b.OwnsOne("QltS.Accounts.Domain.Models.OrganizationAggregate.Address", "Address", b1 =>
                         {
                             b1.Property<Guid>("OrganizationId")
                                 .HasColumnType("uniqueidentifier");
@@ -278,9 +278,9 @@ namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
                     b.Navigation("Address");
                 });
 
-            modelBuilder.Entity("QltSystem.Accounts.Domain.Models.OrganizationAggregate.OrganizationContact", b =>
+            modelBuilder.Entity("QltS.Accounts.Domain.Models.OrganizationAggregate.OrganizationContact", b =>
                 {
-                    b.HasOne("QltSystem.Accounts.Domain.Models.OrganizationAggregate.Organization", "Organization")
+                    b.HasOne("QltS.Accounts.Domain.Models.OrganizationAggregate.Organization", "Organization")
                         .WithMany("OrganizationContacts")
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -290,7 +290,7 @@ namespace QltSystem.Accounts.Infrastructure.Persistence.Migrations
                     b.Navigation("Organization");
                 });
 
-            modelBuilder.Entity("QltSystem.Accounts.Domain.Models.OrganizationAggregate.Organization", b =>
+            modelBuilder.Entity("QltS.Accounts.Domain.Models.OrganizationAggregate.Organization", b =>
                 {
                     b.Navigation("OrganizationContacts");
                 });

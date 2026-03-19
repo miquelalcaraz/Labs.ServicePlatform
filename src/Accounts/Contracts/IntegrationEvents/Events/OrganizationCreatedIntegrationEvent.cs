@@ -1,6 +1,6 @@
-﻿using QltSystem.Core.EventBus.Contracts.Events;
+﻿using QltS.Core.EventBus.Contracts.Events;
 
-namespace QltSystem.Accounts.Contracts.IntegrationEvents.Events
+namespace QltS.Accounts.Contracts.IntegrationEvents.Events
 {
     public record OrganizationCreatedIntegrationEvent(
         Guid TenantId,

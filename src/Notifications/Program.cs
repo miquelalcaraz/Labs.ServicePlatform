@@ -1,8 +1,8 @@
 
-using QltSystem.Core.ServiceDefaults;
-using QltSystem.Notifications.Api;
-using QltSystem.Notifications.Extensions;
- 
+using QltS.Core.ServiceDefaults;
+using QltS.Notifications.Api;
+using QltS.Notifications.Extensions;
+
 
 var builder = WebApplication.CreateBuilder(args);
 

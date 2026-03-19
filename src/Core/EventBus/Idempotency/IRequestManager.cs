@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 
-namespace QltSystem.Core.EventBus.Idempotency;
+namespace QltS.Core.EventBus.Idempotency;
 
 /// <summary>
 /// Manages command request idempotency by tracking processed requests.

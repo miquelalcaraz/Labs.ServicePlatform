@@ -4,11 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using QltSystem.Notifications.Infrastructure;
+using QltS.Notifications.Infrastructure;
 
 #nullable disable
 
-namespace QltSystem.Notifications.Infrastructure.Migrations
+namespace QltS.Notifications.Infrastructure.Migrations
 {
     [DbContext(typeof(NotificationsContext))]
     partial class NotificationsContextModelSnapshot : ModelSnapshot
@@ -23,7 +23,7 @@ namespace QltSystem.Notifications.Infrastructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("QltSystem.Core.Domain.SeedWork.AuditLog", b =>
+            modelBuilder.Entity("QltS.Core.Domain.SeedWork.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -61,7 +61,7 @@ namespace QltSystem.Notifications.Infrastructure.Migrations
                     b.ToTable("AuditLogs", "notifications");
                 });
 
-            modelBuilder.Entity("QltSystem.Core.EventBus.Idempotency.Models.ProcessedIntegrationEvent", b =>
+            modelBuilder.Entity("QltS.Core.EventBus.Idempotency.Models.ProcessedIntegrationEvent", b =>
                 {
                     b.Property<Guid>("EventId")
                         .HasColumnType("uniqueidentifier");
@@ -86,7 +86,7 @@ namespace QltSystem.Notifications.Infrastructure.Migrations
                     b.ToTable("ProcessedIntegrationEvents", "notifications");
                 });
 
-            modelBuilder.Entity("QltSystem.Core.EventBus.TransactionalOutbox.Models.IntegrationEventLogEntry", b =>
+            modelBuilder.Entity("QltS.Core.EventBus.TransactionalOutbox.Models.IntegrationEventLogEntry", b =>
                 {
                     b.Property<Guid>("EventId")
                         .ValueGeneratedOnAdd()
@@ -121,7 +121,7 @@ namespace QltSystem.Notifications.Infrastructure.Migrations
                     b.ToTable("IntegrationEventLog", "notifications");
                 });
 
-            modelBuilder.Entity("QltSystem.Core.Persistence.EF.Idempotency.ClientRequest", b =>
+            modelBuilder.Entity("QltS.Core.Persistence.EF.Idempotency.ClientRequest", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -143,7 +143,7 @@ namespace QltSystem.Notifications.Infrastructure.Migrations
                     b.ToTable("ClientRequests", "notifications");
                 });
 
-            modelBuilder.Entity("QltSystem.Notifications.Models.EmailNotification", b =>
+            modelBuilder.Entity("QltS.Notifications.Models.EmailNotification", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");

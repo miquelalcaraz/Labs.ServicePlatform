@@ -1,11 +1,11 @@
-﻿using QltSystem.Accounts.Domain.Models.OrganizationAggregate;
-using QltSystem.Core.Domain.Messaging;
+﻿using System.Runtime.Serialization;
 
-using System.Runtime.Serialization;
+using QltS.Accounts.Domain.Models.OrganizationAggregate;
+using QltS.Core.Domain.Messaging;
 
 
 
-namespace QltSystem.Accounts.Application.Commands;
+namespace QltS.Accounts.Application.Commands;
 
 [DataContract]
 public record CreateOrganizationCommand : ICommand<bool>

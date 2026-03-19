@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore.Storage;
 
-using QltSystem.Core.EventBus.Contracts.Events;
-using QltSystem.Core.EventBus.TransactionalOutbox.Models;
+using QltS.Core.EventBus.Contracts.Events;
+using QltS.Core.EventBus.TransactionalOutbox.Models;
 
-namespace QltSystem.Core.EventBus.TransactionalOutbox.Services;
+namespace QltS.Core.EventBus.TransactionalOutbox.Services;
 
 /// <summary>
 /// Service for managing integration events in the transactional outbox.

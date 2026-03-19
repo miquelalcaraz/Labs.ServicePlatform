@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <RootNamespace>QltSystem.Core.IntegrationEventLogEF</RootNamespace>
+    <RootNamespace>QltS.Core.IntegrationEventLogEF</RootNamespace>
     <IsPublishable>false</IsPublishable>
   </PropertyGroup>
 

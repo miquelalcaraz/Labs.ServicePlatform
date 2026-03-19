@@ -10,7 +10,7 @@ using Microsoft.Extensions.Hosting;
 
 using Scalar.AspNetCore;
 
-namespace QltSystem.Core.ServiceDefaults
+namespace QltS.Core.ServiceDefaults
 {
 
     public static partial class Extensions

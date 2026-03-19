@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
-namespace QltSystem.Core.Domain.SeedWork;
+namespace QltS.Core.Domain.SeedWork;
 
 public interface IRepository<T> where T : IAggregateRoot
 {

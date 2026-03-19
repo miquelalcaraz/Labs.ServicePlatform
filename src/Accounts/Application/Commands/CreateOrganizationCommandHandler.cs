@@ -2,17 +2,17 @@
 
 using Microsoft.Extensions.Logging;
 
-using QltSystem.Accounts.Domain.Models.OrganizationAggregate;
-using QltSystem.Accounts.Domain.Repositories;
-using QltSystem.Core.Domain.Exceptions;
-using QltSystem.Core.Domain.Messaging;
-using QltSystem.Core.Domain.SeedWork;
-using QltSystem.Core.EventBus.Idempotency;
+using QltS.Accounts.Domain.Models.OrganizationAggregate;
+using QltS.Accounts.Domain.Repositories;
+using QltS.Core.Domain.Exceptions;
+using QltS.Core.Domain.Messaging;
+using QltS.Core.Domain.SeedWork;
+using QltS.Core.EventBus.Idempotency;
 
 
 
 
-namespace QltSystem.Accounts.Application.Commands;
+namespace QltS.Accounts.Application.Commands;
 
 public class CreateOrganizationCommandHandler : ICommandHandler<CreateOrganizationCommand, bool>
 {

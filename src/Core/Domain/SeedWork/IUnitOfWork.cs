@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace QltSystem.Core.Domain.SeedWork;
+namespace QltS.Core.Domain.SeedWork;
 
 public interface IUnitOfWork : IDisposable
 {

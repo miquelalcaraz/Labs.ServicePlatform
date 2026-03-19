@@ -1,8 +1,8 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Reflection;
 
-using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace QltSystem.Core.Persistence.EF.Extensions
+namespace QltS.Core.Persistence.EF.Extensions
 {
     public class QltDbContextConfiguration
     {

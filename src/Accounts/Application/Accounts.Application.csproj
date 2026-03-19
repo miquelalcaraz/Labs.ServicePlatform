@@ -3,7 +3,7 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<RootNamespace>QltSystem.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+		<RootNamespace>QltS.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="MediatR" Version="14.1.0" />
@@ -11,6 +11,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\Core\Application\Core.Application.csproj" />
 		<ProjectReference Include="..\..\Core\Domain\Core.Domain.csproj" />
 		<ProjectReference Include="..\..\Core\EventBus\Core.EventBus.csproj" />
 		<ProjectReference Include="..\Contracts\Accounts.Contracts.csproj" /> 

@@ -1,14 +1,14 @@
-using MediatR;
-
-using Microsoft.Extensions.Logging;
-
-using QltSystem.Core.EventBus.Extensions;
-
 using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace QltSystem.Core.EventBus.Idempotency;
+using MediatR;
+
+using Microsoft.Extensions.Logging;
+
+using QltS.Core.EventBus.Extensions;
+
+namespace QltS.Core.EventBus.Idempotency;
 
 /// <summary>
 /// Base implementation for handling identified commands with idempotency support.

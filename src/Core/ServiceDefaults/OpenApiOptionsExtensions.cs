@@ -1,4 +1,7 @@
-﻿using Asp.Versioning.ApiExplorer;
+﻿using System.Text;
+using System.Text.Json.Nodes;
+
+using Asp.Versioning.ApiExplorer;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
@@ -8,10 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using Microsoft.OpenApi;
 
-using System.Text;
-using System.Text.Json.Nodes;
-
-namespace QltSystem.Core.ServiceDefaults;
+namespace QltS.Core.ServiceDefaults;
 
 internal static class OpenApiOptionsExtensions
 {

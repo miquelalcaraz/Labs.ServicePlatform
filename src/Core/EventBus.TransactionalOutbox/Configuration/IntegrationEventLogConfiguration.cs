@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using QltSystem.Core.EventBus.TransactionalOutbox.Models;
+using QltS.Core.EventBus.TransactionalOutbox.Models;
 
-namespace QltSystem.Core.EventBus.TransactionalOutbox.Configuration;
+namespace QltS.Core.EventBus.TransactionalOutbox.Configuration;
 
 /// <summary>
 /// Entity Framework configuration for IntegrationEventLogEntry.

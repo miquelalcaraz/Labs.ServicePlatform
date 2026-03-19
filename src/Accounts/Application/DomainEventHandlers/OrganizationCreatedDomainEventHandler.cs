@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 
-using QltSystem.Accounts.Contracts.IntegrationEvents.Events;
-using QltSystem.Accounts.Domain.Events;
-using QltSystem.Accounts.Domain.Repositories;
-using QltSystem.Core.Domain.Messaging;
-using QltSystem.Core.EventBus.Services;
+using QltS.Accounts.Contracts.IntegrationEvents.Events;
+using QltS.Accounts.Domain.Events;
+using QltS.Accounts.Domain.Repositories;
+using QltS.Core.Domain.Messaging;
+using QltS.Core.EventBus.Services;
 
-namespace QltSystem.Accounts.Application.DomainEventHandlers
+namespace QltS.Accounts.Application.DomainEventHandlers
 {
     /// <summary>
     /// Handles the OrganizationCreatedDomainEvent by publishing an integration event

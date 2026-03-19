@@ -1,6 +1,6 @@
-using QltSystem.Notifications.Models;
+using QltS.Notifications.Models;
 
-namespace QltSystem.Notifications.Repositories
+namespace QltS.Notifications.Repositories
 {
     public interface IEmailRepository
     {

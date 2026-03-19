@@ -1,8 +1,8 @@
-﻿using QltSystem.Core.Domain.SeedWork;
+﻿using System.ComponentModel.DataAnnotations;
 
-using System.ComponentModel.DataAnnotations;
+using QltS.Core.Domain.SeedWork;
 
-namespace QltSystem.Accounts.Domain.Models.OrganizationAggregate;
+namespace QltS.Accounts.Domain.Models.OrganizationAggregate;
 
 public partial class OrganizationContact : Entity
 {

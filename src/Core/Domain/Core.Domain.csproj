@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
-		<RootNamespace>QltSystem.Core.Domain</RootNamespace>
+		<RootNamespace>QltS.Core.Domain</RootNamespace>
 		<IsAotCompatible>true</IsAotCompatible>
 	</PropertyGroup>
 	<ItemGroup>

@@ -1,8 +1,8 @@
-﻿using QltSystem.Accounts.Domain.Services;
-using QltSystem.Core.Domain.Exceptions;
-using QltSystem.Core.Domain.SeedWork;
+﻿using QltS.Accounts.Domain.Services;
+using QltS.Core.Domain.Exceptions;
+using QltS.Core.Domain.SeedWork;
 
-namespace QltSystem.Accounts.Infrastructure.Services
+namespace QltS.Accounts.Infrastructure.Services
 {
     public class LanguageCodesService : ILanguageCodesService
     {

@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-using QltSystem.Core.EventBus.Idempotency.Models;
-using QltSystem.Core.EventBus.Services;
+using QltS.Core.EventBus.Idempotency.Models;
+using QltS.Core.EventBus.Services;
 
-namespace QltSystem.Core.EventBus.Idempotency.Services;
+namespace QltS.Core.EventBus.Idempotency.Services;
 
 /// <summary>
 /// Database-backed implementation of event idempotency service.

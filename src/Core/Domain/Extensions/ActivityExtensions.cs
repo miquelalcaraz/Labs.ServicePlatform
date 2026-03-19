@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
-namespace QltSystem.Core.Domain.Extensions;
+namespace QltS.Core.Domain.Extensions;
 
 public static class ActivityExtensions
 {

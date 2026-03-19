@@ -1,7 +1,8 @@
-﻿using QltSystem.Accounts.Api;
-using QltSystem.Accounts.Extensions;
-using QltSystem.Core.API.Extensions;
-using QltSystem.Core.ServiceDefaults;
+﻿using QltS.Accounts.Api;
+using QltS.Accounts.Extensions;
+using QltS.Core.API.Extensions;
+using QltS.Core.API.Middleware;
+using QltS.Core.ServiceDefaults;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,8 +21,8 @@ builder.AddDefaultOpenApi(withApiVersioning);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-app.UseExceptionHandler();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 
 // Register API endpoints (available in all environments)
 var accounts = app.NewVersionedApi("accounts");

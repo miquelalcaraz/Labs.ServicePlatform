@@ -1,13 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Diagnostics;
+
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-using QltSystem.Core.Domain.Extensions;
+using QltS.Core.Domain.Extensions;
 
-using System.Diagnostics;
-
-namespace QltSystem.Core.Persistence.EF.Extensions;
+namespace QltS.Core.Persistence.EF.Extensions;
 
 public static class MigrateDbContextExtensions
 {

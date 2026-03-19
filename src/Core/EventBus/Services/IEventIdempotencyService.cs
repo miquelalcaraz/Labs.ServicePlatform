@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-namespace QltSystem.Core.EventBus.Services;
+namespace QltS.Core.EventBus.Services;
 
 /// <summary>
 /// Service for managing integration event idempotency.

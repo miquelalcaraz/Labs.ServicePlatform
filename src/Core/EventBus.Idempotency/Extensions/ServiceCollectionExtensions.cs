@@ -1,12 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-using QltSystem.Core.EventBus.Idempotency.Configuration;
-using QltSystem.Core.EventBus.Idempotency.Services;
-using QltSystem.Core.EventBus.Services;
-using QltSystem.Core.Persistence.EF.Extensions;
+using QltS.Core.EventBus.Idempotency.Configuration;
+using QltS.Core.EventBus.Idempotency.Services;
+using QltS.Core.EventBus.Services;
+using QltS.Core.Persistence.EF.Extensions;
 
-namespace QltSystem.Core.EventBus.Idempotency.Extensions;
+namespace QltS.Core.EventBus.Idempotency.Extensions;
 
 /// <summary>
 /// Extension methods for registering event idempotency services with DI container.
@@ -14,7 +14,7 @@ namespace QltSystem.Core.EventBus.Idempotency.Extensions;
 /// </summary>
 /// <example>
 /// // In your service configuration (using QltDbContextConfiguration):
-/// services.AddQltSystemDBContext&lt;AccountContext&gt;(config =>
+/// services.AddQltSDBContext&lt;AccountContext&gt;(config =>
 /// {
 ///     config.RegisterModelsFromAssembly(typeof(AccountContext).Assembly);
 /// }, dbOptions =>

@@ -2,9 +2,9 @@
 
 using Microsoft.EntityFrameworkCore;
 
-using QltSystem.Core.Domain.SeedWork;
+using QltS.Core.Domain.SeedWork;
 
-namespace QltSystem.Core.Persistence.EF.Extensions;
+namespace QltS.Core.Persistence.EF.Extensions;
 
 public static class DomainEventsDispatcherExtension
 {

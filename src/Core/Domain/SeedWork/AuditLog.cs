@@ -1,10 +1,10 @@
-﻿using QltSystem.Core.Domain.Messaging;
-
-using System;
+﻿using System;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 
-namespace QltSystem.Core.Domain.SeedWork
+using QltS.Core.Domain.Messaging;
+
+namespace QltS.Core.Domain.SeedWork
 {
     public enum AuditActionType
     {

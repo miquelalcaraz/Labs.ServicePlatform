@@ -1,21 +1,20 @@
-using Core.Persistence.EF.Relational.Extensions;
-
 using Microsoft.EntityFrameworkCore;
 
-using QltSystem.Accounts.Contracts.IntegrationEvents.Events;
-using QltSystem.Core.EventBus.Abstractions;
-using QltSystem.Core.EventBus.Extensions;
-using QltSystem.Core.EventBus.Idempotency.Extensions;
-using QltSystem.Core.EventBus.TransactionalOutbox.Extensions;
-using QltSystem.Core.EventBusRabbitMQ;
-using QltSystem.Core.Persistence.EF.Extensions;
-using QltSystem.Notifications.Behaviors;
-using QltSystem.Notifications.Infrastructure;
-using QltSystem.Notifications.IntegrationEvents.EventHandling;
-using QltSystem.Notifications.Repositories;
-using QltSystem.Notifications.Services;
+using QltS.Accounts.Contracts.IntegrationEvents.Events;
+using QltS.Core.EventBus.Abstractions;
+using QltS.Core.EventBus.Extensions;
+using QltS.Core.EventBus.Idempotency.Extensions;
+using QltS.Core.EventBus.TransactionalOutbox.Extensions;
+using QltS.Core.EventBusRabbitMQ;
+using QltS.Core.Persistence.EF.Extensions;
+using QltS.Core.Persistence.EF.Relational.Extensions;
+using QltS.Notifications.Behaviors;
+using QltS.Notifications.Infrastructure;
+using QltS.Notifications.IntegrationEvents.EventHandling;
+using QltS.Notifications.Repositories;
+using QltS.Notifications.Services;
 
-namespace QltSystem.Notifications.Extensions
+namespace QltS.Notifications.Extensions
 {
     public static class Extensions
     {
@@ -25,8 +24,8 @@ namespace QltSystem.Notifications.Extensions
 
             var connectionString = builder.Configuration.GetConnectionString("notificationsdb");
 
-            // Register NotificationsContext with QltSystem configuration
-            services.AddQltSystemDBContext<NotificationsContext>(
+            // Register NotificationsContext with QltS configuration
+            services.AddQltSDBContext<NotificationsContext>(
                 conf => conf
                     .UseIdempotency()
                     .UseAudit()

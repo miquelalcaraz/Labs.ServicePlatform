@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace QltSystem.Notifications
+namespace QltS.Notifications
 {
     public static class AssemblyReference
     {

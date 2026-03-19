@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using QltSystem.Core.EventBus.Idempotency.Models;
+using QltS.Core.EventBus.Idempotency.Models;
 
-namespace QltSystem.Core.EventBus.Idempotency.Configuration;
+namespace QltS.Core.EventBus.Idempotency.Configuration;
 
 /// <summary>
 /// Entity Framework configuration for ProcessedIntegrationEvent.

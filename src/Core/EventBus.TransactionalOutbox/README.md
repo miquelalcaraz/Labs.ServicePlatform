@@ -24,10 +24,10 @@ Add package reference to your service project:
 ### 1. Register Services
 
 ```csharp
-using QltSystem.Core.EventBus.TransactionalOutbox.Extensions;
+using QltS.Core.EventBus.TransactionalOutbox.Extensions;
 
 // Register your DbContext
-services.AddQltSystemDBContext<YourContext>(config =>
+services.AddQltSDBContext<YourContext>(config =>
 {
     config.RegisterModelsFromAssembly(typeof(YourContext).Assembly);
 }, dbOptions =>
@@ -42,7 +42,7 @@ services.AddTransactionalOutbox<YourContext>(options =>
 });
 ```
 
-**Note**: Registration order doesn't matter. You can call `AddTransactionalOutbox` before or after `AddQltSystemDBContext`.
+**Note**: Registration order doesn't matter. You can call `AddTransactionalOutbox` before or after `AddQltSDBContext`.
 
 ### 2. Use in Command Handlers (with TransactionBehavior)
 
@@ -50,7 +50,7 @@ The transactional outbox works automatically with the `TransactionBehavior` from
 
 ```csharp
 using MediatR;
-using QltSystem.Core.Domain.SeedWork;
+using QltS.Core.Domain.SeedWork;
 
 public class CreateAccountCommandHandler : IRequestHandler<CreateAccountCommand, Result>
 {
@@ -85,8 +85,8 @@ public class CreateAccountCommandHandler : IRequestHandler<CreateAccountCommand,
 
 ```csharp
 using MediatR;
-using QltSystem.Core.EventBus.Abstractions;
-using QltSystem.Core.EventBus.Extensions;
+using QltS.Core.EventBus.Abstractions;
+using QltS.Core.EventBus.Extensions;
 
 public class AccountCreatedDomainEventHandler : INotificationHandler<AccountCreatedDomainEvent>
 {
@@ -182,7 +182,7 @@ For services that only consume events (don't publish), simply don't add this pac
 
 ```csharp
 // Consumer service example - receives events, doesn't publish
-services.AddQltSystemDBContext<ConsumerContext>(config => { ... });
+services.AddQltSDBContext<ConsumerContext>(config => { ... });
 services.AddEventIdempotency<ConsumerContext>(); // Only idempotency
 // No AddTransactionalOutbox call - no outbox table created
 ```
@@ -192,10 +192,10 @@ services.AddEventIdempotency<ConsumerContext>(); // Only idempotency
 For services that both publish and consume events:
 
 ```csharp
-using QltSystem.Core.EventBus.TransactionalOutbox.Extensions;
-using QltSystem.Core.EventBus.Idempotency.Extensions;
+using QltS.Core.EventBus.TransactionalOutbox.Extensions;
+using QltS.Core.EventBus.Idempotency.Extensions;
 
-services.AddQltSystemDBContext<YourContext>(config => { ... });
+services.AddQltSDBContext<YourContext>(config => { ... });
 
 // Publisher side: Transactional Outbox
 services.AddTransactionalOutbox<YourContext>(options =>

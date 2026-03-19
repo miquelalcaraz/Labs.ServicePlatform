@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace QltSystem.Core.Persistence.EF.Idempotency;
+namespace QltS.Core.Persistence.EF.Idempotency;
 
 /// <summary>
 /// Represents a processed command request for idempotency purposes.

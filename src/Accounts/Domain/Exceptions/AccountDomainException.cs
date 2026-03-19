@@ -1,6 +1,6 @@
-﻿using QltSystem.Core.Domain.Exceptions;
+﻿using QltS.Core.Domain.Exceptions;
 
-namespace QltSystem.Accounts.Domain.Exceptions
+namespace QltS.Accounts.Domain.Exceptions
 {
     public class AccountDomainException : DomainException
     {

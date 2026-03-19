@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace QltSystem.Accounts.Domain.Models.OrganizationAggregate
+namespace QltS.Accounts.Domain.Models.OrganizationAggregate
 {
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum TaxNumberType

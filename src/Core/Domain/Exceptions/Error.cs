@@ -1,4 +1,4 @@
-﻿namespace QltSystem.Core.Domain.Exceptions;
+﻿namespace QltS.Core.Domain.Exceptions;
 
 public record Error(string Code, string Message, string PropertyName = null!)
 {

@@ -1,9 +1,9 @@
-using QltSystem.Core.EventBus.Contracts.Events;
-
 using System;
 using System.Threading.Tasks;
 
-namespace QltSystem.Core.EventBus.Services;
+using QltS.Core.EventBus.Contracts.Events;
+
+namespace QltS.Core.EventBus.Services;
 
 /// <summary>
 /// Generic interface for managing integration events in any bounded context.

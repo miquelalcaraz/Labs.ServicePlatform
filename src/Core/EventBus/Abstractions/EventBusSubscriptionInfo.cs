@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 
-namespace QltSystem.Core.EventBus.Abstractions;
+namespace QltS.Core.EventBus.Abstractions;
 
 public class EventBusSubscriptionInfo
 {

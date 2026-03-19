@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 
-using QltSystem.Accounts.Application.Queries;
+using QltS.Accounts.Application.Queries;
 
-namespace QltSystem.Accounts.Infrastructure.Persistence.Queries;
+namespace QltS.Accounts.Infrastructure.Persistence.Queries;
 
 /// <summary>
 /// Queries for Organization aggregate using EF Core.
