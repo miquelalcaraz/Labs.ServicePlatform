@@ -1,0 +1,24 @@
+﻿<Project Sdk="Aspire.AppHost.Sdk/13.1.0">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<UserSecretsId>51bad8a1-75b6-416d-9ce7-b933bd442f8f</UserSecretsId>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Services.Accounts\Api\Accounts.API.csproj" />
+		<ProjectReference Include="..\Services.Notifications\Service.Notifications.csproj" />
+		<ProjectReference Include="..\QltS.BackOffice\WebApp\QltS.BackOffice.WebApp.csproj" />
+		<ProjectReference Include="..\QltS.Identity\QltS.Identity.csproj" /> 
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.1.2" />
+		<PackageReference Include="Aspire.Hosting.Redis" Version="13.1.2" />
+		<PackageReference Include="Aspire.Hosting.SqlServer" Version="13.1.2" />
+	</ItemGroup>
+
+</Project>

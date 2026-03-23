@@ -1,0 +1,55 @@
+﻿using Microsoft.Extensions.Logging;
+
+using QltS.Accounts.Domain.Models.OrganizationAggregate;
+using QltS.Accounts.Domain.Repositories;
+using QltS.Shared;
+using QltS.Shared.Messaging.Commands;
+
+
+
+
+namespace QltS.Accounts.Application.Commands;
+
+public class CreateOrganizationCommandHandler : CommandHandler<CreateOrganizationCommand, bool>
+{
+    private readonly IOrganizationRepository _organizationRepository;
+    private readonly ILogger<CreateOrganizationCommandHandler> _logger;
+
+    public CreateOrganizationCommandHandler(
+        IOrganizationRepository organizationRepository,
+        ILogger<CreateOrganizationCommandHandler> logger)
+    {
+        _organizationRepository = organizationRepository ?? throw new ArgumentNullException(nameof(organizationRepository));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
+
+    protected override async Task<Result<bool>> HandleAsync(CreateOrganizationCommand message, CancellationToken cancellationToken)
+    {
+        var address = Address.Create(message.Country, message.CountryCode, message.State, message.ZipCode, message.City!, message.Street);
+        var organization = Organization.Create(message.Name, message.LegalName, address, message.TaxIdNumber, message.TaxNumberType, message.OrganizationType, message.Language, message.LanguageCode);
+        _organizationRepository.Add(organization);
+
+        var saved = await _organizationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+
+        return saved
+            ? Result.Success(true)
+            : Result.Failure<bool>(Error.BadRequest.WithMessage("Failed to create organization"));
+    }
+}
+
+
+public record OrganizationCreatedDTO
+{
+    public Guid Id { get; init; }
+    public Guid TenantId { get; init; }
+    public string Name { get; init; } = null!;
+    public string LegalName { get; init; } = null!;
+    public string? TaxIdNumber { get; init; } = null!;
+
+    public string Country { get; init; } = null!;
+    public string Language { get; init; } = null!;
+    public string CountryCode { get; init; } = null!;
+    public string LanguageCode { get; init; } = null!;
+
+
+}

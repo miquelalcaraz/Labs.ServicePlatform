@@ -1,0 +1,160 @@
+﻿.QltS.BackOffice-header {
+    position: relative;
+    max-width: 120rem;
+    margin: auto;
+    background-color: #fff;
+}
+
+.QltS.BackOffice-header.home .QltS.BackOffice-header-container {
+    margin-bottom: 0;
+}
+
+.QltS.BackOffice-header .QltS.BackOffice-header-container {
+    margin-bottom: 4rem;
+}
+
+.QltS.BackOffice-header-hero {
+    overflow: hidden;
+    position: absolute;
+    max-width: 100%;
+    left: 0;
+    top: 0;
+}
+
+.QltS.BackOffice-header-container {
+    position: relative;
+    margin: auto;
+    margin: 0 5rem;
+}
+
+.QltS.BackOffice-header-intro {
+    position: absolute;
+    max-width: 48rem;
+    bottom: 3rem;
+    white-space: nowrap;
+}
+
+.QltS.BackOffice-header-intro h1 {
+    color: #000;
+    font-size: 3.5rem;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 100%;
+    margin: 0;
+}
+
+.QltS.BackOffice-header-intro p {
+    color: #000;
+    font-size: 2rem;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 125%;
+    margin: 0;
+}
+
+.QltS.BackOffice-header .logo-header {
+    color: black;
+
+    width: 20vw;
+    height: auto;
+    max-width: 40px;
+    min-width: 40px;
+}
+
+.QltS.BackOffice-header-navbar {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 0rem;
+    gap: 1rem;
+}
+
+    .QltS.BackOffice-header-navbar h1 {
+        font-size: 1.5rem;
+        font-style: normal;
+        font-weight: 700;
+        line-height: 100%;
+        margin-right: auto;
+    }
+    .QltS.BackOffice-header-navbar img {
+        margin-top: 10px;
+    }
+@media only screen and (max-width: 480px) { 
+    .QltS.BackOffice-header-hero {
+        height: 18rem;
+    }
+
+    .QltS.BackOffice-header-hero img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+    }
+
+    .QltS.BackOffice-header .QltS.BackOffice-header-container {
+        height: 15rem;
+        margin-bottom: 4rem;
+    }
+
+    .QltS.BackOffice-header-container {
+        margin: 0 1rem;
+    }
+
+    .QltS.BackOffice-header.home .QltS.BackOffice-header-container {
+        height: 18rem;
+        margin: 0 1rem;
+    }
+
+    .QltS.BackOffice-header-intro {
+        white-space: wrap;
+        bottom: 0;
+    }
+
+    .QltS.BackOffice-header-intro h1 {
+        font-size: 2rem;
+    }
+    
+    .QltS.BackOffice-header-intro p {
+        font-size: 1.5rem;
+    }
+}
+
+@media only screen and (min-width: 481px) and (max-width: 1024px) { 
+    .QltS.BackOffice-header.home .QltS.BackOffice-header-hero {
+        height: 24rem;
+    }
+
+    .QltS.BackOffice-header .QltS.BackOffice-header-hero {
+        height: 15rem;
+    }
+
+    .QltS.BackOffice-header-hero img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+    }
+
+    .QltS.BackOffice-header-container {
+        margin: 0 1rem;
+        margin: 0 3rem;
+    }
+
+    .QltS.BackOffice-header.home .QltS.BackOffice-header-container {
+        height: 24rem;
+        margin: 0 3rem;
+    }
+
+    .QltS.BackOffice-header-intro {
+        white-space: wrap;
+    }
+
+    .QltS.BackOffice-header-intro h1 {
+        font-size: 2rem;
+    }
+    
+    .QltS.BackOffice-header-intro p {
+        font-size: 1.5rem;
+    }
+}

@@ -1,37 +1,42 @@
 <Solution>
-  <Folder Name="/Core/">
-    <Project Path="src/API/Core.API.csproj" />
-    <Project Path="src/Core/Domain/Core.Domain.csproj" />
-    <Project Path="src/Core/EventBus.Contracts/Core.EventBus.Contracts.csproj" />
-    <Project Path="src/Core/EventBus.Idempotency/EventBus.Idempotency.csproj" />
-    <Project Path="src/Core/EventBus.TransactionalOutbox/Core.EventBus.TransactionalOutbox.csproj" />
-    <Project Path="src/Core/EventBus/Core.EventBus.csproj" />
-    <Project Path="src/Core/EventBusRabbitMQ/Core.EventBusRabbitMQ.csproj" />
-    <Project Path="src/Core/IntegrationEventLogEF/Core.IntegrationEventLogEF.csproj" />
-    <Project Path="src/Core/Persistence.EF.Relational/Core.Persistence.EF.Relational.csproj" />
-    <Project Path="src/Core/Persistence.EF/Core.Persistence.EF.csproj" />
-    <Project Path="src/Core/ServiceDefaults/Core.ServiceDefaults.csproj" />
+  <Folder Name="/BuildingBlocks/" />
+  <Folder Name="/BuildingBlocks/Core/">
+    <Project Path="src/Blocks/Core.API/Core.API.csproj" />
+    <Project Path="src/Blocks/Core.Application/Core.Application.csproj" />
+    <Project Path="src/Blocks/Core.Domain/Core.Domain.csproj" />
+    <Project Path="src/Blocks/Core.Infrastructure/Core.Infrastructure.csproj" />
+    <Project Path="src/Blocks/Core.ServiceDefaults/Core.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/BuildingBlocks/Shared/">
+    <Project Path="src/Blocks/Shared.EventBus.RabbitMQ/Shared.EventBus.RabbitMQ.csproj" />
+    <Project Path="src/Blocks/Shared.EventBus/Shared.EventBus.csproj" />
+    <Project Path="src/Blocks/Shared.Messaging.Abstractions/Shared.Messaging.Abstractions.csproj" />
+    <Project Path="src/Blocks/Shared.Messaging/Shared.Messaging.csproj" />
+    <Project Path="src/Blocks/Shared.Persistence.EF.Relational/Shared.Persistence.EF.Relational.csproj" />
+    <Project Path="src/Blocks/Shared.Persistence.EF/Shared.Persistence.EF.csproj" />
+    <Project Path="src/Blocks/Shared.Telemetry/Shared.Telemetry.csproj" />
+    <Project Path="src/Blocks/Shared/Shared.csproj" />
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/QltSystem/">
-    <Project Path="src/QltSystem.AppHost/QltSystem.AppHost.csproj" />
-    <Project Path="src/QltSystem.Identity/QltSystem.Identity.csproj" />
+    <Project Path="src/QltS.AppHost/QltS.AppHost.csproj" />
+    <Project Path="src/QltS.Identity/QltS.Identity.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
   <Folder Name="/src/Services/Accounts/" />
   <Folder Name="/src/Services/Accounts/Core/">
-    <Project Path="src/Accounts/Application/Accounts.Application.csproj" />
-    <Project Path="src/Accounts/Domain/Accounts.Domain.csproj" />
+    <Project Path="src/Services.Accounts/Application/Accounts.Application.csproj" />
+    <Project Path="src/Services.Accounts/Domain/Accounts.Domain.csproj" />
   </Folder>
   <Folder Name="/src/Services/Accounts/External/">
-    <Project Path="src/Accounts/Api/Accounts.API.csproj" />
-    <Project Path="src/Accounts/Contracts/Accounts.Contracts.csproj" />
-    <Project Path="src/Accounts/Infrastructure/Accounts.Infrastructure.csproj" />
+    <Project Path="src/Services.Accounts/Api/Accounts.API.csproj" />
+    <Project Path="src/Services.Accounts/Contracts/Accounts.Contracts.csproj" />
+    <Project Path="src/Services.Accounts/Infrastructure/Accounts.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Services/Notifications/">
-    <Project Path="src/Notifications/Service.Notifications.csproj" />
+    <Project Path="src/Services.Notifications/Service.Notifications.csproj" />
   </Folder>
   <Folder Name="/src/WebApp/">
-    <Project Path="src/QltSystem.WebApp/QltSystem.WebApp.csproj" />
+    <Project Path="src/QltS.BackOffice/WebApp/QltS.BackOffice.WebApp.csproj" />
   </Folder>
 </Solution>
