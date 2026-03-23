@@ -1,8 +1,8 @@
 
+using Microsoft.AspNetCore.Authentication;
+
 using System.Text;
 using System.Text.Json;
-
-using Microsoft.AspNetCore.Authentication;
 
 namespace QltS.Identity.Pages.Diagnostics;
 

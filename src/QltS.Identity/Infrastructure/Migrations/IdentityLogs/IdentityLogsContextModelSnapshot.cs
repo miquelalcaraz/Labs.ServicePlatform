@@ -58,10 +58,32 @@ namespace QltS.Identity.Infrastructure.Migrations.IdentityLogs
 
                     b.HasAlternateKey("AggregateId");
 
-                    b.ToTable("AuditLogs", "identityLogs");
+                    b.ToTable("Logs", "audit");
                 });
 
-            modelBuilder.Entity("QltS.Core.EventBus.Idempotency.Models.ProcessedIntegrationEvent", b =>
+            modelBuilder.Entity("QltS.Shared.Messaging.Idempotency.RequestIdempotency", b =>
+                {
+                    b.Property<Guid>("RequestId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CommandName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("ProcessedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("RequestId");
+
+                    b.HasIndex("RequestId")
+                        .IsUnique();
+
+                    b.ToTable("RequestIdempotency", "infra");
+                });
+
+            modelBuilder.Entity("QltS.Shared.Messaging.Inbox.IntegrationEventInbox", b =>
                 {
                     b.Property<Guid>("EventId")
                         .HasColumnType("uniqueidentifier");
@@ -83,10 +105,10 @@ namespace QltS.Identity.Infrastructure.Migrations.IdentityLogs
 
                     b.HasIndex("ProcessedAt");
 
-                    b.ToTable("ProcessedIntegrationEvents", "identityLogs");
+                    b.ToTable("IntegrationEventInbox", "infra");
                 });
 
-            modelBuilder.Entity("QltS.Core.EventBus.TransactionalOutbox.Models.IntegrationEventLogEntry", b =>
+            modelBuilder.Entity("QltS.Shared.Messaging.Outbox.OutboxMessage", b =>
                 {
                     b.Property<Guid>("EventId")
                         .ValueGeneratedOnAdd()
@@ -118,29 +140,7 @@ namespace QltS.Identity.Infrastructure.Migrations.IdentityLogs
 
                     b.HasIndex("State", "CreationTime");
 
-                    b.ToTable("IntegrationEventLog", "identityLogs");
-                });
-
-            modelBuilder.Entity("QltS.Core.Persistence.EF.Idempotency.ClientRequest", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime>("Time")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Id")
-                        .IsUnique();
-
-                    b.ToTable("ClientRequests", "identityLogs");
+                    b.ToTable("OutboxMessage", "infra");
                 });
 #pragma warning restore 612, 618
         }

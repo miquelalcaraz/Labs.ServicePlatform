@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-using QltS.Core.EventBus.Extensions;
+using QltS.Shared.Extensions;
 
 namespace QltS.Identity.Behaviors
 {

@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>QltS.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="MediatR" Version="14.1.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Blocks\Core.Application\Core.Application.csproj" />
+		<ProjectReference Include="..\..\Blocks\Core.Domain\Core.Domain.csproj" />
+		<ProjectReference Include="..\..\Blocks\Shared.EventBus\Shared.EventBus.csproj" />
+		<ProjectReference Include="..\Contracts\Accounts.Contracts.csproj" /> 
+		<ProjectReference Include="..\Domain\Accounts.Domain.csproj" />
+	</ItemGroup>
+	
+ 
+</Project>

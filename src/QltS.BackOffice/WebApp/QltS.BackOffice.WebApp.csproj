@@ -7,8 +7,8 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Core\API\Core.API.csproj" />
-		<ProjectReference Include="..\..\Core\ServiceDefaults\Core.ServiceDefaults.csproj" />
+		<ProjectReference Include="..\..\Blocks\Core.API\Core.API.csproj" />
+		<ProjectReference Include="..\..\Blocks\Core.ServiceDefaults\Core.ServiceDefaults.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

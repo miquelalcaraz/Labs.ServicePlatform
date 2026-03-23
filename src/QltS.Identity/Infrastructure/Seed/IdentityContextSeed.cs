@@ -4,10 +4,10 @@ using Duende.IdentityServer.EntityFramework.Mappers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-using QltS.Core.Persistence.EF.Extensions;
 using QltS.Identity.Configuration;
 using QltS.Identity.Models;
 using QltS.Identity.Repositories;
+using QltS.Shared.Persistence.EF.Relational.Migrations;
 
 namespace QltS.Identity.Infrastructure.Seed
 {

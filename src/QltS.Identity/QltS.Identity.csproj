@@ -25,15 +25,14 @@
 	</ItemGroup>
 
 	<ItemGroup> 
-		<ProjectReference Include="..\Accounts\Contracts\Accounts.Contracts.csproj" /> 
-		<ProjectReference Include="..\Core\Domain\Core.Domain.csproj" /> 
-		<ProjectReference Include="..\Core\EventBus.Idempotency\Core.EventBus.Idempotency.csproj" /> 
-		<ProjectReference Include="..\Core\EventBus.TransactionalOutbox\Core.EventBus.TransactionalOutbox.csproj" />
-		<ProjectReference Include="..\Core\EventBus\Core.EventBus.csproj" />
-		<ProjectReference Include="..\Core\Persistence.EF.Relational\Core.Persistence.EF.Relational.csproj" />
-		<ProjectReference Include="..\Core\Persistence.EF\Core.Persistence.EF.csproj" />
-		<ProjectReference Include="..\Core\ServiceDefaults\Core.ServiceDefaults.csproj" />
-		<ProjectReference Include="..\Core\EventBusRabbitMQ\Core.EventBusRabbitMQ.csproj" />
+		<ProjectReference Include="..\Blocks\Shared.Messaging\Shared.Messaging.csproj" /> 
+		<ProjectReference Include="..\Services.Accounts\Contracts\Accounts.Contracts.csproj" /> 
+		<ProjectReference Include="..\Blocks\Core.Domain\Core.Domain.csproj" />
+		<ProjectReference Include="..\Blocks\Shared.EventBus\Shared.EventBus.csproj" />
+		<ProjectReference Include="..\Blocks\Shared.Persistence.EF.Relational\Shared.Persistence.EF.Relational.csproj" />
+		<ProjectReference Include="..\Blocks\Shared.Persistence.EF\Shared.Persistence.EF.csproj" />
+		<ProjectReference Include="..\Blocks\Core.ServiceDefaults\Core.ServiceDefaults.csproj" />
+		<ProjectReference Include="..\Blocks\Shared.EventBus.RabbitMQ\Shared.EventBus.RabbitMQ.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

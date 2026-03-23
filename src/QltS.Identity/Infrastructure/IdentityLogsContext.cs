@@ -2,8 +2,8 @@ using MediatR;
 
 using Microsoft.EntityFrameworkCore;
 
-using QltS.Core.Persistence.EF.Extensions;
-using QltS.Core.Persistence.EF.Relational;
+using QltS.Shared.Persistence.EF.Extensions;
+using QltS.Shared.Persistence.EF.Relational;
 
 namespace QltS.Identity.Infrastructure;
 

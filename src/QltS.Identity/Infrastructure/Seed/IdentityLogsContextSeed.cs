@@ -1,4 +1,4 @@
-﻿using QltS.Core.Persistence.EF.Extensions;
+﻿using QltS.Shared.Persistence.EF.Relational.Migrations;
 
 namespace QltS.Identity.Infrastructure.Seed
 {

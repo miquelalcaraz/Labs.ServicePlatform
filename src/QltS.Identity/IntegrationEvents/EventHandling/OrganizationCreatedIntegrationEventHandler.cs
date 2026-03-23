@@ -1,21 +1,21 @@
 ﻿using QltS.Accounts.Contracts.IntegrationEvents.Events;
-using QltS.Core.EventBus.Abstractions;
-using QltS.Core.EventBus.Services;
-using QltS.Core.EventBus.TransactionalOutbox.Utilities;
 using QltS.Identity.Infrastructure;
 using QltS.Identity.Models;
 using QltS.Identity.Repositories;
 using QltS.Identity.Services;
+using QltS.Shared.Messaging.Inbox;
+using QltS.Shared.Messaging.IntegrationEvents;
+using QltS.Shared.Persistence.EF.Relational;
 
 namespace QltS.Identity.IntegrationEvents.EventHandling
 {
-    public class OrganizationCreatedIntegrationEventHandler : IIntegrationEventHandler<OrganizationCreatedIntegrationEvent>
+    public class OrganizationCreatedIntegrationEventHandler : IntegrationEventHandlerBase<OrganizationCreatedIntegrationEvent>
     {
         private readonly ILogger<OrganizationCreatedIntegrationEventHandler> _logger;
         private readonly ITenantRepository _tenantRepository;
         private readonly IUserRepository _userRepository;
         private readonly IPasswordGenerator _passwordGenerator;
-        private readonly IEventIdempotencyService _idempotencyService;
+        private readonly IIntegrationEventInbox _idempotencyService;
         private readonly IdentityContext _context;
 
         public OrganizationCreatedIntegrationEventHandler(
@@ -23,7 +23,7 @@ namespace QltS.Identity.IntegrationEvents.EventHandling
             ITenantRepository tenantRepository,
             IUserRepository userRepository,
             IPasswordGenerator passwordGenerator,
-            IEventIdempotencyService idempotencyService,
+            IIntegrationEventInbox idempotencyService,
                 IdentityContext context)
         {
             _logger = logger;
@@ -34,7 +34,7 @@ namespace QltS.Identity.IntegrationEvents.EventHandling
             _context = context;
         }
 
-        public async Task Handle(OrganizationCreatedIntegrationEvent @event)
+        protected override async Task HandleAsync(OrganizationCreatedIntegrationEvent @event)
         {
             var handlerName = GetType().Name;
 

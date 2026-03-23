@@ -1,18 +1,9 @@
-using System.Reflection;
-
 using Duende.IdentityServer.Stores;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 using QltS.Accounts.Contracts.IntegrationEvents.Events;
-using QltS.Core.EventBus.Abstractions;
-using QltS.Core.EventBus.Extensions;
-using QltS.Core.EventBus.Idempotency.Extensions;
-using QltS.Core.EventBus.TransactionalOutbox.Extensions;
-using QltS.Core.EventBusRabbitMQ;
-using QltS.Core.Persistence.EF.Extensions;
-using QltS.Core.Persistence.EF.Relational.Extensions;
 using QltS.Identity.Behaviors;
 using QltS.Identity.Infrastructure;
 using QltS.Identity.Infrastructure.Seed;
@@ -21,6 +12,14 @@ using QltS.Identity.Models;
 using QltS.Identity.Repositories;
 using QltS.Identity.Services;
 using QltS.Identity.Stores;
+using QltS.Shared.EventBus.Abstractions;
+using QltS.Shared.EventBus.Extensions;
+using QltS.Shared.EventBus.RabbitMQ;
+using QltS.Shared.Persistence.EF.Behaviors;
+using QltS.Shared.Persistence.EF.Relational.Extensions;
+using QltS.Shared.Persistence.EF.Relational.Migrations;
+
+using System.Reflection;
 
 namespace QltS.Identity.Extensions
 {
@@ -45,7 +44,7 @@ namespace QltS.Identity.Extensions
             {
                 cfg.RegisterServicesFromAssemblyContaining(typeof(AssemblyReference));
                 cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
-                cfg.AddTransactionalOutboxBehavior();
+                cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
             });
 
             // Register repositories (in-memory for now)
@@ -66,8 +65,11 @@ namespace QltS.Identity.Extensions
             // Register IdentityContext with QltS configuration
             services.AddQltSDBContext<IdentityLogsContext>(
                 conf => conf
-                    .UseIdempotency()
-                    .UseAudit()
+                    .WithRequestIdempotency()
+                    .WithIntegrationEventInbox()
+                    .WithAuditLogs()
+                    .WithTransactionalOutbox()
+                    .RegisterIntegrationEventsFromAssembly(typeof(Accounts.Contracts.AssemblyReference).Assembly)
                     .SetDefaultSchema("identityLogs"),
                 options => options.UseSqlServer(connectionString, sqlOptions =>
                 {
@@ -77,14 +79,7 @@ namespace QltS.Identity.Extensions
 
             services.AddMigration<IdentityLogsContext, IdentityLogsContextSeed>();
 
-            services.AddTransactionalOutbox<IdentityLogsContext>(options =>
-            {
-                options.RegisterEventTypes(typeof(AssemblyReference).Assembly);
-            });
 
-            services.AddEventIdempotency<IdentityLogsContext>();
-
-            services.AddCommandIdempotency<IdentityLogsContext>();
         }
 
         private static void AddIdentityServer(this IHostApplicationBuilder builder)
