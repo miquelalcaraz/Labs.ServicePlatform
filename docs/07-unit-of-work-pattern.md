@@ -8,8 +8,8 @@ The Unit of Work pattern maintains a list of objects affected by a business tran
 ### Technical Implementation
 
 **Location**:
-- Interface: `src/Blocks/Core.Domain/SeedWork/IUnitOfWork.cs`
-- Implementation: `src/Blocks/Shared.Persistence.EF/QltDBContextBase.cs`
+- Interface: `src/Qlt.Domain/Qlt.Domain.Core/SeedWork/IUnitOfWork.cs`
+- Implementation: `src/Qlt.Platform/Qlt.Platform.Persistence.EntityFramework/QltDBContextBase.cs`
 
 **Core Components**:
 

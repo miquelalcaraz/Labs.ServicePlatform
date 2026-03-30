@@ -8,9 +8,10 @@ Command Query Responsibility Segregation (CQRS) separates read and write operati
 ### Technical Implementation
 
 **Location**: 
-- Commands: `src/Blocks/Shared.Messaging.Abstractions/Commands/`
-- Domain Events: `src/Blocks/Shared.Messaging.Abstractions/DomainEvents/`
-- Behaviors: `src/Blocks/Core.Application/Behaviors/`
+- Commands: `src/Qlt.Platform/Qlt.Platform.Messaging.Abstractions/Commands/`
+- Domain Events Interface: `src/Qlt.Domain/Qlt.Domain.Core/SeedWork/IDomainEvent.cs`
+- Domain Events Handler Interface: `src/Qlt.Platform/Qlt.Platform.Messaging.Abstractions/DomainEvents/`
+- Behaviors: `src/Qlt.Domain/Qlt.Domain.Application/Behaviors/`
 
 **Core Components**:
 
@@ -32,10 +33,16 @@ public interface ICommandHandler<TCommand, TResponse> : IRequestHandler<TCommand
 
 2. **Domain Event Abstractions**:
 ```csharp
-public interface IDomainEvent : INotification { }
+// In Domain.Core (pure DDD, no dependencies)
+namespace Qlt.Domain;
+public interface IDomainEvent { }
+
+// In Platform.Messaging.Abstractions (MediatR adapter)
+using MediatR;
+using Qlt.Domain;
 
 public interface IDomainEventHandler<TEvent> : INotificationHandler<TEvent>
-    where TEvent : IDomainEvent { }
+    where TEvent : IDomainEvent, INotification { }
 ```
 
 3. **Pipeline Behaviors** (Applied in order):

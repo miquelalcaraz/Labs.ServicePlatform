@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>Qlt.Services.Accounts.Application</RootNamespace>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="MediatR" Version="14.1.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\Qlt.Domain\Qlt.Domain.Application\Domain.Application.csproj" />
+		<ProjectReference Include="..\..\..\Qlt.Domain\Qlt.Domain.Core\Domain.Core.csproj" />
+		<ProjectReference Include="..\..\..\Qlt.Platform\Qlt.Platform.EventBus\Platform.EventBus.csproj" />
+		<ProjectReference Include="..\Contracts\Services.Accounts.Contracts.csproj" /> 
+		<ProjectReference Include="..\Domain\Services.Accounts.Domain.csproj" />
+	</ItemGroup>
+	
+ 
+</Project>

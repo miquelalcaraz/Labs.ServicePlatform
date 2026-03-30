@@ -3,27 +3,61 @@
 ## Executive Summary
 
 ### Brief Description
-Domain Events represent state changes within a bounded context that other parts of the same bounded context need to react to. They enable loose coupling between aggregates while maintaining transactional consistency. Events are dispatched AFTER database SaveChanges but WITHIN the same transaction, ensuring all side effects are atomic.
+Domain Events represent state changes within a bounded context that other parts of the same bounded context need to react to. They enable loose coupling between aggregates while maintaining transactional consistency. Events are dispatched AFTER transaction commit by MessagingBehavior, ensuring data integrity and following DDD principles.
 
 ### Technical Implementation
 
 **Location**: 
-- Interface: `src/Blocks/Shared.Messaging.Abstractions/DomainEvents/IDomainEvent.cs`
-- Dispatcher: `src/Blocks/Shared.Persistence.EF/Extensions/DomainEventsDispatcherExtension.cs`
-- Entity Base: `src/Blocks/Core.Domain/SeedWork/Entity.cs`
-- Example Handler: `src/Services.Accounts/Application/DomainEventHandlers/OrganizationCreatedDomainEventHandler.cs`
+- Interface: `src/Qlt.Domain/Qlt.Domain.Core/SeedWork/IDomainEvent.cs` (pure DDD, no dependencies)
+- Handler Interface: `src/Qlt.Platform/Qlt.Platform.Messaging.Abstractions/DomainEvents/IDomainEventHandler.cs` (MediatR adapter)
+- Telemetry Decorator: `src/Qlt.Platform/Qlt.Platform.Messaging/DomainEvents/TelemetryDomainEventHandlerDecorator.cs`
+- **Collector Interface**: `src/Qlt.Platform/Qlt.Platform.Messaging.EntityFramework/IDomainEventCollector.cs` (separates event collection from transactions)
+- **Dispatcher Extension**: `src/Qlt.Platform/Qlt.Platform.Messaging.EntityFramework/Extensions/DomainEventsDispatcherExtension.cs` (centralized telemetry)
+- **Behavior**: `src/Qlt.Platform/Qlt.Platform.Messaging.EntityFramework/Behaviors/MessagingBehavior.cs` (dispatches AFTER commit)
+- **DbContext**: `src/Qlt.Platform/Qlt.Platform.Persistence.EntityFramework.Relational/QltDBContext.cs` (implements IDomainEventCollector, stores entities)
+- Entity Base: `src/Qlt.Domain/Qlt.Domain.Core/SeedWork/Entity.cs`
+- Example Handler: `src/Qlt.Services/Qlt.Services.Accounts/Application/DomainEventHandlers/OrganizationCreatedDomainEventHandler.cs`
 
 **Core Components**:
 
-1. **IDomainEvent Interface**:
+1. **IDomainEvent Interface (Domain.Core - Pure DDD)**:
 ```csharp
-public interface IDomainEvent : INotification { }
+// In Domain.Core (no dependencies on infrastructure)
+namespace Qlt.Domain;
 
-public interface IDomainEventHandler<TEvent> : INotificationHandler<TEvent>
-    where TEvent : IDomainEvent { }
+public interface IDomainEvent
+{
+    // Marker interface - intentionally empty
+}
 ```
 
-2. **Entity Domain Event Collection**:
+2. **IDomainEventHandler Interface (Platform - MediatR Adapter)**:
+```csharp
+// In Platform.Messaging.Abstractions (adapts Domain to MediatR)
+using MediatR;
+using Qlt.Domain;
+
+namespace Qlt.Platform.Messaging.DomainEvents;
+
+public interface IDomainEventHandler<TEvent> : INotificationHandler<TEvent>
+    where TEvent : IDomainEvent, INotification
+{
+}
+```
+
+3. **Domain Event Definition**:
+```csharp
+// Events implement both IDomainEvent (Domain) and INotification (MediatR)
+using MediatR;
+using Qlt.Domain;
+
+public record OrganizationCreatedDomainEvent(
+    Guid OrganizationId,
+    string Name,
+    string TaxNumber) : IDomainEvent, INotification;
+```
+
+4. **Entity Domain Event Collection**:
 ```csharp
 public abstract class Entity
 {
@@ -44,48 +78,114 @@ public abstract class Entity
 }
 ```
 
-3. **Domain Event Dispatcher**:
+3. **IDomainEventCollector Interface** (Separation of Responsibilities):
 ```csharp
-public static async Task DispatchDomainEventsAsync(this IMediator mediator, DbContext ctx, CancellationToken ct)
+// Platform.Messaging.EntityFramework - Separates event collection from transaction management
+public interface IDomainEventCollector
 {
-    // Collect events from tracked entities
-    var domainEvents = ctx.ChangeTracker
-        .Entries<Entity>()
-        .Where(x => x.Entity.DomainEvents != null && x.Entity.DomainEvents.Any())
-        .SelectMany(x => x.Entity.DomainEvents!)
-        .ToList();
-
-    // Clear events from entities
-    domainEntities.ForEach(entity => entity.Entity.ClearDomainEvents());
-
-    // Publish via MediatR
-    foreach (var domainEvent in domainEvents)
-    {
-        ApplicationDiagnostics.DomainEventsPublished.Add(1,
-            new KeyValuePair<string, object?>("event_type", eventType));
-        await mediator.Publish(domainEvent, ct);
-    }
+    IReadOnlyList<Entity> GetEntitiesWithPendingEvents();
 }
 ```
 
-4. **Dispatcher Invocation** (in QltDBContextBase):
+4. **Domain Event Collection** (in QltDBContext - Stores Entities, Not Events):
 ```csharp
 public async Task<bool> SaveEntitiesAsync(CancellationToken cancellationToken = default)
 {
     if (_configuration.UseAuditLogs)
         await this.SaveAuditLogsAsync(cancellationToken);
 
-    // Save changes first (INSERT/UPDATE entities)
-    await base.SaveChangesAsync(cancellationToken);
+    // Collect entities with domain events (keep events inside entities)
+    _entitiesWithEvents = ChangeTracker
+        .Entries<Entity>()
+        .Where(x => x.Entity.DomainEvents != null && x.Entity.DomainEvents.Any())
+        .Select(x => x.Entity)
+        .ToList();
 
-    // Dispatch domain events AFTER SaveChanges but BEFORE transaction commit
-    await _mediator.DispatchDomainEventsAsync(this, cancellationToken);
+    // Save changes (INSERT/UPDATE entities)
+    await base.SaveChangesAsync(cancellationToken);
 
     return true;
 }
+
+// IDomainEventCollector implementation
+public IReadOnlyList<Entity> GetEntitiesWithPendingEvents()
+{
+    var entities = _entitiesWithEvents ?? new List<Entity>();
+    _entitiesWithEvents = null;  // Clear after reading
+    return entities;
+}
 ```
 
-5. **Example Usage**:
+**Key Improvement**: Events remain in entities until dispatch (more DDD pure). Events are extracted AFTER commit by the dispatcher extension.
+
+5. **Domain Event Dispatcher Extension** (Centralized Telemetry):
+```csharp
+// Platform.Messaging.EntityFramework/Extensions/DomainEventsDispatcherExtension.cs
+public static class DomainEventsDispatcherExtension
+{
+    public static async Task DispatchDomainEventsAsync(
+        this IMediator mediator,
+        IReadOnlyList<Entity> entities,
+        CancellationToken cancellationToken = default)
+    {
+        using var activity = ActivityHelper.StartActivity("DispatchDomainEvents");
+
+        // Extract events from entities
+        var domainEvents = entities
+            .SelectMany(e => e.DomainEvents ?? Array.Empty<IDomainEvent>())
+            .ToList();
+
+        // Clear events from entities
+        foreach (var entity in entities)
+            entity.ClearDomainEvents();
+
+        // Dispatch with telemetry
+        ApplicationDiagnostics.DomainEventsDispatched.Add(domainEvents.Count);
+
+        foreach (var domainEvent in domainEvents)
+        {
+            await mediator.Publish(domainEvent, cancellationToken);
+        }
+    }
+}
+```
+
+6. **Domain Event Dispatch** (in MessagingBehavior - AFTER commit):
+```csharp
+public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
+{
+    var response = await next(ct);  // Handler + Transaction executed
+
+    if (_unitOfWork.LastCommittedTransactionId is { } transactionId)
+    {
+        // 1. Dispatch Domain Events FIRST (transaction already committed ✅)
+        if (_eventCollector is not null)
+        {
+            var entities = _eventCollector.GetEntitiesWithPendingEvents();
+            if (entities.Count > 0)
+            {
+                await _mediator.DispatchDomainEventsAsync(entities, ct);
+            }
+        }
+
+        // 2. Publish Integration Events to event bus
+        if (_outboxService is not null)
+        {
+            await _outboxService.PublishEventsThroughEventBusAsync(transactionId);
+        }
+    }
+
+    return response;
+}
+```
+
+**Architecture Highlights**:
+- ✅ **SRP Preserved**: `ITransactionalUnitOfWork` only manages transactions, `IDomainEventCollector` only collects events
+- ✅ **Layer Separation**: Dispatcher extension in `Platform.Messaging.EntityFramework` (not Persistence)
+- ✅ **DDD Pure**: Events remain in entities until dispatch
+- ✅ **Centralized Telemetry**: All dispatch goes through extension method with ActivitySource and metrics
+
+7. **Example Usage**:
 ```csharp
 // Domain Event Definition
 public record OrganizationCreatedDomainEvent(
@@ -114,23 +214,129 @@ public class Organization : Entity, IAggregateRoot
     }
 }
 
-// Domain Event Handler
-public class OrganizationCreatedDomainEventHandler : IDomainEventHandler<OrganizationCreatedDomainEvent>
+5. **Domain Event Handler (Pure Business Logic)**:
+```csharp
+using Microsoft.Extensions.Logging;
+using Qlt.Platform.Messaging.DomainEvents;
+using Qlt.Platform.Messaging.Outbox;
+using Qlt.Services.Accounts.Domain.Events;
+
+public class OrganizationCreatedDomainEventHandler 
+    : IDomainEventHandler<OrganizationCreatedDomainEvent>
 {
-    public async Task Handle(OrganizationCreatedDomainEvent notification, CancellationToken ct)
+    private readonly ILogger<OrganizationCreatedDomainEventHandler> _logger;
+    private readonly IOrganizationRepository _repository;
+    private readonly IEventBusOutboxService _outboxService;
+
+    public OrganizationCreatedDomainEventHandler(
+        ILogger<OrganizationCreatedDomainEventHandler> logger,
+        IOrganizationRepository repository,
+        IEventBusOutboxService outboxService)
     {
+        _logger = logger;
+        _repository = repository;
+        _outboxService = outboxService;
+    }
+
+    public async Task Handle(
+        OrganizationCreatedDomainEvent notification, 
+        CancellationToken ct)
+    {
+        _logger.LogInformation(
+            "Organization created: {OrganizationId} - {Name}",
+            notification.OrganizationId,
+            notification.Name);
+
         // Verify entity is tracked
         var organization = await _repository.GetAsync(notification.OrganizationId);
 
         if (organization != null)
         {
             // Publish integration event to outbox
-            var integrationEvent = new OrganizationCreatedIntegrationEvent(...);
+            var integrationEvent = new OrganizationCreatedIntegrationEvent(
+                organization.TenantId,
+                organization.Id,
+                organization.Name,
+                organization.LegalName,
+                organization.TaxNumber,
+                organization.Address?.CountryCode!
+            );
+
             await _outboxService.AddAndSaveEventAsync(integrationEvent);
         }
     }
 }
 ```
+
+6. **Telemetry Decorator (Automatic via DI)**:
+```csharp
+// Automatically wraps all domain event handlers with telemetry
+// Located in: Platform.Messaging/DomainEvents/TelemetryDomainEventHandlerDecorator.cs
+
+public class TelemetryDomainEventHandlerDecorator<TDomainEvent> 
+    : IDomainEventHandler<TDomainEvent>
+    where TDomainEvent : IDomainEvent, INotification
+{
+    private readonly IDomainEventHandler<TDomainEvent> _inner;
+
+    public async Task Handle(TDomainEvent notification, CancellationToken ct)
+    {
+        var eventType = typeof(TDomainEvent).Name;
+        var handlerType = _inner.GetType().Name;
+
+        using var activity = ActivityHelper.StartHandlerActivity($"Handle {eventType}");
+        var stopwatch = Stopwatch.StartNew();
+
+        try
+        {
+            await _inner.Handle(notification, ct); // Call actual handler
+            stopwatch.Stop();
+
+            MetricsHelper.RecordDomainEventHandlerExecution(
+                eventType, handlerType, stopwatch.Elapsed.TotalMilliseconds, true);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            MetricsHelper.RecordDomainEventHandlerExecution(
+                eventType, handlerType, stopwatch.Elapsed.TotalMilliseconds, false);
+            ActivityHelper.RecordException(activity, ex);
+            throw;
+        }
+    }
+}
+```
+
+7. **DI Registration**:
+```csharp
+// In service Extensions.cs
+services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly);
+    // Behaviors...
+});
+
+// Automatically decorate all domain event handlers with telemetry
+services.AddDomainEventTelemetryDecorator();
+```
+
+### Architecture: Decorator Pattern
+
+**Pattern Applied:** Decorator Pattern (Gang of Four)
+
+**Why Decorator over Base Class?**
+- ✅ **Safety**: Impossible to accidentally bypass telemetry (no method to override incorrectly)
+- ✅ **Consistency**: Same pattern as Integration Events
+- ✅ **Extensibility**: Can chain multiple decorators (retry, caching, etc.)
+- ✅ **Testability**: Handlers are pure and can be tested without telemetry infrastructure
+- ✅ **Single Responsibility**: Handler = business logic, Decorator = cross-cutting concern
+- ✅ **Composition over Inheritance**: Aligns with SOLID principles
+
+**Previous Approach (Removed):**
+~~Base class `DomainEventHandler<T>` with `HandleAsync` abstract method~~ → Risky (developers could override `Handle()` by mistake)
+
+**Current Approach:**
+Direct implementation of `IDomainEventHandler<T>` + automatic decorator via DI
 
 ### Critical Points Detected
 

@@ -8,10 +8,10 @@ The Transactional Outbox pattern ensures reliable publishing of integration even
 ### Technical Implementation
 
 **Location**:
-- Outbox Entity: `src/Blocks/Shared.Messaging/Outbox/OutboxMessage.cs`
-- Outbox Service: `src/Blocks/Shared.Persistence.EF/Outbox/OutboxMessageService.cs`
-- Event Bus Service: `src/Blocks/Shared.Persistence.EF/Outbox/EventBusOutboxService.cs`
-- Transaction Behavior: `src/Blocks/Shared.Persistence.EF/Behaviors/TransactionBehavior.cs`
+- Outbox Entity: `src/Qlt.Platform/Qlt.Platform.Messaging/Outbox/OutboxMessage.cs`
+- Outbox Service: `src/Qlt.Platform/Qlt.Platform.Persistence.EntityFramework/Outbox/OutboxMessageService.cs`
+- Event Bus Service: `src/Qlt.Platform/Qlt.Platform.Persistence.EntityFramework/Outbox/EventBusOutboxService.cs`
+- Transaction Behavior: `src/Qlt.Platform/Qlt.Platform.Persistence.EntityFramework/Behaviors/TransactionBehavior.cs`
 
 **Core Components**:
 
