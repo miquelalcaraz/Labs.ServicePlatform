@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>Qlt.Platform.Persistence</RootNamespace>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="MediatR" Version="14.1.0" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.5" /> 
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\..\Qlt.Domain\Qlt.Domain.Core\Domain.Core.csproj" />
+	  <ProjectReference Include="..\Qlt.Platform.Core\Platform.Core.csproj" />
+	  <ProjectReference Include="..\Qlt.Platform.Telemetry\Platform.Telemetry.csproj" />
+	</ItemGroup>
+ 
+</Project>

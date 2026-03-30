@@ -8,9 +8,9 @@ The Idempotent Consumer pattern ensures that integration events from external bo
 ### Technical Implementation
 
 **Location**:
-- Interface: `src/Blocks/Shared.Messaging.Abstractions/Inbox/IIntegrationEventInbox.cs`
-- Entity: `src/Blocks/Shared.Messaging/Inbox/IntegrationEventInbox.cs`
-- Service: `src/Blocks/Shared.Persistence.EF/Inbox/IntegrationEventInboxService.cs`
+- Interface: `src/Qlt.Platform/Qlt.Platform.Messaging.Abstractions/Inbox/IIntegrationEventInbox.cs`
+- Entity: `src/Qlt.Platform/Qlt.Platform.Messaging/Inbox/IntegrationEventInbox.cs`
+- Service: `src/Qlt.Platform/Qlt.Platform.Persistence.EntityFramework/Inbox/IntegrationEventInboxService.cs`
 
 **Core Components**:
 
@@ -183,7 +183,7 @@ public interface IIdempotentIntegrationEventHandler<TEvent> : IIntegrationEventH
 }
 
 // Decorator pattern for automatic inbox handling
-public class IdempotentIntegrationEventHandlerDecorator<TEvent> : IIntegrationEventHandler<TEvent>
+public class IdempotencyIntegrationEventDecorator<TEvent> : IIntegrationEventHandler<TEvent>
     where TEvent : IntegrationEvent
 {
     private readonly IIntegrationEventHandler<TEvent> _inner;
@@ -219,7 +219,7 @@ public class IdempotentIntegrationEventHandlerDecorator<TEvent> : IIntegrationEv
 }
 
 // Registration in DI
-services.Decorate(typeof(IIntegrationEventHandler<>), typeof(IdempotentIntegrationEventHandlerDecorator<>));
+services.Decorate(typeof(IIntegrationEventHandler<>), typeof(IdempotencyIntegrationEventDecorator<>));
 ```
 
 2. **🔥 HIGH: Integrate with Handler Transaction**:

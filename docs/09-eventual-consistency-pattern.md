@@ -8,10 +8,10 @@ Eventual Consistency is a consistency model where data changes are not immediate
 ### Technical Implementation
 
 **Location**: Distributed across multiple components:
-- Domain Events: `src/Blocks/Shared.Persistence.EF/Extensions/DomainEventsDispatcherExtension.cs`
-- Outbox: `src/Blocks/Shared.Persistence.EF/Outbox/`
-- Inbox: `src/Blocks/Shared.Persistence.EF/Inbox/`
-- Event Bus: `src/Blocks/Shared.EventBus/`
+- Domain Events: `src/Qlt.Platform/Qlt.Platform.Persistence.EntityFramework/Extensions/DomainEventsDispatcherExtension.cs`
+- Outbox: `src/Qlt.Platform/Qlt.Platform.Persistence.EntityFramework/Outbox/`
+- Inbox: `src/Qlt.Platform/Qlt.Platform.Persistence.EntityFramework/Inbox/`
+- Event Bus: `src/Qlt.Platform/Qlt.Platform.EventBus/`
 
 **Core Components**:
 

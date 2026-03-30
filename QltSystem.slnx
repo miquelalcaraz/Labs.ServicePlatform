@@ -1,42 +1,50 @@
 <Solution>
-  <Folder Name="/BuildingBlocks/" />
-  <Folder Name="/BuildingBlocks/Core/">
-    <Project Path="src/Blocks/Core.API/Core.API.csproj" />
-    <Project Path="src/Blocks/Core.Application/Core.Application.csproj" />
-    <Project Path="src/Blocks/Core.Domain/Core.Domain.csproj" />
-    <Project Path="src/Blocks/Core.Infrastructure/Core.Infrastructure.csproj" />
-    <Project Path="src/Blocks/Core.ServiceDefaults/Core.ServiceDefaults.csproj" />
+  <Folder Name="/Packages/" />
+  <Folder Name="/Packages/Domain/">
+    <Project Path="src/Qlt.Domain/Qlt.Domain.Application/Domain.Application.csproj" />
+    <Project Path="src/Qlt.Domain/Qlt.Domain.Core/Domain.Core.csproj" />
   </Folder>
-  <Folder Name="/BuildingBlocks/Shared/">
-    <Project Path="src/Blocks/Shared.EventBus.RabbitMQ/Shared.EventBus.RabbitMQ.csproj" />
-    <Project Path="src/Blocks/Shared.EventBus/Shared.EventBus.csproj" />
-    <Project Path="src/Blocks/Shared.Messaging.Abstractions/Shared.Messaging.Abstractions.csproj" />
-    <Project Path="src/Blocks/Shared.Messaging/Shared.Messaging.csproj" />
-    <Project Path="src/Blocks/Shared.Persistence.EF.Relational/Shared.Persistence.EF.Relational.csproj" />
-    <Project Path="src/Blocks/Shared.Persistence.EF/Shared.Persistence.EF.csproj" />
-    <Project Path="src/Blocks/Shared.Telemetry/Shared.Telemetry.csproj" />
-    <Project Path="src/Blocks/Shared/Shared.csproj" />
+  <Folder Name="/Packages/Platform/">
+    <Project Path="src/Qlt.Platform/Qlt.Platform.Core/Platform.Core.csproj" />
+    <Project Path="src/Qlt.Platform/Qlt.Platform.EventBus.RabbitMQ/Platform.EventBus.RabbitMQ.csproj" />
+    <Project Path="src/Qlt.Platform/Qlt.Platform.EventBus/Platform.EventBus.csproj" />
+    <Project Path="src/Qlt.Platform/Qlt.Platform.Infrastructure/Platform.Infrastructure.csproj" />
+    <Project Path="src/Qlt.Platform/Qlt.Platform.Messaging.Abstractions/Platform.Messaging.Abstractions.csproj" />
+    <Project Path="src/Qlt.Platform/Qlt.Platform.Messaging.EntityFramework/Platform.Messaging.EntityFramework.csproj" />
+    <Project Path="src/Qlt.Platform/Qlt.Platform.Messaging.Redis/Platform.Messaging.Redis.csproj" />
+    <Project Path="src/Qlt.Platform/Qlt.Platform.Messaging/Platform.Messaging.csproj" />
+    <Project Path="src/Qlt.Platform/Qlt.Platform.Persistence.EntityFramework.Relational/Platform.Persistence.EntityFramework.Relational.csproj" />
+    <Project Path="src/Qlt.Platform/Qlt.Platform.Persistence.EntityFramework/Platform.Persistence.EntityFramework.csproj" />
+    <Project Path="src/Qlt.Platform/Qlt.Platform.ServiceDefaults/Platform.ServiceDefaults.csproj" />
+    <Project Path="src/Qlt.Platform/Qlt.Platform.Telemetry/Platform.Telemetry.csproj" />
+    <Project Path="src/Qlt.Platform/Qlt.Platform.WebApi/Platform.WebApi.csproj" />
   </Folder>
   <Folder Name="/src/" />
-  <Folder Name="/src/QltSystem/">
-    <Project Path="src/QltS.AppHost/QltS.AppHost.csproj" />
-    <Project Path="src/QltS.Identity/QltS.Identity.csproj" />
+  <Folder Name="/src/Infrastructure/">
+    <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.AppHost/Qlt.Infrastructure.AppHost.csproj" />
+    <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.Identity/Qlt.Infrastructure.Identity.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
   <Folder Name="/src/Services/Accounts/" />
   <Folder Name="/src/Services/Accounts/Core/">
-    <Project Path="src/Services.Accounts/Application/Accounts.Application.csproj" />
-    <Project Path="src/Services.Accounts/Domain/Accounts.Domain.csproj" />
+    <Project Path="src/Qlt.Services/Qlt.Services.Accounts/Application/Services.Accounts.Application.csproj" />
+    <Project Path="src/Qlt.Services/Qlt.Services.Accounts/Domain/Services.Accounts.Domain.csproj" />
   </Folder>
   <Folder Name="/src/Services/Accounts/External/">
-    <Project Path="src/Services.Accounts/Api/Accounts.API.csproj" />
-    <Project Path="src/Services.Accounts/Contracts/Accounts.Contracts.csproj" />
-    <Project Path="src/Services.Accounts/Infrastructure/Accounts.Infrastructure.csproj" />
+    <Project Path="src/Qlt.Services/Qlt.Services.Accounts/Api/Services.Accounts.API.csproj" />
+    <Project Path="src/Qlt.Services/Qlt.Services.Accounts/Contracts/Services.Accounts.Contracts.csproj" />
+    <Project Path="src/Qlt.Services/Qlt.Services.Accounts/Infrastructure/Services.Accounts.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Services/Notifications/">
-    <Project Path="src/Services.Notifications/Service.Notifications.csproj" />
+    <Project Path="src/Qlt.Services/Qlt.Services.Notifications/Services.Notifications.csproj" />
   </Folder>
   <Folder Name="/src/WebApp/">
-    <Project Path="src/QltS.BackOffice/WebApp/QltS.BackOffice.WebApp.csproj" />
+    <Project Path="src/Qlt.WebApps/Qlt.WebApps.BackOffice/Qlt.WebApps.BackOffice.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Platform.FunctionalTests/Platform.FunctionalTests.csproj" />
+    <Project Path="tests/Platform.TestWebApi/Platform.TestWebApi.csproj" />
+    <Project Path="tests/Platform.UnitTests/Platform.UnitTests.csproj" />
+    <Project Path="tests/Services.Accounts.FunctionalTests/Services.Accounts.FunctionalTests.csproj" />
   </Folder>
 </Solution>

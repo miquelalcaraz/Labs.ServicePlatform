@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<RootNamespace>Qlt.Platform.Messaging</RootNamespace>
+		<IsAotCompatible>true</IsAotCompatible>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Qlt.Platform.EventBus\Platform.EventBus.csproj" />
+	  <ProjectReference Include="..\Qlt.Platform.Messaging\Platform.Messaging.csproj" />
+	  <ProjectReference Include="..\Qlt.Platform.Persistence.EntityFramework\Platform.Persistence.EntityFramework.csproj" />
+	  <ProjectReference Include="..\Qlt.Platform.Telemetry\Platform.Telemetry.csproj" />
+	</ItemGroup>
+
+
+</Project>
