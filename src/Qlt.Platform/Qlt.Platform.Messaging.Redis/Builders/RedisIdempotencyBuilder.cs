@@ -1,11 +1,11 @@
+using System;
+using System.Linq;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-using Qlt.Platform.Messaging.Idempotency;
 using Qlt.Platform.Messaging.IntegrationEvents;
-
-using System;
-using System.Linq;
+using Qlt.Platform.Messaging.Services;
 
 namespace Qlt.Platform.Messaging.Builders;
 

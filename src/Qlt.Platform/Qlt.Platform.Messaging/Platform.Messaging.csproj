@@ -17,5 +17,5 @@
 	  <ProjectReference Include="..\Qlt.Platform.Messaging.Abstractions\Platform.Messaging.Abstractions.csproj" />
 	  <ProjectReference Include="..\Qlt.Platform.Telemetry\Platform.Telemetry.csproj" />
 	</ItemGroup>
-
+ 
 </Project>

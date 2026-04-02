@@ -10,7 +10,7 @@ using Qlt.Services.Accounts.Domain.Repositories;
 
 namespace Qlt.Services.Accounts.Application.Commands;
 
-public class CreateOrganizationCommandHandler : CommandHandler<CreateOrganizationCommand, bool>
+public class CreateOrganizationCommandHandler : ICommandHandler<CreateOrganizationCommand, bool>
 {
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ILogger<CreateOrganizationCommandHandler> _logger;
@@ -23,15 +23,14 @@ public class CreateOrganizationCommandHandler : CommandHandler<CreateOrganizatio
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    protected override async Task<Result<bool>> HandleAsync(CreateOrganizationCommand message, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(CreateOrganizationCommand message, CancellationToken cancellationToken)
     {
         var address = Address.Create(message.Country, message.CountryCode, message.State, message.ZipCode, message.City!, message.Street);
         var organization = Organization.Create(message.Name, message.LegalName, address, message.TaxIdNumber, message.TaxNumberType, message.OrganizationType, message.Language, message.LanguageCode);
         _organizationRepository.Add(organization);
-        //await Task.Delay(TimeSpan.FromSeconds(20));
-        var saved = await _organizationRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
+        var saved = await _organizationRepository.UnitOfWork.SaveChangesAsync(cancellationToken);
 
-        return saved
+        return saved > 0
             ? Result.Success(true)
             : Result.Failure<bool>(Error.BadRequest.WithMessage("Failed to create organization"));
     }

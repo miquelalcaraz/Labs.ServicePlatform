@@ -1,18 +1,14 @@
-﻿using MediatR;
-
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 using Npgsql;
 
-using Qlt.Domain;
 using Qlt.Domain.SeedWork;
-using Qlt.Platform.Messaging;
-using Qlt.Platform.Persistence.Audit;
 using Qlt.Platform.Persistence.Configurations;
 using Qlt.Platform.Persistence.Exceptions;
 using Qlt.Platform.Persistence.Extensions;
+using Qlt.Platform.Persistence.Options;
 
 namespace Qlt.Platform.Persistence;
 
@@ -20,20 +16,17 @@ namespace Qlt.Platform.Persistence;
 /// Base DbContext for all Qlt contexts. 
 /// Provides common functionality like domain events dispatching, audit logging, and transaction management.
 /// </summary>
-public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEventCollector
+public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityChangeTracker
 {
-    private readonly IMediator _mediator = null!;
-    private IDbContextTransaction? _currentTransaction = null!;
-    private List<Entity>? _entitiesWithEvents;
 
+    private IDbContextTransaction? _currentTransaction = null!;
     public bool HasActiveTransaction => _currentTransaction is not null;
     public Guid? LastCommittedTransactionId { get; private set; }
 
     protected readonly QltDbContextConfiguration _configuration;
 
-    public QltDBContext(DbContextOptions options, IMediator mediator, QltDbContextConfiguration configuration) : base(options)
+    public QltDBContext(DbContextOptions options, QltDbContextConfiguration configuration) : base(options)
     {
-        _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     }
 
@@ -71,24 +64,12 @@ public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEventCol
             modelBuilder.ConfigureTransactionalOutbox();
         }
     }
-    public async Task<bool> SaveEntitiesAsync(CancellationToken cancellationToken = default)
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            if (_configuration.UseAuditLogs)
-            {
-                await this.SaveAuditLogsAsync(cancellationToken);
-            }
-
-            _entitiesWithEvents = ChangeTracker
-                .Entries<Entity>()
-                .Where(x => x.Entity.DomainEvents != null && x.Entity.DomainEvents.Any())
-                .Select(x => x.Entity)
-                .ToList();
-
-            await base.SaveChangesAsync(cancellationToken);
-
-            return true;
+            return await base.SaveChangesAsync(cancellationToken);
         }
         catch (DbUpdateException ex)
         {
@@ -103,8 +84,9 @@ public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEventCol
             }
             throw;
         }
-
     }
+
+
     public IExecutionStrategy CreateExecutionStrategy()
     {
         IExecutionStrategy executionStrategy = Database.CreateExecutionStrategy();
@@ -119,14 +101,21 @@ public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEventCol
         return _currentTransaction;
     }
 
-    public async Task CommitTransactionAsync(IDbContextTransaction transaction)
+    public async Task CommitTransactionAsync(IDbContextTransaction transaction, CancellationToken cancellationToken = default)
     {
         if (transaction is null) throw new ArgumentNullException(nameof(transaction));
         if (transaction != _currentTransaction) throw new InvalidOperationException($"Transaction {transaction.TransactionId} is not current");
 
         try
         {
-            await transaction.CommitAsync();
+            await base.SaveChangesAsync(cancellationToken);
+
+            if (_configuration.UseAuditLogs)
+            {
+                await this.SaveAuditLogsAsync(cancellationToken);
+            }
+
+            await transaction.CommitAsync(cancellationToken);
             LastCommittedTransactionId = transaction.TransactionId;
         }
         catch
@@ -159,6 +148,12 @@ public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEventCol
             }
         }
     }
+
+    public int GetPendingChangesCount() =>
+        ChangeTracker.Entries()
+            .Count(e => e.State == EntityState.Added ||
+                        e.State == EntityState.Modified ||
+                        e.State == EntityState.Deleted);
 
     private bool IsUniqueConstraintViolation(DbUpdateException ex)
     {
@@ -201,11 +196,11 @@ public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEventCol
             || innerMessage.Contains("UNIQUE KEY", StringComparison.OrdinalIgnoreCase);
     }
 
-    public IReadOnlyList<Entity> GetEntitiesWithPendingEvents()
+    public IReadOnlyList<Entity> GetEntitiesWithChanges()
     {
-        var entities = _entitiesWithEvents ?? new List<Entity>();
-        _entitiesWithEvents = null;
-        return entities;
+        return ChangeTracker.Entries<Entity>()
+            .Select(x => x.Entity)
+            .ToList();
     }
 
 }

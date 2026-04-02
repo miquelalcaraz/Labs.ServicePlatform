@@ -9,6 +9,6 @@ namespace Qlt.Services.Accounts.Domain.Repositories
 
         void Update(Organization Organization);
 
-        Task<Organization> GetAsync(Guid OrganizationId);
+        Task<Organization?> GetAsync(Guid OrganizationId);
     }
 }

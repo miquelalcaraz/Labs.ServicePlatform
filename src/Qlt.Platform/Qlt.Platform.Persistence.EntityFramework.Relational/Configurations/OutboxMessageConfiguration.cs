@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using Qlt.Platform.Messaging.Outbox;
+using Qlt.Platform.Messaging.Models;
 
 namespace Qlt.Platform.Persistence.Configurations;
 
@@ -30,6 +30,12 @@ public static class OutboxMessageConfiguration
 
         entity.Property(e => e.TransactionId)
             .IsRequired();
+
+        entity.Property(e => e.RowVersion)
+            .IsRowVersion()
+            .IsRequired();
+
+        entity.Ignore(e => e.IntegrationEvent);
 
         // Index for querying by transaction
         entity.HasIndex(e => e.TransactionId);

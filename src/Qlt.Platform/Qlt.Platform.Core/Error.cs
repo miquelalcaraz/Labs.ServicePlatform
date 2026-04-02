@@ -9,6 +9,7 @@ public record Error(string Code, string Message, string PropertyName = null!)
     public static readonly Error Conflict = new("Error.Conflict", "Request could not be completed due to a conflict with the current state of the resource.");
     public static readonly Error BadRequest = new("Error.BadRequest", "The request could not be understood by the server due to invalid syntax or missing parameters.");
     public static readonly Error Unauthorized = new("Error.Unauthorized", "The request requires user authentication.");
+    public static readonly Error Validation = new("Error.ValidationFailed", "One or more validation errors occurred.");
 }
 
 public static class ErrorExtensions

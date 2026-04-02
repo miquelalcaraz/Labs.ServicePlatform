@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 
-using Qlt.Platform.Messaging.Idempotency;
+using Qlt.Platform.Messaging.Models;
 using Qlt.Platform.Messaging.Services;
 using Qlt.Platform.Persistence;
 
@@ -270,8 +270,8 @@ public class IdempotencyEfServiceTests : IDisposable
         public bool HasActiveTransaction => Database.CurrentTransaction != null;
         public Guid? LastCommittedTransactionId { get; private set; }
         public IExecutionStrategy CreateExecutionStrategy() => Database.CreateExecutionStrategy();
-        public Task<IDbContextTransaction?> BeginTransactionAsync() => Database.BeginTransactionAsync();
-        public async Task CommitTransactionAsync(IDbContextTransaction transaction)
+        public Task<IDbContextTransaction?> BeginTransactionAsync() => Database.BeginTransactionAsync()!;
+        public async Task CommitTransactionAsync(IDbContextTransaction transaction, CancellationToken cancellationToken = default)
         {
             await transaction.CommitAsync();
             LastCommittedTransactionId = transaction.TransactionId;
@@ -284,7 +284,8 @@ public class IdempotencyEfServiceTests : IDisposable
         }
         public void RollbackTransaction() => Database.CurrentTransaction?.Rollback();
         public Task RollbackTransactionAsync() => Database.CurrentTransaction?.RollbackAsync() ?? Task.CompletedTask;
-        public Task<bool> SaveEntitiesAsync(CancellationToken cancellationToken = default) => Task.FromResult(SaveChanges() > 0);
+        public int GetPendingChangesCount() => ChangeTracker.Entries().Count(e => e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted);
+
         public IReadOnlyList<Qlt.Domain.SeedWork.Entity> GetEntitiesWithPendingEvents() => new List<Qlt.Domain.SeedWork.Entity>();
     }
 }

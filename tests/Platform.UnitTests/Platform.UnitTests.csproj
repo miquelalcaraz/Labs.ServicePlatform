@@ -19,15 +19,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Qlt.Platform\Qlt.Platform.Core\Platform.Core.csproj" />
     <ProjectReference Include="..\..\src\Qlt.Platform\Qlt.Platform.Messaging.Redis\Platform.Messaging.Redis.csproj" />
     <ProjectReference Include="..\..\src\Qlt.Platform\Qlt.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
     <ProjectReference Include="..\..\src\Qlt.Platform\Qlt.Platform.Persistence.EntityFramework.Relational\Platform.Persistence.EntityFramework.Relational.csproj" />
+    <ProjectReference Include="..\..\src\Qlt.Domain\Qlt.Domain.Application\Domain.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Using Include="Xunit" />
     <Using Include="FluentAssertions" />
     <Using Include="Moq" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Persistence\" />
   </ItemGroup>
 
 </Project>

@@ -1,8 +1,8 @@
-﻿using Qlt.Platform;
-using Qlt.Platform.Messaging.Idempotency;
-using Qlt.Services.Accounts.Domain.Models.OrganizationAggregate;
+﻿using System.Runtime.Serialization;
 
-using System.Runtime.Serialization;
+using Qlt.Platform;
+using Qlt.Platform.Messaging.Commands;
+using Qlt.Services.Accounts.Domain.Models.OrganizationAggregate;
 
 namespace Qlt.Services.Accounts.Application.Commands;
 

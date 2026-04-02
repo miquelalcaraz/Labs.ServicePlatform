@@ -1,14 +1,14 @@
-﻿using Asp.Versioning;
+﻿using System.Net;
+using System.Text;
+using System.Text.Json;
+
+using Asp.Versioning;
 using Asp.Versioning.Http;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 
 using Qlt.Services.Accounts.Application.Commands;
 using Qlt.Services.Accounts.Domain.Models.OrganizationAggregate;
-
-using System.Net;
-using System.Text;
-using System.Text.Json;
 
 namespace Services.Accounts.FunctionalTests;
 

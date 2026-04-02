@@ -1,8 +1,8 @@
-﻿using Qlt.Platform.Meters;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
+using Qlt.Platform.Meters;
 
 namespace Qlt.Platform.Activities;
 
@@ -133,17 +133,23 @@ public static class BehaviorHelper
     /// <param name="activity">The activity to update</param>
     /// <param name="commandName">The command name</param>
     /// <param name="durationMs">The transaction duration in milliseconds</param>
+    /// <param name="entitiesAffected">The number of entities in Added, Modified, or Deleted state</param>
     public static void RecordTransactionSuccess(
         Activity? activity,
         string commandName,
-        double durationMs)
+        double durationMs,
+        int entitiesAffected = 0)
     {
         ApplicationDiagnostics.TransactionDuration.Record(durationMs,
             new KeyValuePair<string, object?>("command_type", commandName),
             new KeyValuePair<string, object?>("success", "true"));
 
+        ApplicationDiagnostics.TransactionEntitiesAffected.Record(entitiesAffected,
+            new KeyValuePair<string, object?>("command_type", commandName));
+
         activity?.SetTag("transaction.success", true);
         activity?.SetTag("transaction.duration_ms", durationMs);
+        activity?.SetTag("transaction.entities_affected", entitiesAffected);
     }
 
     /// <summary>
@@ -253,5 +259,107 @@ public static class BehaviorHelper
         activity?.SetTag("command.duration_ms", durationMs);
         activity?.SetTag("error.type", exception.GetType().FullName);
         activity?.SetStatus(ActivityStatusCode.Error, exception.Message);
+    }
+
+    // === Domain Event Processor ===
+
+    /// <summary>
+    /// Starts a domain event processor activity.
+    /// </summary>
+    public static Activity? StartDomainEventProcessorActivity(string commandName)
+    {
+        var activity = ApplicationDiagnostics.ActivitySource.StartActivity(
+            name: $"DomainEventProcessor {commandName}",
+            kind: ActivityKind.Internal);
+
+        activity?.SetTag("processor.command", commandName);
+        activity?.SetTag("processor.type", "domain_events");
+
+        return activity;
+    }
+
+    /// <summary>
+    /// Sets the transaction ID tag on a processor activity.
+    /// </summary>
+    public static void SetProcessorTransactionId(Activity? activity, Guid transactionId)
+    {
+        activity?.SetTag("processor.transaction_id", transactionId.ToString());
+    }
+
+    /// <summary>
+    /// Records completion of domain event processing.
+    /// </summary>
+    public static void RecordDomainEventProcessorComplete(
+        Activity? activity,
+        int entityCount,
+        int dispatchCycles,
+        double durationMs)
+    {
+        activity?.SetTag("processor.entity_count", entityCount);
+        activity?.SetTag("processor.dispatch_cycles", dispatchCycles);
+        activity?.SetTag("processor.duration_ms", durationMs);
+    }
+
+    // === Integration Event Processor ===
+
+    /// <summary>
+    /// Starts an integration event processor activity.
+    /// </summary>
+    public static Activity? StartIntegrationEventProcessorActivity(string commandName)
+    {
+        var activity = ApplicationDiagnostics.ActivitySource.StartActivity(
+            name: $"IntegrationEventProcessor {commandName}",
+            kind: ActivityKind.Internal);
+
+        activity?.SetTag("processor.command", commandName);
+        activity?.SetTag("processor.type", "integration_events");
+
+        return activity;
+    }
+
+    /// <summary>
+    /// Records completion of integration event processing.
+    /// </summary>
+    public static void RecordIntegrationEventProcessorComplete(
+        Activity? activity,
+        Guid transactionId,
+        double durationMs)
+    {
+        activity?.SetTag("processor.transaction_id", transactionId.ToString());
+        activity?.SetTag("processor.duration_ms", durationMs);
+    }
+
+    // === Domain Event Dispatch ===
+
+    /// <summary>
+    /// Starts a domain event dispatch activity.
+    /// </summary>
+    public static Activity? StartDomainEventDispatchActivity(int eventCount, int entityCount)
+    {
+        var activity = ApplicationDiagnostics.ActivitySource.StartActivity(
+            name: "Dispatch Domain Events",
+            kind: ActivityKind.Internal);
+
+        activity?.SetTag("domain_events.count", eventCount);
+        activity?.SetTag("entities.count", entityCount);
+
+        return activity;
+    }
+
+    /// <summary>
+    /// Records a domain event being dispatched via MediatR.Publish.
+    /// </summary>
+    public static void RecordDomainEventDispatched(string eventType)
+    {
+        ApplicationDiagnostics.DomainEventsPublished.Add(1,
+            new KeyValuePair<string, object?>("event_type", eventType));
+    }
+
+    /// <summary>
+    /// Marks a domain event dispatch activity as complete.
+    /// </summary>
+    public static void SetDomainEventDispatchComplete(Activity? activity)
+    {
+        activity?.SetTag("domain_events.dispatched", true);
     }
 }

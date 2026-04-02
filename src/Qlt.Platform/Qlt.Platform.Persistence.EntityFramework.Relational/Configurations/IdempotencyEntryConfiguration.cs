@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-using Qlt.Platform.Messaging.Idempotency;
+using Qlt.Platform.Messaging.Models;
 
 namespace Qlt.Platform.Persistence.Configurations;
 

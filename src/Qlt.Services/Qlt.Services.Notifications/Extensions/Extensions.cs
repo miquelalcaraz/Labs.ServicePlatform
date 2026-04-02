@@ -2,12 +2,11 @@ using Microsoft.EntityFrameworkCore;
 
 using Qlt.Domain.Behaviors;
 using Qlt.Platform.EventBus;
-using Qlt.Platform.EventBus.Abstractions;
+using Qlt.Platform.EventBus.Builders;
 using Qlt.Platform.EventBus.Extensions;
 using Qlt.Platform.Messaging.Behaviors;
-using Qlt.Platform.Messaging.Extensions;
-using Qlt.Platform.Persistence.Behaviors;
-using Qlt.Platform.Persistence.Extensions;
+using Qlt.Platform.Messaging.Builders;
+using Qlt.Platform.Persistence.Builders;
 using Qlt.Platform.Persistence.Migrations;
 using Qlt.Services.Accounts.Contracts.IntegrationEvents;
 using Qlt.Services.Notifications.Infrastructure;
@@ -37,7 +36,7 @@ namespace Qlt.Services.Notifications.Extensions
             services.AddMigration<NotificationsContext, NotificationsContextSeed>();
 
 
-            builder.AddRabbitMqEventBus("eventbus")
+            builder.AddServiceBusEventBus("eventbus")
                     .AddEventBusSubscriptions();
 
             services.AddHttpContextAccessor();
@@ -46,17 +45,18 @@ namespace Qlt.Services.Notifications.Extensions
             {
                 cfg.RegisterServicesFromAssemblyContaining(typeof(AssemblyReference));
                 cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
-                cfg.AddOpenBehavior(typeof(MessagingBehavior<,>));
                 cfg.AddOpenBehavior(typeof(IdempotencyBehavior<,>));
+                cfg.AddOpenBehavior(typeof(IntegrationEventProcessorBehavior<,>));
                 cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
+                cfg.AddOpenBehavior(typeof(DomainEventProcessorBehavior<,>));
             });
 
 
 
-            // ✅ Register decorators for event handlers (order matters!)
-            // 1. Telemetry decorator (outer) - Measures total execution time including idempotency checks
             services.AddIntegrationEventTelemetryDecorator();
-            services.AddDomainEventTelemetryDecorator();
+            services.AddDomainEventTelemetryBehavior();
+            services.AddCommandTelemetryBehavior();
+            services.AddQueryTelemetryBehavior();
 
             services.AddIdempotencyEntityFramework<NotificationsContext>()
                 .ForIntegrationEventHandlers();

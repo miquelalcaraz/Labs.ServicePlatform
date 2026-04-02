@@ -50,6 +50,15 @@ public static class ApplicationDiagnostics
         description: "Total number of command handlers processed");
 
     /// <summary>
+    /// Counts the total number of query handlers processed.
+    /// Tags: query_type, handler_type, success (true/false)
+    /// </summary>
+    public static readonly Counter<long> QueryHandlersProcessed = Meter.CreateCounter<long>(
+        name: "application.query_handlers.processed",
+        unit: "{handler}",
+        description: "Total number of query handlers processed");
+
+    /// <summary>
     /// Counts the total number of validation failures.
     /// Tags: command_type, error_count
     /// </summary>
@@ -169,6 +178,15 @@ public static class ApplicationDiagnostics
         description: "Duration of command handler execution in milliseconds");
 
     /// <summary>
+    /// Records the duration of query handler execution.
+    /// Tags: query_type, handler_type
+    /// </summary>
+    public static readonly Histogram<double> QueryHandlerDuration = Meter.CreateHistogram<double>(
+        name: "application.query_handlers.duration",
+        unit: "ms",
+        description: "Duration of query handler execution in milliseconds");
+
+    /// <summary>
     /// Records the duration of validation.
     /// Tags: command_type, validator_count
     /// </summary>
@@ -185,6 +203,15 @@ public static class ApplicationDiagnostics
         name: "application.transactions.duration",
         unit: "ms",
         description: "Duration of database transactions in milliseconds");
+
+    /// <summary>
+    /// Records the number of entities affected per transaction (Added + Modified + Deleted).
+    /// Tags: command_type
+    /// </summary>
+    public static readonly Histogram<int> TransactionEntitiesAffected = Meter.CreateHistogram<int>(
+        name: "application.transactions.entities_affected",
+        unit: "{entity}",
+        description: "Number of entities affected per database transaction");
 
     /// <summary>
     /// Records the duration of integration event handler execution.

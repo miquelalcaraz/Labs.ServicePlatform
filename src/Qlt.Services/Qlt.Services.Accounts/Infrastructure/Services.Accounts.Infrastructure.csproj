@@ -27,7 +27,7 @@
  
 	
 	<ItemGroup>
-		<ProjectReference Include="..\..\..\Qlt.Platform\Qlt.Platform.EventBus.RabbitMQ\Platform.EventBus.RabbitMQ.csproj" />
+		<ProjectReference Include="..\..\..\Qlt.Platform\Qlt.Platform.EventBus.ServiceBus\Platform.EventBus.ServiceBus.csproj" />
 		<ProjectReference Include="..\..\..\Qlt.Platform\Qlt.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
 		<ProjectReference Include="..\..\..\Qlt.Platform\Qlt.Platform.Messaging.Redis\Platform.Messaging.Redis.csproj" />
 		<ProjectReference Include="..\Application\Services.Accounts.Application.csproj" />

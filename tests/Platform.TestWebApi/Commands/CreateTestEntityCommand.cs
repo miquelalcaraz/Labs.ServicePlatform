@@ -2,7 +2,6 @@ using Platform.TestWebApi.Infrastructure;
 
 using Qlt.Platform;
 using Qlt.Platform.Messaging.Commands;
-using Qlt.Platform.Messaging.Idempotency;
 
 namespace Platform.TestWebApi.Commands;
 
@@ -14,7 +13,7 @@ public record CreateTestEntityCommand(string Name, int Value, Guid RequestId) : 
     }
 }
 
-public class CreateTestEntityCommandHandler : CommandHandler<CreateTestEntityCommand, int>
+public class CreateTestEntityCommandHandler : ICommandHandler<CreateTestEntityCommand, int>
 {
     private readonly TestDbContext _context;
 
@@ -23,7 +22,7 @@ public class CreateTestEntityCommandHandler : CommandHandler<CreateTestEntityCom
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
-    protected override async Task<Result<int>> HandleAsync(CreateTestEntityCommand command, CancellationToken cancellationToken)
+    public async Task<Result<int>> Handle(CreateTestEntityCommand command, CancellationToken cancellationToken)
     {
         var entity = new TestEntity(command.Name, command.Value);
 

@@ -1,9 +1,7 @@
-using MediatR;
-
 using Microsoft.EntityFrameworkCore;
 
 using Qlt.Platform.Persistence;
-using Qlt.Platform.Persistence.Extensions;
+using Qlt.Platform.Persistence.Options;
 using Qlt.Services.Notifications.Models;
 
 namespace Qlt.Services.Notifications.Infrastructure;
@@ -12,8 +10,8 @@ public class NotificationsContext : QltDBContext
 {
     public DbSet<EmailNotification> EmailNotifications { get; set; } = null!;
 
-    public NotificationsContext(DbContextOptions<NotificationsContext> options, IMediator mediator, QltDbContextConfiguration configuration)
-            : base(options, mediator, configuration)
+    public NotificationsContext(DbContextOptions<NotificationsContext> options, QltDbContextConfiguration configuration)
+            : base(options, configuration)
     {
         System.Diagnostics.Debug.WriteLine("NotificationsContext::ctor ->" + this.GetHashCode());
     }
