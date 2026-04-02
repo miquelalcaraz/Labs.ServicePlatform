@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 
 using Qlt.Platform.Messaging.DomainEvents;
-using Qlt.Platform.Messaging.Outbox;
+using Qlt.Platform.Messaging.Services;
 using Qlt.Services.Accounts.Contracts.IntegrationEvents;
 using Qlt.Services.Accounts.Domain.Events;
 using Qlt.Services.Accounts.Domain.Repositories;

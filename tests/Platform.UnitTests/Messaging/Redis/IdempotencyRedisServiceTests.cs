@@ -1,8 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-using Qlt.Platform.Messaging.Configuration;
-using Qlt.Platform.Messaging.Idempotency;
+using Qlt.Platform.Messaging.Models;
+using Qlt.Platform.Messaging.Options;
+using Qlt.Platform.Messaging.Services;
 
 using StackExchange.Redis;
 

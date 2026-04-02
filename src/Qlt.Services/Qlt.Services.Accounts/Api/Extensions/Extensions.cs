@@ -2,11 +2,8 @@
 
 using Qlt.Domain.Behaviors;
 using Qlt.Platform.Messaging.Behaviors;
-using Qlt.Platform.Persistence.Behaviors;
 using Qlt.Services.Accounts.Application;
-using Qlt.Services.Accounts.Application.Queries;
 using Qlt.Services.Accounts.Infrastructure.Extensions;
-using Qlt.Services.Accounts.Infrastructure.Persistence.Queries;
 
 
 namespace Qlt.Services.Accounts.Extensions
@@ -28,16 +25,16 @@ namespace Qlt.Services.Accounts.Extensions
             services.AddMediatR(cfg =>
             {
                 cfg.RegisterServicesFromAssembly(AssemblyReference.Assembly);
-
+                cfg.RegisterServicesFromAssembly(typeof(Infrastructure.AssemblyReference).Assembly);
                 cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
-                cfg.AddOpenBehavior(typeof(MessagingBehavior<,>));
                 cfg.AddOpenBehavior(typeof(IdempotencyBehavior<,>));
+                cfg.AddOpenBehavior(typeof(IntegrationEventProcessorBehavior<,>));
                 cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
                 cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+                cfg.AddOpenBehavior(typeof(DomainEventProcessorBehavior<,>));
             });
 
             services.AddValidatorsFromAssembly(AssemblyReference.Assembly);
-            services.AddScoped<IOrganizationQueries, OrganizationQueries>();
 
             return services;
         }

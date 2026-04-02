@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
+using Qlt.Platform;
 using Qlt.Platform.Extensions;
 using Qlt.Services.Accounts.Application.Commands;
 using Qlt.Services.Accounts.Application.Queries;
@@ -22,7 +23,7 @@ namespace Qlt.Services.Accounts.Api
             return api;
         }
 
-        public static async Task<Results<Ok<bool>, BadRequest<string>>> CreateOrganizationAsync(
+        public static async Task<Results<Ok<bool>, ValidationProblem, BadRequest<string>>> CreateOrganizationAsync(
             [FromHeader(Name = "x-requestid")] Guid requestId,
             CreateOrganizationRequest request,
             [AsParameters] AccountsServices services)
@@ -65,16 +66,16 @@ namespace Qlt.Services.Accounts.Api
                         createOrganizationCommand.RequestId,
                         createOrganizationCommand);
 
-                if (result.IsSuccess)
+                if (result.IsFailure)
                 {
-                    services.Logger.LogInformation("CreateCreateOrganizationCommand succeeded - RequestId: {RequestId}", requestId);
-                    return TypedResults.Ok(result.Value);
+                    services.Logger.LogWarning("CreateCreateOrganizationCommand failed - RequestId: {RequestId}", requestId);
                 }
                 else
                 {
-                    services.Logger.LogWarning("CreateCreateOrganizationCommand failed - RequestId: {RequestId}", requestId);
-                    return TypedResults.BadRequest(result.Error.Message);
+                    services.Logger.LogInformation("CreateCreateOrganizationCommand succeeded - RequestId: {RequestId}", requestId);
                 }
+
+                return result.ToHttpResult();
             }
         }
 
@@ -82,28 +83,19 @@ namespace Qlt.Services.Accounts.Api
             Guid id,
             [AsParameters] AccountsServices services)
         {
-            try
-            {
-                var organization = await services.Queries.GetOrganizationAsync(id);
+            var result = await services.Mediator.Send(new GetOrganizationByIdQuery(id));
 
-                if (organization is null)
-                {
-                    return TypedResults.NotFound();
-                }
-
-                return TypedResults.Ok(organization);
-            }
-            catch (KeyNotFoundException)
-            {
+            if (result.IsFailure)
                 return TypedResults.NotFound();
-            }
+
+            return TypedResults.Ok(result.Value);
         }
 
         public static async Task<Ok<IEnumerable<OrganizationSummary>>> GetAllOrganizationsAsync(
             [AsParameters] AccountsServices services)
         {
-            var organizations = await services.Queries.GetAllOrganizationsAsync();
-            return TypedResults.Ok(organizations);
+            var result = await services.Mediator.Send(new GetAllOrganizationsQuery());
+            return TypedResults.Ok(result.Value);
         }
     }
 

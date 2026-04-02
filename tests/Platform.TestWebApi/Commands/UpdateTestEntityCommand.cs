@@ -4,7 +4,6 @@ using Platform.TestWebApi.Infrastructure;
 
 using Qlt.Platform;
 using Qlt.Platform.Messaging.Commands;
-using Qlt.Platform.Messaging.Idempotency;
 
 namespace Platform.TestWebApi.Commands;
 
@@ -16,7 +15,7 @@ public record UpdateTestEntityCommand(int EntityId, int NewValue, Guid RequestId
     }
 }
 
-public class UpdateTestEntityCommandHandler : CommandHandler<UpdateTestEntityCommand, bool>
+public class UpdateTestEntityCommandHandler : ICommandHandler<UpdateTestEntityCommand, bool>
 {
     private readonly TestDbContext _context;
 
@@ -25,7 +24,7 @@ public class UpdateTestEntityCommandHandler : CommandHandler<UpdateTestEntityCom
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
-    protected override async Task<Result<bool>> HandleAsync(UpdateTestEntityCommand command, CancellationToken cancellationToken)
+    public async Task<Result<bool>> Handle(UpdateTestEntityCommand command, CancellationToken cancellationToken)
     {
         var entity = await _context.TestEntities
             .FirstOrDefaultAsync(e => e.Id.GetHashCode() == command.EntityId, cancellationToken);

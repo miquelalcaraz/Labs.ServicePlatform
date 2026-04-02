@@ -1,20 +1,4 @@
 ﻿
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-
-using Polly;
-using Polly.Retry;
-
-using Qlt.Platform.EventBus.Abstractions;
-using Qlt.Platform.Messaging.IntegrationEvents;
-using Qlt.Platform.Meters;
-
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
-using RabbitMQ.Client.Exceptions;
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,6 +9,22 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+using Polly;
+using Polly.Retry;
+
+using Qlt.Platform.EventBus.Options;
+using Qlt.Platform.Messaging.IntegrationEvents;
+using Qlt.Platform.Meters;
+
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
+using RabbitMQ.Client.Exceptions;
+
 namespace Qlt.Platform.EventBus;
 
 public sealed class RabbitMqEventBus(
@@ -33,7 +33,7 @@ public sealed class RabbitMqEventBus(
     IOptions<EventBusOptions> options,
     IOptions<EventBusSubscriptionInfo> subscriptionOptions) : IEventBus, IDisposable, IHostedService
 {
-    private const string ExchangeName = "QltS_event_bus";
+    private const string ExchangeName = "qlt_event_bus";
 
     private readonly ResiliencePipeline _pipeline = CreateResiliencePipeline(options.Value.RetryCount);
 
@@ -43,7 +43,7 @@ public sealed class RabbitMqEventBus(
 
     private IChannel _consumerChannel;
 
-    public async Task PublishAsync(IntegrationEvent @event)
+    public async Task PublishAsync(IntegrationEvent @event, CancellationToken cancellationToken = default)
     {
         var routingKey = @event.GetType().Name;
 

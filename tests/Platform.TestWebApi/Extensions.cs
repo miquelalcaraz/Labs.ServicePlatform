@@ -1,17 +1,16 @@
+using System.Reflection;
+
 using Microsoft.EntityFrameworkCore;
 
 using Platform.TestWebApi.Infrastructure;
 
 using Qlt.Domain.Behaviors;
 using Qlt.Platform.EventBus;
-using Qlt.Platform.EventBus.Abstractions;
+using Qlt.Platform.EventBus.Builders;
 using Qlt.Platform.Messaging.Behaviors;
-using Qlt.Platform.Messaging.Extensions;
-using Qlt.Platform.Persistence.Behaviors;
-using Qlt.Platform.Persistence.Extensions;
+using Qlt.Platform.Messaging.Builders;
+using Qlt.Platform.Persistence.Builders;
 using Qlt.Platform.Persistence.Migrations;
-
-using System.Reflection;
 
 namespace Platform.TestWebApi;
 
@@ -40,9 +39,10 @@ public static class Extensions
         builder.AddRabbitMqEventBus("eventbus")
             .AddEventBusSubscriptions();
 
-        // Add telemetry decorators for both integration and domain events
         services.AddIntegrationEventTelemetryDecorator();
-        services.AddDomainEventTelemetryDecorator();
+        services.AddDomainEventTelemetryBehavior();
+        services.AddCommandTelemetryBehavior();
+        services.AddQueryTelemetryBehavior();
 
         services.AddTransactionalOutbox<TestDbContext>(options =>
         {
@@ -58,7 +58,7 @@ public static class Extensions
         {
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
             cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
-            cfg.AddOpenBehavior(typeof(MessagingBehavior<,>));
+            cfg.AddOpenBehavior(typeof(DomainEventProcessorBehavior<,>));
             cfg.AddOpenBehavior(typeof(IdempotencyBehavior<,>));
             cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));

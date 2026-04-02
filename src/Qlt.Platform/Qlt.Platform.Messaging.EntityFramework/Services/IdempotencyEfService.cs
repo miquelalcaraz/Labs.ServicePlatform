@@ -1,11 +1,11 @@
+using System;
+using System.Threading.Tasks;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-using Qlt.Platform.Messaging.Idempotency;
+using Qlt.Platform.Messaging.Models;
 using Qlt.Platform.Persistence;
-
-using System;
-using System.Threading.Tasks;
 
 namespace Qlt.Platform.Messaging.Services;
 

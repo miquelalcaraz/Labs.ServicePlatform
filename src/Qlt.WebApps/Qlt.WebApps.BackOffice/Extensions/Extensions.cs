@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 using Microsoft.IdentityModel.JsonWebTokens;
 
-using Qlt.Platform;
+using Qlt.Platform.Extensions;
 using Qlt.WebApps.BackOffice.Services;
 
 namespace Qlt.WebApps.BackOffice.Extensions

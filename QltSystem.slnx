@@ -7,6 +7,7 @@
   <Folder Name="/Packages/Platform/">
     <Project Path="src/Qlt.Platform/Qlt.Platform.Core/Platform.Core.csproj" />
     <Project Path="src/Qlt.Platform/Qlt.Platform.EventBus.RabbitMQ/Platform.EventBus.RabbitMQ.csproj" />
+    <Project Path="src/Qlt.Platform/Qlt.Platform.EventBus.ServiceBus/Platform.EventBus.ServiceBus.csproj" />
     <Project Path="src/Qlt.Platform/Qlt.Platform.EventBus/Platform.EventBus.csproj" />
     <Project Path="src/Qlt.Platform/Qlt.Platform.Infrastructure/Platform.Infrastructure.csproj" />
     <Project Path="src/Qlt.Platform/Qlt.Platform.Messaging.Abstractions/Platform.Messaging.Abstractions.csproj" />
@@ -43,6 +44,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Platform.FunctionalTests/Platform.FunctionalTests.csproj" />
+    <Project Path="tests/Platform.IntegrationTests/Platform.IntegrationTests.csproj" />
     <Project Path="tests/Platform.TestWebApi/Platform.TestWebApi.csproj" />
     <Project Path="tests/Platform.UnitTests/Platform.UnitTests.csproj" />
     <Project Path="tests/Services.Accounts.FunctionalTests/Services.Accounts.FunctionalTests.csproj" />

@@ -1,22 +1,23 @@
+using System.Diagnostics;
+
 using FluentValidation;
 
 using MediatR;
 
+using Qlt.Platform;
 using Qlt.Platform.Activities;
-
-using System.Diagnostics;
 
 namespace Qlt.Domain.Behaviors;
 
 /// <summary>
 /// MediatR pipeline behavior that validates commands/queries using FluentValidation validators.
-/// Throws ValidationException if validation fails.
+/// Returns Result.ValidationFailure for Result-based responses; throws DomainValidationException for non-Result types.
 /// </summary>
-/// <typeparam name="TRequest">The request type (Command or Query)</typeparam>
-/// <typeparam name="TResponse">The response type</typeparam>
 public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
+    private static readonly Func<ValidationError, TResponse>? _failureFactory = CreateFailureFactory();
+
     private readonly IEnumerable<IValidator<TRequest>> _validators;
 
     public ValidationBehavior(
@@ -29,7 +30,6 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
     {
         if (!_validators.Any())
         {
-            // No validators registered for this request type, skip validation
             return await next(cancellationToken);
         }
 
@@ -67,6 +67,13 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
                 elapsedMs,
                 errorMessages);
 
+            var errors = failures
+                .GroupBy(f => f.PropertyName, f => f.ErrorMessage)
+                .ToDictionary(g => g.Key, g => g.ToArray());
+
+            if (_failureFactory is not null)
+                return _failureFactory(new ValidationError(errors));
+
             throw new Exceptions.DomainValidationException(failures);
         }
 
@@ -75,4 +82,23 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
         return await next(cancellationToken);
     }
 
+    private static Func<ValidationError, TResponse>? CreateFailureFactory()
+    {
+        var responseType = typeof(TResponse);
+
+        if (responseType == typeof(Result))
+            return error => (TResponse)(object)Result.Failure(error);
+
+        if (responseType.IsGenericType && responseType.GetGenericTypeDefinition() == typeof(Result<>))
+        {
+            var innerType = responseType.GetGenericArguments()[0];
+            var method = typeof(Result)
+                .GetMethod(nameof(Result.Failure), 1, [typeof(Error)])!
+                .MakeGenericMethod(innerType);
+
+            return error => (TResponse)method.Invoke(null, [error])!;
+        }
+
+        return null;
+    }
 }

@@ -10,8 +10,13 @@ Pipeline Behaviors are cross-cutting concerns that wrap command/query execution 
 **Location**:
 - Core Behaviors: `src/Qlt.Domain/Qlt.Domain.Application/Behaviors/` (LoggingBehavior, ValidationBehavior)
 - Messaging Behaviors: `src/Qlt.Platform/Qlt.Platform.Messaging/Behaviors/` (IdempotencyBehavior)
-- Messaging EF Behaviors: `src/Qlt.Platform/Qlt.Platform.Messaging.EntityFramework/Behaviors/` (MessagingBehavior)
-- Persistence Behaviors: `src/Qlt.Platform/Qlt.Platform.Persistence.EntityFramework/Behaviors/` (TransactionBehavior)
+- Messaging EF Behaviors: `src/Qlt.Platform/Qlt.Platform.Messaging.EntityFramework/Behaviors/` (TransactionBehavior, IntegrationEventProcessorBehavior, DomainEventProcessorBehavior)
+
+> **Architectural Note**: `TransactionBehavior` lives in `Platform.Messaging.EntityFramework` (not `Platform.Persistence.EntityFramework`)
+> because it is fundamentally a messaging+persistence concern — it wraps *commands* (a messaging concept defined by `ICommandRequest`)
+> in *transactions* (a persistence concept). This layer has access to both `Platform.Messaging.Abstractions` (for `ICommandRequest`)
+> and `Platform.Persistence.EntityFramework` (for `ITransactionalUnitOfWork`), enabling zero-reflection pattern matching
+> via `request is not ICommandRequest` instead of fragile string-based naming conventions.
 
 **Core Components**:
 
@@ -167,53 +172,43 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
 }
 ```
 
-5. **TransactionBehavior** (Pure Transaction Management):
+5. **TransactionBehavior** (Messaging+Persistence Concern):
 ```csharp
-public class TransactionBehavior<TRequest, TResponse, TContext> : IPipelineBehavior<TRequest, TResponse>
+public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
-    where TContext : DbContext, ITransactionalUnitOfWork
 {
-    private readonly TContext _context;
+    private readonly ITransactionalUnitOfWork _dbTransaction;
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, ...)
     {
-        var typeName = request.GetType().Name;
+        // Zero-reflection pattern matching — skip queries and non-command requests
+        if (request is not ICommandRequest)
+            return await next(cancellationToken);
+
+        var typeName = request.GetGenericTypeName();
 
         // Skip if already in transaction (nested call)
-        if (_context.HasActiveTransaction)
-        {
-            _logger.LogDebug("Skipping transaction for nested {RequestType}", typeName);
+        if (_dbTransaction.HasActiveTransaction)
             return await next(cancellationToken);
-        }
 
         var response = default(TResponse);
-        var strategy = _context.Database.CreateExecutionStrategy();
+        var strategy = _dbTransaction.CreateExecutionStrategy();
 
         await strategy.ExecuteAsync(async () =>
         {
-            await using var transaction = await _context.BeginTransactionAsync(cancellationToken);
+            await using var transaction = await _dbTransaction.BeginTransactionAsync();
 
             _logger.LogInformation(
                 "Begin transaction {TransactionId} for {RequestType}",
                 transaction.TransactionId, typeName);
 
-            try
-            {
-                response = await next(cancellationToken);
+            response = await next(cancellationToken);
 
-                await _context.CommitTransactionAsync(transaction, cancellationToken);
+            await _dbTransaction.CommitTransactionAsync(transaction);
 
-                _logger.LogInformation(
-                    "Commit transaction {TransactionId} for {RequestType}",
-                    transaction.TransactionId, typeName);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex,
-                    "Rollback transaction {TransactionId} for {RequestType}",
-                    transaction.TransactionId, typeName);
-                throw;
-            }
+            _logger.LogInformation(
+                "Commit transaction {TransactionId} for {RequestType}",
+                transaction.TransactionId, typeName);
         });
 
         return response!;
@@ -222,17 +217,24 @@ public class TransactionBehavior<TRequest, TResponse, TContext> : IPipelineBehav
 ```
 
 6. **Behavior Registration Order** (in DI):
+
+> **Architectural Note**: The pipeline uses two separate post-processing behaviors instead of a single `MessagingBehavior`.
+> `DomainEventProcessorBehavior` runs **inside** the transaction to dispatch domain events atomically.
+> `IntegrationEventProcessorBehavior` runs **outside** the transaction to publish outbox events after commit.
+> This is an intentional design based on the eShop reference architecture and *Patterns of Enterprise Application Architecture*.
+
 ```csharp
 services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(assembly);
 
     // Order matters! Outer to inner:
-    cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));                    // 1. Outermost - logs everything
-    cfg.AddOpenBehavior(typeof(MessagingBehavior<,>));                  // 2. Publishes outbox events
-    cfg.AddOpenBehavior(typeof(IdempotencyBehavior<,>));                // 3. Checks duplicates
-    cfg.AddOpenBehavior(typeof(TransactionBehavior<,,>));               // 4. Wraps in transaction
-    cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));                 // 5. Innermost - validates
+    cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));                        // 1. Outermost - logs everything
+    cfg.AddOpenBehavior(typeof(IdempotencyBehavior<,>));                    // 2. Checks duplicates
+    cfg.AddOpenBehavior(typeof(IntegrationEventProcessorBehavior<,>));      // 3. Publishes outbox events AFTER commit
+    cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));                    // 4. Wraps in transaction
+    cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));                     // 5. Validates command
+    cfg.AddOpenBehavior(typeof(DomainEventProcessorBehavior<,>));           // 6. Innermost - dispatches domain events WITHIN transaction
 });
 ```
 
@@ -242,23 +244,27 @@ Request
   ↓
 LoggingBehavior (start timer, log begin)
   ↓
-MessagingBehavior (pass through → publish outbox on return)
-  ↓
 IdempotencyBehavior (check duplicate, mark as processing in change tracker)
+  ↓
+IntegrationEventProcessorBehavior (pass through → publish outbox on return)
   ↓
 TransactionBehavior (begin transaction)
   ↓
 ValidationBehavior (FluentValidation)
   ↓
-Command Handler (business logic, domain events)
+DomainEventProcessorBehavior (pass through → dispatch domain events on return, WITHIN transaction)
+  ↓
+Command Handler (business logic, SaveChangesAsync flush)
+  ↓
+DomainEventProcessorBehavior (dispatch domain events, handlers add outbox messages)
   ↓
 ValidationBehavior (return)
   ↓
-TransactionBehavior (commit transaction, set LastCommittedTransactionId)
+TransactionBehavior (CommitTransactionAsync: SaveChanges + CommitAsync, set LastCommittedTransactionId)
+  ↓
+IntegrationEventProcessorBehavior (read transactionId, publish outbox events to message broker)
   ↓
 IdempotencyBehavior (mark as completed in cache)
-  ↓
-MessagingBehavior (read transactionId, publish outbox events to message broker)
   ↓
 LoggingBehavior (log end, detect slow commands)
   ↓
@@ -298,11 +304,12 @@ Response
    - **Current Risk**: ✅ RESOLVED - Atomic commit ensures consistency
 
 5. **✅ EXCELLENT: Zero-Reflection Pattern Matching**:
-   - IdempotencyBehavior uses `is IIdempotentRequest` pattern matching
-   - No `GetInterfaces()` reflection overhead on every request
-   - **Previous Implementation**: Used reflection to detect IIdempotentCommand
-   - **Current Implementation**: Pattern matching (C# 14.0)
-   - **Benefit**: Better performance, cleaner code
+    - IdempotencyBehavior uses `is IIdempotentRequest` pattern matching
+    - TransactionBehavior uses `is not ICommandRequest` pattern matching
+    - No `GetInterfaces()` reflection overhead on every request
+    - **Previous Implementation**: Used string-based `IsCommandRequest()` (checked if type name ended with "Command")
+    - **Current Implementation**: Interface-based pattern matching via `ICommandRequest` marker (C# 14.0)
+    - **Benefit**: Type-safe, zero-reflection, consistent across all behaviors
 
 6. **✅ OpenTelemetry Integration**:
    - `BehaviorHelper` creates activities for distributed tracing
@@ -310,10 +317,11 @@ Response
    - **Benefit**: Excellent observability
 
 7. **✅ EXCELLENT: Dependency Inversion Fixed**:
-   - Previous architecture: `Shared.Persistence.EntityFramework` referenced `Shared.Messaging.Abstractions` (inverted dependency)
-   - Current architecture: Messaging behaviors in separate layer, no circular dependencies
-   - Persistence layer is now messaging-agnostic
-   - **Benefit**: Clean layering, easier to maintain and test
+    - Previous architecture: `Shared.Persistence.EntityFramework` referenced `Shared.Messaging.Abstractions` (inverted dependency)
+    - Current architecture: All pipeline behaviors that need both messaging and persistence concepts live in `Platform.Messaging.EntityFramework`
+    - `TransactionBehavior` moved from `Platform.Persistence.EntityFramework` to `Platform.Messaging.EntityFramework` as it is fundamentally a messaging+persistence concern
+    - Persistence layer (`Platform.Persistence.EntityFramework`) is now behavior-free and messaging-agnostic
+    - **Benefit**: Clean layering, proper separation of concerns, easier to maintain and test
 
 8. **⚠️ No Authorization Behavior**:
    - No built-in authorization/permission check
@@ -691,7 +699,7 @@ The Pipeline Behavior implementation is **architecturally EXCELLENT** with perfe
 - ✅ **EXCELLENT**: Zero-reflection pattern matching (`is IIdempotentRequest`)
 - ✅ **RESOLVED**: Correct idempotency timing (atomic commit with business data)
 - ✅ **RESOLVED**: Dependency inversion fixed (Persistence no longer depends on Messaging)
-- ✅ Correct execution order (Logging → Messaging → Idempotency → Transaction → Validation)
+- ✅ Correct execution order (Logging → Idempotency → IntegrationEventProcessor → Transaction → Validation → DomainEventProcessor)
 - ✅ Excellent OpenTelemetry integration
 - ✅ Slow command detection (> 500ms threshold)
 - ✅ Conditional application of behaviors

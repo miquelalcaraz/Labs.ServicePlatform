@@ -1,16 +1,15 @@
-using Microsoft.Extensions.Logging;
-
-using Qlt.Platform.EventBus.Abstractions;
-using Qlt.Platform.Messaging.IntegrationEvents;
-using Qlt.Platform.Messaging.Outbox;
-using Qlt.Platform.Meters;
-using Qlt.Platform.Persistence;
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+
+using Microsoft.Extensions.Logging;
+
+using Qlt.Platform.EventBus;
+using Qlt.Platform.Messaging.IntegrationEvents;
+using Qlt.Platform.Meters;
+using Qlt.Platform.Persistence;
 
 namespace Qlt.Platform.Messaging.Services;
 
@@ -112,7 +111,12 @@ public class EventBusOutboxService<TContext> : IEventBusOutboxService
 
         try
         {
-            await _eventLogService.SaveEventAsync(evt, _dbTransaction.GetCurrentTransaction());
+            var transaction = _dbTransaction.GetCurrentTransaction()
+                ?? throw new InvalidOperationException(
+                    "Cannot save an outbox event without an active transaction. " +
+                    "Ensure AddAndSaveEventAsync is called within a TransactionBehavior scope.");
+
+            await _eventLogService.SaveEventAsync(evt, transaction.TransactionId);
             stopwatch.Stop();
 
             var elapsedMs = stopwatch.Elapsed.TotalMilliseconds;

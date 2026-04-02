@@ -1,11 +1,27 @@
 
+//#define USE_RABBITMQ
+#define USE_AZURE_SERVICE_BUS
+
 
 var builder = DistributedApplication.CreateBuilder(args);
 
 var cache = builder.AddRedis("cache");
 
-var rabbitMq = builder.AddRabbitMQ("eventbus")
+#if USE_RABBITMQ
+var eventbus = builder.AddRabbitMQ("eventbus")
     .WithLifetime(ContainerLifetime.Persistent);
+#endif
+
+#if USE_AZURE_SERVICE_BUS
+var eventbus = builder.AddAzureServiceBus("eventbus")
+    .RunAsEmulator(emulator => emulator
+        .WithLifetime(ContainerLifetime.Persistent));
+
+var eventBusTopic = eventbus.AddServiceBusTopic("qlt-event-bus");
+eventBusTopic.AddServiceBusSubscription("accounts-sub", subscriptionName: "Accounts");
+eventBusTopic.AddServiceBusSubscription("notifications-sub", subscriptionName: "Notifications");
+eventBusTopic.AddServiceBusSubscription("identity-sub", subscriptionName: "Identity");
+#endif
 
 var sqlPassword = builder.AddParameter("sqlPassword", value: "***REMOVED***", secret: true);
 var sqlserver = builder.AddSqlServer("sqlserver", sqlPassword, 1444)
@@ -27,7 +43,7 @@ var identity = builder.AddProject<Projects.Qlt_Infrastructure_Identity>("identit
     .WaitFor(identityDb)
     .WithReference(identityLogsDb)
     .WaitFor(identityLogsDb)
-    .WithReference(rabbitMq).WaitFor(rabbitMq);
+    .WithReference(eventbus).WaitFor(eventbus);
 
 var identityEndpoint = identity.GetEndpoint(launchProfileName);
 
@@ -35,7 +51,7 @@ var notifications = builder.AddProject<Projects.Services_Notifications>("notific
    .WithHttpHealthCheck("/health")
     .WithReference(notificationsDb)
     .WaitFor(notificationsDb)
-    .WithReference(rabbitMq).WaitFor(rabbitMq);
+    .WithReference(eventbus).WaitFor(eventbus);
 
 var accountApiService = builder.AddProject<Projects.Services_Accounts_API>("accounts")
     .WithHttpHealthCheck("/health")
@@ -43,7 +59,7 @@ var accountApiService = builder.AddProject<Projects.Services_Accounts_API>("acco
     .WaitFor(accountDb)
     .WithReference(cache)
     .WaitFor(cache)
-    .WithReference(rabbitMq).WaitFor(rabbitMq)
+    .WithReference(eventbus).WaitFor(eventbus)
     .WaitFor(identity)
     .WithEnvironment("Identity__Url", identityEndpoint);
 

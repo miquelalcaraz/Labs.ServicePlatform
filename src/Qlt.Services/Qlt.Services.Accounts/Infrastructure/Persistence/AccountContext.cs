@@ -3,7 +3,7 @@ using MediatR;
 using Microsoft.EntityFrameworkCore;
 
 using Qlt.Platform.Persistence;
-using Qlt.Platform.Persistence.Extensions;
+using Qlt.Platform.Persistence.Options;
 using Qlt.Services.Accounts.Domain.Models.OrganizationAggregate;
 
 namespace Qlt.Services.Accounts.Infrastructure.Persistence
@@ -28,7 +28,7 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence
             DbContextOptions<AccountContext> options,
             IMediator mediator,
             QltDbContextConfiguration configuration)
-            : base(options, mediator, configuration)
+            : base(options, configuration)
         {
             System.Diagnostics.Debug.WriteLine("AccountContext::ctor ->" + this.GetHashCode());
         }

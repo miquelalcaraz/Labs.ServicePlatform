@@ -1,6 +1,6 @@
-using Qlt.Platform.Meters;
-
 using System.Collections.Generic;
+
+using Qlt.Platform.Meters;
 namespace Qlt.Platform.Activities;
 
 /// <summary>
@@ -31,6 +31,31 @@ public static class MetricsHelper
 
         ApplicationDiagnostics.CommandHandlerDuration.Record(durationMs,
             new KeyValuePair<string, object?>("command_type", commandType),
+            new KeyValuePair<string, object?>("handler_type", handlerType));
+    }
+
+    /// <summary>
+    /// Records query handler execution metrics.
+    /// </summary>
+    /// <param name="queryType">The query type name</param>
+    /// <param name="handlerType">The handler type name</param>
+    /// <param name="durationMs">The execution duration in milliseconds</param>
+    /// <param name="success">Whether the execution was successful</param>
+    public static void RecordQueryHandlerExecution(
+        string queryType,
+        string handlerType,
+        double durationMs,
+        bool success)
+    {
+        var successTag = success.ToString().ToLowerInvariant();
+
+        ApplicationDiagnostics.QueryHandlersProcessed.Add(1,
+            new KeyValuePair<string, object?>("query_type", queryType),
+            new KeyValuePair<string, object?>("handler_type", handlerType),
+            new KeyValuePair<string, object?>("success", successTag));
+
+        ApplicationDiagnostics.QueryHandlerDuration.Record(durationMs,
+            new KeyValuePair<string, object?>("query_type", queryType),
             new KeyValuePair<string, object?>("handler_type", handlerType));
     }
 

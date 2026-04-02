@@ -25,7 +25,7 @@
 		<ProjectReference Include="..\Qlt.Services.Accounts\Contracts\Services.Accounts.Contracts.csproj" /> 
 		<ProjectReference Include="..\..\Qlt.Platform\Qlt.Platform.Persistence.EntityFramework.Relational\Platform.Persistence.EntityFramework.Relational.csproj" />
 		<ProjectReference Include="..\..\Qlt.Platform\Qlt.Platform.ServiceDefaults\Platform.ServiceDefaults.csproj" />
-		<ProjectReference Include="..\..\Qlt.Platform\Qlt.Platform.EventBus.RabbitMQ\Platform.EventBus.RabbitMQ.csproj" />
+		<ProjectReference Include="..\..\Qlt.Platform\Qlt.Platform.EventBus.ServiceBus\Platform.EventBus.ServiceBus.csproj" />
 	</ItemGroup>
 
 </Project>

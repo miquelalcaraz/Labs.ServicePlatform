@@ -1,9 +1,11 @@
+using System.Reflection;
+
 using Duende.IdentityServer.Stores;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-using Qlt.Infrastructure.Identity.Behaviors;
+using Qlt.Domain.Behaviors;
 using Qlt.Infrastructure.Identity.Extensions;
 using Qlt.Infrastructure.Identity.Infrastructure;
 using Qlt.Infrastructure.Identity.Infrastructure.Seed;
@@ -13,16 +15,13 @@ using Qlt.Infrastructure.Identity.Repositories;
 using Qlt.Infrastructure.Identity.Services;
 using Qlt.Infrastructure.Identity.Stores;
 using Qlt.Platform.EventBus;
-using Qlt.Platform.EventBus.Abstractions;
+using Qlt.Platform.EventBus.Builders;
 using Qlt.Platform.EventBus.Extensions;
 using Qlt.Platform.Messaging.Behaviors;
-using Qlt.Platform.Messaging.Extensions;
-using Qlt.Platform.Persistence.Behaviors;
-using Qlt.Platform.Persistence.Extensions;
+using Qlt.Platform.Messaging.Builders;
+using Qlt.Platform.Persistence.Builders;
 using Qlt.Platform.Persistence.Migrations;
 using Qlt.Services.Accounts.Contracts.IntegrationEvents;
-
-using System.Reflection;
 
 namespace Qlt.Infrastructure.Identity.Extensions
 {
@@ -38,7 +37,7 @@ namespace Qlt.Infrastructure.Identity.Extensions
             builder.AddIdentityServer();
             builder.AddDbContext();
 
-            builder.AddRabbitMqEventBus("eventbus")
+            builder.AddServiceBusEventBus("eventbus")
                     .AddEventBusSubscriptions();
 
             services.AddHttpContextAccessor();
@@ -47,9 +46,10 @@ namespace Qlt.Infrastructure.Identity.Extensions
             {
                 cfg.RegisterServicesFromAssemblyContaining(typeof(AssemblyReference));
                 cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
-                cfg.AddOpenBehavior(typeof(MessagingBehavior<,>));
                 cfg.AddOpenBehavior(typeof(IdempotencyBehavior<,>));
+                cfg.AddOpenBehavior(typeof(IntegrationEventProcessorBehavior<,>));
                 cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
+                cfg.AddOpenBehavior(typeof(DomainEventProcessorBehavior<,>));
             });
 
             // Register repositories (in-memory for now)
@@ -59,10 +59,10 @@ namespace Qlt.Infrastructure.Identity.Extensions
             // Register services
             services.AddSingleton<IPasswordGenerator, PasswordGenerator>();
 
-            // ✅ Register decorators for event handlers (order matters!)
-            // 1. Telemetry decorator (outer) - Measures total execution time including idempotency checks
             services.AddIntegrationEventTelemetryDecorator();
-            services.AddDomainEventTelemetryDecorator();
+            services.AddDomainEventTelemetryBehavior();
+            services.AddCommandTelemetryBehavior();
+            services.AddQueryTelemetryBehavior();
 
 
             services.AddIdempotencyEntityFramework<IdentityLogsContext>()

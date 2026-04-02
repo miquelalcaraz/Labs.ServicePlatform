@@ -1,12 +1,12 @@
+using System.Net;
+using System.Text;
+using System.Text.Json;
+
 using Microsoft.AspNetCore.Mvc.Testing;
 
 using Platform.TestWebApi.Controllers;
 
 using Qlt.Platform;
-
-using System.Net;
-using System.Text;
-using System.Text.Json;
 
 namespace Platform.FunctionalTests.Tests;
 

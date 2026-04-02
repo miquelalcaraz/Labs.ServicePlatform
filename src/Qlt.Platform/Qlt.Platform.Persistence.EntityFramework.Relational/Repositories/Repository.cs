@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Linq.Expressions;
+
+using Microsoft.EntityFrameworkCore;
 
 using Qlt.Domain.SeedWork;
-
-using System.Linq.Expressions;
 
 namespace Qlt.Platform.Persistence.Repositories;
 
@@ -32,7 +32,7 @@ public abstract class Repository<T> : IRepository<T> where T : Entity, IAggregat
         Context.Update(entity);
     }
 
-    public async Task<T> GetAsync(Guid id)
+    public async Task<T?> GetAsync(Guid id)
     {
         return await Context.Set<T>()
             .SingleOrDefaultAsync(e => e.Id == id);

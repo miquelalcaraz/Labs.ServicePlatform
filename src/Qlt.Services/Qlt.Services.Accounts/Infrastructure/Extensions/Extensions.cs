@@ -4,9 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 using Qlt.Platform.EventBus;
-using Qlt.Platform.EventBus.Abstractions;
-using Qlt.Platform.Messaging.Extensions;
-using Qlt.Platform.Persistence.Extensions;
+using Qlt.Platform.EventBus.Builders;
+using Qlt.Platform.Messaging.Builders;
+using Qlt.Platform.Persistence.Builders;
 using Qlt.Platform.Persistence.Migrations;
 using Qlt.Services.Accounts.Domain.Repositories;
 using Qlt.Services.Accounts.Infrastructure.Persistence;
@@ -22,7 +22,8 @@ namespace Qlt.Services.Accounts.Infrastructure.Extensions
             var services = builder.Services;
 
             var connectionString = builder.Configuration.GetConnectionString("accountdb");
-
+            var readConnectionString = builder.Configuration.GetConnectionString("accountdb-readonly")
+                ?? connectionString;
 
             services.AddQltSDBContext<AccountContext>(
                 conf => conf
@@ -33,19 +34,26 @@ namespace Qlt.Services.Accounts.Infrastructure.Extensions
                 {
                     sqlOptions.MigrationsAssembly(typeof(AssemblyReference).Assembly.FullName);
                 })
+            );
 
+            services.AddQltReadDbContext<AccountReadContext>(
+                conf => conf
+                    .SetDefaultSchema("accounts")
+                    .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
+                options => options.UseSqlServer(readConnectionString)
             );
 
 
             services.AddMigration<AccountContext, QltDBContextSeed>();
 
 
-            builder.AddRabbitMqEventBus("eventbus")
+            builder.AddServiceBusEventBus("eventbus")
                 .AddEventBusSubscriptions();
 
-            // Add telemetry decorators for both integration and domain events
             services.AddIntegrationEventTelemetryDecorator();
-            services.AddDomainEventTelemetryDecorator();
+            services.AddDomainEventTelemetryBehavior();
+            services.AddCommandTelemetryBehavior();
+            services.AddQueryTelemetryBehavior();
 
             services.AddRedisIdempotencyCache(builder.Configuration)
                    .ForApiRequests()

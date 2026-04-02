@@ -12,6 +12,5 @@
 	  <ProjectReference Include="..\Qlt.Platform.Persistence.EntityFramework\Platform.Persistence.EntityFramework.csproj" />
 	  <ProjectReference Include="..\Qlt.Platform.Telemetry\Platform.Telemetry.csproj" />
 	</ItemGroup>
-
-
+ 
 </Project>

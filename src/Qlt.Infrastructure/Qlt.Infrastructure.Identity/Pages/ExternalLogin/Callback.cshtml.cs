@@ -1,3 +1,5 @@
+using System.Security.Claims;
+
 using Duende.IdentityModel;
 using Duende.IdentityServer;
 using Duende.IdentityServer.Events;
@@ -10,8 +12,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 using Qlt.Infrastructure.Identity.Models;
-
-using System.Security.Claims;
 
 namespace Qlt.Infrastructure.Identity.Pages.ExternalLogin;
 

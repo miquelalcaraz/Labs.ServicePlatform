@@ -55,7 +55,7 @@ public abstract class Entity
 
     public Entity AddDomainEvent(IDomainEvent eventItem)
     {
-        _domainEvents = _domainEvents ?? new List<IDomainEvent>();
+        _domainEvents ??= [];
         _domainEvents.Add(eventItem);
         return this;
     }

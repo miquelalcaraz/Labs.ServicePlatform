@@ -1,5 +1,6 @@
 ﻿using MediatR;
-using Qlt.Domain;
+
+using Qlt.Domain.SeedWork;
 
 namespace Qlt.Platform.Messaging.DomainEvents
 {

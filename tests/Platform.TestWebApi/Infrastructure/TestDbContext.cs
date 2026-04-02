@@ -1,9 +1,7 @@
-using MediatR;
-
 using Microsoft.EntityFrameworkCore;
 
 using Qlt.Platform.Persistence;
-using Qlt.Platform.Persistence.Extensions;
+using Qlt.Platform.Persistence.Options;
 
 namespace Platform.TestWebApi.Infrastructure;
 
@@ -11,9 +9,8 @@ public class TestDbContext : QltDBContext
 {
     public TestDbContext(
         DbContextOptions<TestDbContext> options,
-        IMediator mediator,
         QltDbContextConfiguration configuration)
-        : base(options, mediator, configuration)
+        : base(options, configuration)
     {
     }
 

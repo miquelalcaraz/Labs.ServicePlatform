@@ -1,4 +1,4 @@
-namespace Qlt.Domain;
+namespace Qlt.Domain.SeedWork;
 
 /// <summary>
 /// Marker interface for domain events following DDD principles.

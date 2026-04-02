@@ -12,7 +12,7 @@ namespace Qlt.Platform.Persistence
     public interface ITransactionalUnitOfWork : IUnitOfWork
     {
         /// <summary>
-        /// Begins a new database transaction.
+        /// Begins a new database transaction with the default isolation level.
         /// </summary>
         /// <returns>The transaction object, or null if a transaction is already active.</returns>
         Task<IDbContextTransaction?> BeginTransactionAsync();
@@ -42,7 +42,8 @@ namespace Qlt.Platform.Persistence
         /// Commits the specified transaction, persisting all changes to the database.
         /// </summary>
         /// <param name="transaction">The transaction to commit.</param>
-        Task CommitTransactionAsync(IDbContextTransaction transaction);
+        /// <param name="cancellationToken">A token to observe while waiting for the task to complete.</param>
+        Task CommitTransactionAsync(IDbContextTransaction transaction, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Rolls back the current transaction, discarding all uncommitted changes.
@@ -59,5 +60,10 @@ namespace Qlt.Platform.Persistence
         /// Available after CommitTransactionAsync completes, until the next transaction begins.
         /// </summary>
         Guid? LastCommittedTransactionId { get; }
+
+        /// <summary>
+        /// Gets the number of entities in Added, Modified, or Deleted state.
+        /// </summary>
+        int GetPendingChangesCount();
     }
 }

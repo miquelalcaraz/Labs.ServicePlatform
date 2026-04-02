@@ -1,8 +1,8 @@
-using Qlt.Platform.Activities;
-
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+
+using Qlt.Platform.Activities;
 
 namespace Qlt.Platform.Messaging.IntegrationEvents;
 

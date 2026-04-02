@@ -24,7 +24,5 @@
 	  <ProjectReference Include="..\..\Qlt.Domain\Qlt.Domain.Core\Domain.Core.csproj" />
 	  <ProjectReference Include="..\Qlt.Platform.Core\Platform.Core.csproj" />
 	</ItemGroup>
-
  
-
 </Project>

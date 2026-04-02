@@ -1,11 +1,12 @@
-using Microsoft.Extensions.Logging;
-
-using Qlt.Platform.Activities;
-using Qlt.Platform.Messaging.Idempotency;
-
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+
+using Microsoft.Extensions.Logging;
+
+using Qlt.Platform.Activities;
+using Qlt.Platform.Messaging.Models;
+using Qlt.Platform.Messaging.Services;
 
 namespace Qlt.Platform.Messaging.IntegrationEvents;
 
