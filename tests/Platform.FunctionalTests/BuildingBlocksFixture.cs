@@ -2,6 +2,7 @@ using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Hosting;
 
 namespace Platform.FunctionalTests;
@@ -34,7 +35,8 @@ public sealed class BuildingBlocksFixture : WebApplicationFactory<Program>, IAsy
 
         TestDb = SqlServer.AddDatabase("testDb");
 
-        RabbitMQ = appBuilder.AddRabbitMQ("eventbus");
+        RabbitMQ = appBuilder.AddRabbitMQ("eventbus")
+            .WithLifetime(ContainerLifetime.Persistent);
 
         _app = appBuilder.Build();
     }
@@ -46,14 +48,14 @@ public sealed class BuildingBlocksFixture : WebApplicationFactory<Program>, IAsy
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 { $"ConnectionStrings:{TestDb.Resource.Name}", _sqlConnectionString },
-                { "ConnectionStrings:EventBus", _eventBusUri }
+                { "ConnectionStrings:eventbus", _eventBusUri }
             }!);
         });
 
         return base.CreateHost(builder);
     }
 
-    public new async Task DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
         await _app.StopAsync();
@@ -75,7 +77,26 @@ public sealed class BuildingBlocksFixture : WebApplicationFactory<Program>, IAsy
         _sqlConnectionString = await TestDb.Resource.ConnectionStringExpression.GetValueAsync(default);
         _eventBusUri = await RabbitMQ.Resource.ConnectionStringExpression.GetValueAsync(default);
 
+        await WaitForSqlServerReadyAsync(_sqlConnectionString);
+
         Console.WriteLine($"SQL Server Connection String: {_sqlConnectionString}");
         Console.WriteLine($"RabbitMQ Event Bus URI: {_eventBusUri}");
+    }
+
+    private static async Task WaitForSqlServerReadyAsync(string connectionString, int maxRetries = 30, int delayMs = 2000)
+    {
+        for (int i = 0; i < maxRetries; i++)
+        {
+            try
+            {
+                await using var connection = new SqlConnection(connectionString);
+                await connection.OpenAsync();
+                return;
+            }
+            catch when (i < maxRetries - 1)
+            {
+                await Task.Delay(delayMs);
+            }
+        }
     }
 }
