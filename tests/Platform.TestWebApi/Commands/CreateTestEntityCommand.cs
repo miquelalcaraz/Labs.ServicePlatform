@@ -9,7 +9,7 @@ public record CreateTestEntityCommand(string Name, int Value, Guid RequestId) : 
 {
     Result<int> IIdempotentCommand<int>.CreateResultForDuplicateRequest()
     {
-        return Result.Failure<int>(Error.Conflict.WithMessage("Duplicate request detected"));
+        return Result.Success(default(int));
     }
 }
 

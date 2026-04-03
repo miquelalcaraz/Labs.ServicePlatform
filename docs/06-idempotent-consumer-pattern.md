@@ -46,7 +46,7 @@ public class IntegrationEventInboxService<TContext> : IIntegrationEventInbox
         using var activity = IdempotencyHelper.StartEventIdempotencyCheck(eventId, handlerName);
 
         var exists = await _context.Set<IntegrationEventInbox>()
-            .AnyAsync(e => e.EventId == eventId && e.HandlerName == handlerName);
+            .AnyAsync(e => e.Id == eventId && e.HandlerName == handlerName);
 
         IdempotencyHelper.RecordCheckResult(activity, exists, elapsedMs);
 
@@ -82,7 +82,7 @@ public class IntegrationEventInboxService<TContext> : IIntegrationEventInbox
 4. **Database Configuration**:
 ```csharp
 // Composite primary key
-builder.HasKey(e => new { e.EventId, e.HandlerName });
+builder.HasKey(e => new { e.Id, e.HandlerName });
 
 // Index for queries
 builder.HasIndex(e => new { e.HandlerName, e.ProcessedAt });
@@ -272,8 +272,8 @@ public class TransactionalIntegrationEventHandler<TEvent> : IIntegrationEventHan
 3. **Add Database-Enforced Unique Constraint**:
 ```csharp
 // In IntegrationEventInboxConfiguration
-builder.HasKey(e => new { e.EventId, e.HandlerName });
-builder.HasIndex(e => new { e.EventId, e.HandlerName }).IsUnique(); // Explicit unique constraint
+builder.HasKey(e => new { e.Id, e.HandlerName });
+builder.HasIndex(e => new { e.Id, e.HandlerName }).IsUnique(); // Explicit unique constraint
 
 // Handle duplicate insert as expected behavior
 try
@@ -442,7 +442,7 @@ public async Task ReplayEvents(DateTime since)
     foreach (var processed in processedEvents)
     {
         // Reset state
-        await _inbox.ResetProcessedStateAsync(processed.EventId, processed.HandlerName);
+        await _inbox.ResetProcessedStateAsync(processed.Id, processed.HandlerName);
 
         // Event will be reprocessed on next delivery
     }
@@ -461,7 +461,7 @@ public class IntegrationEventInbox
 }
 
 // Configuration
-builder.HasKey(e => new { e.EventId, e.HandlerName, e.PartitionKey });
+builder.HasKey(e => new { e.Id, e.HandlerName, e.PartitionKey });
 builder.HasIndex(e => new { e.PartitionKey, e.ProcessedAt });
 ```
 

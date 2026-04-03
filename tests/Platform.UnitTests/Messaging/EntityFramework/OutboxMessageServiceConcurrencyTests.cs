@@ -51,8 +51,8 @@ public class OutboxMessageServiceConcurrencyTests : IDisposable
         var result = await service.RetrieveUnpublishedEventsAsync(10, 3, CancellationToken.None);
 
         result.Should().HaveCount(5);
-        result.Should().OnlyContain(e => e.State == EventStateEnum.InProgress);
-        result.Should().OnlyContain(e => e.TimesSent == 1);
+        result.Should().OnlyContain(e => e.Status == OutboxMessageStatus.InProgress);
+        result.Should().OnlyContain(e => e.SendCount == 1);
     }
 
     [Fact(Skip = "ExecuteUpdateAsync not supported by EF InMemory provider. Run as integration test against real DB.")]
@@ -74,14 +74,14 @@ public class OutboxMessageServiceConcurrencyTests : IDisposable
         var totalClaimed = events1.Count + events2.Count;
         totalClaimed.Should().BeLessOrEqualTo(10);
 
-        var allEventIds = events1.Select(e => e.EventId)
-            .Concat(events2.Select(e => e.EventId))
+        var allEventIds = events1.Select(e => e.Id)
+            .Concat(events2.Select(e => e.Id))
             .ToList();
 
         allEventIds.Should().OnlyHaveUniqueItems("each event should be claimed by only one process");
 
         var inProgressCount = await _context.Set<OutboxMessage>()
-            .CountAsync(e => e.State == EventStateEnum.InProgress);
+            .CountAsync(e => e.Status == OutboxMessageStatus.InProgress);
 
         inProgressCount.Should().Be(totalClaimed);
     }
@@ -134,7 +134,7 @@ public class OutboxMessageServiceConcurrencyTests : IDisposable
         result.Should().BeEmpty("all events have reached max retry count");
 
         var stillNotPublished = await _context.Set<OutboxMessage>()
-            .CountAsync(e => e.State == EventStateEnum.NotPublished && e.TimesSent >= 3);
+            .CountAsync(e => e.Status == OutboxMessageStatus.NotPublished && e.SendCount >= 3);
 
         stillNotPublished.Should().Be(5);
     }
@@ -142,16 +142,16 @@ public class OutboxMessageServiceConcurrencyTests : IDisposable
     [Fact(Skip = "ExecuteUpdateAsync not supported by EF InMemory provider. Run as integration test against real DB.")]
     public async Task RetrieveUnpublishedEventsAsync_IncludesFailedEvents()
     {
-        await SeedOutboxMessagesAsync(3, state: EventStateEnum.NotPublished);
-        await SeedOutboxMessagesAsync(2, state: EventStateEnum.PublishedFailed, timesSent: 1);
+        await SeedOutboxMessagesAsync(3, state: OutboxMessageStatus.NotPublished);
+        await SeedOutboxMessagesAsync(2, state: OutboxMessageStatus.FailedToPublish, timesSent: 1);
 
         var service = CreateService();
 
         var result = await service.RetrieveUnpublishedEventsAsync(10, 3, CancellationToken.None);
 
         result.Should().HaveCount(5);
-        result.Where(e => e.TimesSent == 1).Should().HaveCount(3, "NotPublished events get incremented");
-        result.Where(e => e.TimesSent == 2).Should().HaveCount(2, "PublishedFailed events get incremented");
+        result.Where(e => e.SendCount == 1).Should().HaveCount(3, "NotPublished events get incremented");
+        result.Where(e => e.SendCount == 2).Should().HaveCount(2, "FailedToPublish events get incremented");
     }
 
     [Fact(Skip = "ExecuteUpdateAsync not supported by EF InMemory provider. Run as integration test against real DB.")]
@@ -166,51 +166,51 @@ public class OutboxMessageServiceConcurrencyTests : IDisposable
         var result = (await service.RetrieveUnpublishedEventsAsync(2, 3, CancellationToken.None)).ToList();
 
         result.Should().HaveCount(2);
-        result[0].EventId.Should().Be(oldEvent);
-        result[1].EventId.Should().Be(middleEvent);
+        result[0].Id.Should().Be(oldEvent);
+        result[1].Id.Should().Be(middleEvent);
     }
 
     [Fact]
     public async Task MarkEventAsPublishedAsync_UpdatesStateSuccessfully()
     {
-        var eventId = await CreateOutboxMessageAsync(state: EventStateEnum.InProgress);
+        var eventId = await CreateOutboxMessageAsync(state: OutboxMessageStatus.InProgress);
         var service = CreateService();
 
         await service.MarkEventAsPublishedAsync(eventId);
 
         var updated = await _context.Set<OutboxMessage>()
-            .FirstOrDefaultAsync(e => e.EventId == eventId);
+            .FirstOrDefaultAsync(e => e.Id == eventId);
 
         updated.Should().NotBeNull();
-        updated!.State.Should().Be(EventStateEnum.Published);
+        updated!.Status.Should().Be(OutboxMessageStatus.Published);
     }
 
     [Fact]
     public async Task MarkEventAsFailedAsync_UpdatesStateSuccessfully()
     {
-        var eventId = await CreateOutboxMessageAsync(state: EventStateEnum.InProgress, timesSent: 1);
+        var eventId = await CreateOutboxMessageAsync(state: OutboxMessageStatus.InProgress, timesSent: 1);
         var service = CreateService();
 
         await service.MarkEventAsFailedAsync(eventId);
 
         var updated = await _context.Set<OutboxMessage>()
-            .FirstOrDefaultAsync(e => e.EventId == eventId);
+            .FirstOrDefaultAsync(e => e.Id == eventId);
 
         updated.Should().NotBeNull();
-        updated!.State.Should().Be(EventStateEnum.PublishedFailed);
-        updated.TimesSent.Should().Be(1, "TimesSent should not change when marking as failed");
+        updated!.Status.Should().Be(OutboxMessageStatus.FailedToPublish);
+        updated.SendCount.Should().Be(1, "SendCount should not change when marking as failed");
     }
 
     [Fact]
     public async Task UpdateEventStatus_HandlesConcurrencyConflict()
     {
-        var eventId = await CreateOutboxMessageAsync(state: EventStateEnum.InProgress);
+        var eventId = await CreateOutboxMessageAsync(state: OutboxMessageStatus.InProgress);
         var service1 = CreateService();
         var service2 = CreateService();
 
         var originalEvent = await _context.Set<OutboxMessage>()
             .AsNoTracking()
-            .FirstAsync(e => e.EventId == eventId);
+            .FirstAsync(e => e.Id == eventId);
 
         await service1.MarkEventAsPublishedAsync(eventId);
 
@@ -256,8 +256,8 @@ public class OutboxMessageServiceConcurrencyTests : IDisposable
             .ToList();
 
         pending.Should().HaveCount(1);
-        pending[0].EventId.Should().Be(@event.Id);
-        pending[0].State.Should().Be(EventStateEnum.NotPublished);
+        pending[0].Id.Should().Be(@event.Id);
+        pending[0].Status.Should().Be(OutboxMessageStatus.NotPublished);
         pending[0].TransactionId.Should().Be(transactionId);
     }
 
@@ -283,7 +283,16 @@ public class OutboxMessageServiceConcurrencyTests : IDisposable
     public async Task RetrieveUnpublishedEventsAsync_ThrowsWhenEventTypeNotRegistered()
     {
         var unregisteredEvent = new UnregisteredIntegrationEvent { Id = Guid.NewGuid() };
-        var outboxMessage = new OutboxMessage(unregisteredEvent, Guid.NewGuid());
+        var outboxMessage = new OutboxMessage
+        {
+            Id = unregisteredEvent.Id,
+            CreatedAt = unregisteredEvent.CreationDate,
+            TypeName = unregisteredEvent.GetType().FullName!,
+            Payload = System.Text.Json.JsonSerializer.Serialize(unregisteredEvent),
+            Status = OutboxMessageStatus.NotPublished,
+            SendCount = 0,
+            TransactionId = Guid.NewGuid()
+        };
 
         _context.Set<OutboxMessage>().Add(outboxMessage);
         await _context.SaveChangesAsync();
@@ -310,7 +319,7 @@ public class OutboxMessageServiceConcurrencyTests : IDisposable
 
         var allClaimedEvents = tasks
             .SelectMany(t => t.Result)
-            .Select(e => e.EventId)
+            .Select(e => e.Id)
             .ToList();
 
         allClaimedEvents.Should().OnlyHaveUniqueItems(
@@ -320,7 +329,7 @@ public class OutboxMessageServiceConcurrencyTests : IDisposable
             "all events should be claimed exactly once");
 
         var inProgressCount = await _context.Set<OutboxMessage>()
-            .CountAsync(e => e.State == EventStateEnum.InProgress);
+            .CountAsync(e => e.Status == OutboxMessageStatus.InProgress);
 
         inProgressCount.Should().Be(100);
     }
@@ -335,7 +344,7 @@ public class OutboxMessageServiceConcurrencyTests : IDisposable
 
     private async Task SeedOutboxMessagesAsync(
         int count,
-        EventStateEnum state = EventStateEnum.NotPublished,
+        OutboxMessageStatus state = OutboxMessageStatus.NotPublished,
         int timesSent = 0)
     {
         for (int i = 0; i < count; i++)
@@ -345,22 +354,24 @@ public class OutboxMessageServiceConcurrencyTests : IDisposable
     }
 
     private async Task<Guid> CreateOutboxMessageAsync(
-        EventStateEnum state = EventStateEnum.NotPublished,
+        OutboxMessageStatus state = OutboxMessageStatus.NotPublished,
         int timesSent = 0,
         Guid? transactionId = null,
         DateTime? creationTime = null)
     {
         var @event = new TestIntegrationEvent { Id = Guid.NewGuid() };
-        var message = new OutboxMessage(@event, transactionId ?? Guid.NewGuid());
-
-        var entry = _context.Set<OutboxMessage>().Add(message);
-        entry.Property("State").CurrentValue = state;
-        entry.Property("TimesSent").CurrentValue = timesSent;
-
-        if (creationTime.HasValue)
+        var message = new OutboxMessage
         {
-            entry.Property("CreationTime").CurrentValue = creationTime.Value;
-        }
+            Id = @event.Id,
+            CreatedAt = creationTime ?? @event.CreationDate,
+            TypeName = @event.GetType().FullName!,
+            Payload = System.Text.Json.JsonSerializer.Serialize(@event),
+            Status = state,
+            SendCount = timesSent,
+            TransactionId = transactionId ?? Guid.NewGuid()
+        };
+
+        _context.Set<OutboxMessage>().Add(message);
 
         await _context.SaveChangesAsync();
         _context.ChangeTracker.Clear();
@@ -388,14 +399,15 @@ public class OutboxMessageServiceConcurrencyTests : IDisposable
         {
             modelBuilder.Entity<OutboxMessage>(entity =>
             {
-                entity.HasKey(e => e.EventId);
-                entity.Property(e => e.EventTypeName).IsRequired();
-                entity.Property(e => e.Content).IsRequired();
-                entity.Property(e => e.CreationTime).IsRequired();
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.TypeName).IsRequired();
+                entity.Property(e => e.Payload).IsRequired();
+                entity.Property(e => e.CreatedAt).IsRequired();
                 entity.Property(e => e.TransactionId).IsRequired();
-                entity.Property(e => e.State).IsRequired();
-                entity.Property(e => e.TimesSent).IsRequired();
+                entity.Property(e => e.Status).IsRequired();
+                entity.Property(e => e.SendCount).IsRequired();
                 entity.Property(e => e.RowVersion).IsRowVersion();
+                entity.Ignore(e => e.DeserializedEvent);
             });
 
             modelBuilder.Entity<IdempotencyEntry>(entity =>

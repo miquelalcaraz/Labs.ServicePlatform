@@ -10,26 +10,26 @@ internal static class AuditLogConfiguration
 
     public static void ConfigureAuditLogs(this ModelBuilder builder)
     {
-        builder.Entity<AuditLog>(builder =>
+        builder.Entity<AuditLog>(entity =>
         {
-            builder.ToTable(TableName, "audit");
-            builder.HasAlternateKey(x => x.AggregateId);
-            builder.HasKey(x => x.Id);
+            entity.ToTable(TableName, "audit");
+            entity.HasKey(x => x.Id);
 
-            builder.Property(x => x.UserId);
-            builder.Property(x => x.AggregateType).IsRequired();
-            builder.Property(x => x.Timestamp).IsRequired();
-            builder.Property(x => x.ActionType)
-              .IsRequired()
-              .HasConversion(
-                   v => v.ToString(),
-                   v => (AuditActionType)Enum.Parse(typeof(AuditActionType), v)
-              );
+            entity.Property(x => x.EntityId).IsRequired();
+            entity.Property(x => x.EntityType).IsRequired();
+            entity.Property(x => x.UserId).IsRequired();
+            entity.Property(x => x.Timestamp).IsRequired();
+            entity.Property(x => x.ActionType)
+                .IsRequired()
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (AuditActionType)Enum.Parse(typeof(AuditActionType), v)
+                );
 
-            builder.Property(x => x.Event).IsRequired();
-            builder.Property(x => x.EventType).IsRequired();
+            entity.Property(x => x.Changes);
 
-            builder.Ignore(x => x.Changes);
+            entity.HasIndex(x => x.EntityId);
+            entity.HasIndex(x => new { x.EntityType, x.Timestamp });
         });
     }
 }

@@ -100,7 +100,7 @@ The project follows a **5-layer architecture** for messaging and persistence. **
 
 #### 2️⃣ Platform.Messaging (Messaging Logic - No Persistence)
 **Responsibilities:**
-- Domain models as POCOs: `IntegrationEventInbox`, `RequestIdempotency`, `OutboxMessage`, `EventStateEnum`
+- Domain models as POCOs: `IdempotencyEntry`, `OutboxMessage`, `OutboxMessageStatus`
 - MediatR behaviors: `IdempotencyBehavior<TRequest, TResponse>`
 - Base handlers: `CommandHandler<T,R>`, `DomainEventHandler<T>`
 - Decorators without persistence: `TelemetryIntegrationEventHandlerDecorator<T>`

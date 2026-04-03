@@ -21,8 +21,8 @@ public class OutboxConcurrencyIntegrationTests : IntegrationTestBase
         var result = await service.RetrieveUnpublishedEventsAsync(10, 3, CancellationToken.None);
 
         result.Should().HaveCount(5);
-        result.Should().OnlyContain(e => e.State == EventStateEnum.InProgress);
-        result.Should().OnlyContain(e => e.TimesSent == 1);
+        result.Should().OnlyContain(e => e.Status == OutboxMessageStatus.InProgress);
+        result.Should().OnlyContain(e => e.SendCount == 1);
     }
 
     [Fact]
@@ -47,14 +47,14 @@ public class OutboxConcurrencyIntegrationTests : IntegrationTestBase
         var totalClaimed = events1.Count + events2.Count;
         totalClaimed.Should().BeLessOrEqualTo(10);
 
-        var allEventIds = events1.Select(e => e.EventId)
-            .Concat(events2.Select(e => e.EventId))
+        var allEventIds = events1.Select(e => e.Id)
+            .Concat(events2.Select(e => e.Id))
             .ToList();
 
         allEventIds.Should().OnlyHaveUniqueItems("each event should be claimed by only one process");
 
         var inProgressCount = await DbContext.Set<OutboxMessage>()
-            .CountAsync(e => e.State == EventStateEnum.InProgress);
+            .CountAsync(e => e.Status == OutboxMessageStatus.InProgress);
 
         inProgressCount.Should().Be(totalClaimed);
     }
@@ -87,7 +87,7 @@ public class OutboxConcurrencyIntegrationTests : IntegrationTestBase
             {
                 var batch = await service.RetrieveUnpublishedEventsAsync(20, 5, CancellationToken.None);
                 if (!batch.Any()) break;
-                claimed.AddRange(batch.Select(e => e.EventId));
+                claimed.AddRange(batch.Select(e => e.Id));
             }
             return claimed;
         }).ToArray();
@@ -103,14 +103,14 @@ public class OutboxConcurrencyIntegrationTests : IntegrationTestBase
             "all events should be claimed exactly once");
 
         var inProgressCount = await DbContext.Set<OutboxMessage>()
-            .CountAsync(e => e.State == EventStateEnum.InProgress);
+            .CountAsync(e => e.Status == OutboxMessageStatus.InProgress);
 
         inProgressCount.Should().Be(100);
 
         var allEventsIncrementedOnce = await DbContext.Set<OutboxMessage>()
-            .AllAsync(e => e.TimesSent == 1);
+            .AllAsync(e => e.SendCount == 1);
 
-        allEventsIncrementedOnce.Should().BeTrue("all events should have TimesSent=1 after being claimed");
+        allEventsIncrementedOnce.Should().BeTrue("all events should have SendCount=1 after being claimed");
     }
 
     [Fact]
@@ -174,7 +174,7 @@ public class OutboxConcurrencyIntegrationTests : IntegrationTestBase
         result.Should().BeEmpty("all events have reached max retry count");
 
         var stillNotPublished = await DbContext.Set<OutboxMessage>()
-            .CountAsync(e => e.State == EventStateEnum.NotPublished && e.TimesSent >= 3);
+            .CountAsync(e => e.Status == OutboxMessageStatus.NotPublished && e.SendCount >= 3);
 
         stillNotPublished.Should().Be(5);
     }
@@ -184,11 +184,11 @@ public class OutboxConcurrencyIntegrationTests : IntegrationTestBase
     {
         for (int i = 0; i < 3; i++)
         {
-            await SeedOutboxMessageAsync(state: EventStateEnum.NotPublished);
+            await SeedOutboxMessageAsync(state: OutboxMessageStatus.NotPublished);
         }
         for (int i = 0; i < 2; i++)
         {
-            await SeedOutboxMessageAsync(state: EventStateEnum.PublishedFailed, timesSent: 1);
+            await SeedOutboxMessageAsync(state: OutboxMessageStatus.FailedToPublish, timesSent: 1);
         }
 
         var service = CreateOutboxService();
@@ -196,8 +196,8 @@ public class OutboxConcurrencyIntegrationTests : IntegrationTestBase
         var result = await service.RetrieveUnpublishedEventsAsync(10, 3, CancellationToken.None);
 
         result.Should().HaveCount(5);
-        result.Where(e => e.TimesSent == 1).Should().HaveCount(3, "NotPublished events get incremented");
-        result.Where(e => e.TimesSent == 2).Should().HaveCount(2, "PublishedFailed events get incremented");
+        result.Where(e => e.SendCount == 1).Should().HaveCount(3, "NotPublished events get incremented");
+        result.Where(e => e.SendCount == 2).Should().HaveCount(2, "FailedToPublish events get incremented");
     }
 
     [Fact]
@@ -212,14 +212,14 @@ public class OutboxConcurrencyIntegrationTests : IntegrationTestBase
         var result = (await service.RetrieveUnpublishedEventsAsync(2, 3, CancellationToken.None)).ToList();
 
         result.Should().HaveCount(2);
-        result[0].EventId.Should().Be(oldEvent);
-        result[1].EventId.Should().Be(middleEvent);
+        result[0].Id.Should().Be(oldEvent);
+        result[1].Id.Should().Be(middleEvent);
     }
 
     [Fact(Skip = "RowVersion concurrency detection needs further investigation with SQL Server isolation levels")]
     public async Task UpdateEventStatus_WithRowVersion_DetectsConcurrencyConflict()
     {
-        var eventId = await SeedOutboxMessageAsync(state: EventStateEnum.InProgress);
+        var eventId = await SeedOutboxMessageAsync(state: OutboxMessageStatus.InProgress);
 
         var service1 = CreateOutboxService();
 
@@ -282,7 +282,7 @@ public class OutboxConcurrencyIntegrationTests : IntegrationTestBase
             {
                 var batch = await service.RetrieveUnpublishedEventsAsync(10, 5, CancellationToken.None);
                 if (!batch.Any()) break;
-                claimed.AddRange(batch.Select(e => e.EventId));
+                claimed.AddRange(batch.Select(e => e.Id));
                 await Task.Delay(10);
             }
             return claimed;
@@ -296,8 +296,8 @@ public class OutboxConcurrencyIntegrationTests : IntegrationTestBase
         allClaimed.Should().OnlyHaveUniqueItems("no event should be claimed twice");
 
         var allEventsProcessed = await DbContext.Set<OutboxMessage>()
-            .AllAsync(e => e.State == EventStateEnum.InProgress && e.TimesSent == 1);
+            .AllAsync(e => e.Status == OutboxMessageStatus.InProgress && e.SendCount == 1);
 
-        allEventsProcessed.Should().BeTrue("all events should be in InProgress state with TimesSent=1");
+        allEventsProcessed.Should().BeTrue("all events should be in InProgress state with SendCount=1");
     }
 }

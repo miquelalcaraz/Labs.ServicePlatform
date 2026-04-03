@@ -5,7 +5,6 @@ namespace Qlt.Platform.Persistence.Options
     public class QltDbContextConfiguration
     {
         public List<Assembly> AssembliesToRegister { get; } = [];
-        public bool UseAuditLogs { get; private set; } = true;
         public bool UseIdempotency { get; private set; } = false;
         public bool UseTransactionalOutbox { get; private set; } = false;
         public string? DefaultSchema { get; private set; } = null;
@@ -33,11 +32,6 @@ namespace Qlt.Platform.Persistence.Options
             return AssembliesToRegister.Contains(assembly);
         }
 
-        public QltDbContextConfiguration WithAuditLogs()
-        {
-            UseAuditLogs = true;
-            return this;
-        }
         public QltDbContextConfiguration WithIdempotency()
         {
             UseIdempotency = true;

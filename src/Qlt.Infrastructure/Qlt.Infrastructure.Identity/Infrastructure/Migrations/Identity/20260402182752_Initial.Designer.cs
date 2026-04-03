@@ -12,7 +12,7 @@ using Qlt.Infrastructure.Identity.Infrastructure;
 namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.Identity
 {
     [DbContext(typeof(IdentityContext))]
-    [Migration("20260330204212_Initial")]
+    [Migration("20260402182752_Initial")]
     partial class Initial
     {
         /// <inheritdoc />

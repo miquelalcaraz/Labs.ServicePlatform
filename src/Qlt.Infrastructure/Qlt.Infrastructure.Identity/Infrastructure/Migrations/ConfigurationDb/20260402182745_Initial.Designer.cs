@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.ConfigurationDb
 {
     [DbContext(typeof(ConfigurationDbContext))]
-    [Migration("20260330204201_Initial")]
+    [Migration("20260402182745_Initial")]
     partial class Initial
     {
         /// <inheritdoc />

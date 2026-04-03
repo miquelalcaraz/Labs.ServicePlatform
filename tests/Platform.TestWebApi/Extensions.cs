@@ -7,7 +7,6 @@ using Platform.TestWebApi.Infrastructure;
 using Qlt.Domain.Behaviors;
 using Qlt.Platform.EventBus;
 using Qlt.Platform.EventBus.Builders;
-using Qlt.Platform.Messaging.Behaviors;
 using Qlt.Platform.Messaging.Builders;
 using Qlt.Platform.Persistence.Builders;
 using Qlt.Platform.Persistence.Migrations;
@@ -27,7 +26,6 @@ public static class Extensions
         services.AddQltSDBContext<TestDbContext>(
             conf => conf
                 .SetDefaultSchema("test")
-                .WithAuditLogs()
                 .RegisterModelsFromAssembly(Assembly.GetExecutingAssembly()),
             options => options.UseSqlServer(connectionString, sqlOptions =>
             {
@@ -39,11 +37,6 @@ public static class Extensions
         builder.AddRabbitMqEventBus("eventbus")
             .AddEventBusSubscriptions();
 
-        services.AddIntegrationEventTelemetryDecorator();
-        services.AddDomainEventTelemetryBehavior();
-        services.AddCommandTelemetryBehavior();
-        services.AddQueryTelemetryBehavior();
-
         services.AddTransactionalOutbox<TestDbContext>(options =>
         {
             options.RegisterEventTypes(typeof(AssemblyReference).Assembly);
@@ -54,20 +47,13 @@ public static class Extensions
 
         services.AddRepositories();
 
-        services.AddMediatR(cfg =>
+        services.AddQltMediator(cfg =>
         {
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
-            cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
-            cfg.AddOpenBehavior(typeof(DomainEventProcessorBehavior<,>));
-            cfg.AddOpenBehavior(typeof(IdempotencyBehavior<,>));
-            cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
-            cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+            cfg.WithLogging(typeof(LoggingBehavior<,>));
+            cfg.WithValidation(typeof(ValidationBehavior<,>));
         });
 
-
-
-
-        // services.AddValidatorsFromAssembly(AssemblyReference.Assembly);
         services.AddQueryRepositories();
 
         return builder;

@@ -16,5 +16,8 @@
 	  <ProjectReference Include="..\Qlt.Platform.Core\Platform.Core.csproj" />
 	  <ProjectReference Include="..\Qlt.Platform.Telemetry\Platform.Telemetry.csproj" />
 	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="Extensions\" />
+	</ItemGroup>
  
 </Project>

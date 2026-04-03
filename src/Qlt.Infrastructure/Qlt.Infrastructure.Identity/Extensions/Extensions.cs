@@ -17,7 +17,6 @@ using Qlt.Infrastructure.Identity.Stores;
 using Qlt.Platform.EventBus;
 using Qlt.Platform.EventBus.Builders;
 using Qlt.Platform.EventBus.Extensions;
-using Qlt.Platform.Messaging.Behaviors;
 using Qlt.Platform.Messaging.Builders;
 using Qlt.Platform.Persistence.Builders;
 using Qlt.Platform.Persistence.Migrations;
@@ -33,37 +32,29 @@ namespace Qlt.Infrastructure.Identity.Extensions
 
             builder.Services.AddRazorPages();
 
-
             builder.AddIdentityServer();
             builder.AddDbContext();
-
-            builder.AddServiceBusEventBus("eventbus")
-                    .AddEventBusSubscriptions();
+            builder.AddInfrastructureServices();
 
             services.AddHttpContextAccessor();
 
-            services.AddMediatR(cfg =>
+            services.AddQltMediator(cfg =>
             {
-                cfg.RegisterServicesFromAssemblyContaining(typeof(AssemblyReference));
-                cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
-                cfg.AddOpenBehavior(typeof(IdempotencyBehavior<,>));
-                cfg.AddOpenBehavior(typeof(IntegrationEventProcessorBehavior<,>));
-                cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
-                cfg.AddOpenBehavior(typeof(DomainEventProcessorBehavior<,>));
+                cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly);
+                cfg.WithLogging(typeof(LoggingBehavior<,>));
             });
 
-            // Register repositories (in-memory for now)
             services.AddScoped<ITenantRepository, TenantRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
-
-            // Register services
             services.AddSingleton<IPasswordGenerator, PasswordGenerator>();
+        }
 
-            services.AddIntegrationEventTelemetryDecorator();
-            services.AddDomainEventTelemetryBehavior();
-            services.AddCommandTelemetryBehavior();
-            services.AddQueryTelemetryBehavior();
+        private static void AddInfrastructureServices(this IHostApplicationBuilder builder)
+        {
+            var services = builder.Services;
 
+            builder.AddServiceBusEventBus("eventbus")
+                    .AddEventBusSubscriptions();
 
             services.AddIdempotencyEntityFramework<IdentityLogsContext>()
                 .ForIntegrationEventHandlers();
@@ -72,13 +63,12 @@ namespace Qlt.Infrastructure.Identity.Extensions
             {
                 options.RegisterEventTypes(typeof(Qlt.Services.Accounts.Contracts.AssemblyReference).Assembly);
             });
-
         }
         private static void AddDbContext(this IHostApplicationBuilder builder)
         {
             var services = builder.Services;
 
-            var connectionString = builder.Configuration.GetConnectionString("identityLogsDb");
+            var connectionString = builder.Configuration.GetConnectionString("IdentityLogsDb");
 
             // Register IdentityContext with Qlt configuration
             services.AddQltSDBContext<IdentityLogsContext>(
@@ -99,7 +89,7 @@ namespace Qlt.Infrastructure.Identity.Extensions
         private static void AddIdentityServer(this IHostApplicationBuilder builder)
         {
             var services = builder.Services;
-            var connectionString = builder.Configuration.GetConnectionString("identityDb");
+            var connectionString = builder.Configuration.GetConnectionString("IdentityDb");
 
             var migrationsAssembly = typeof(AssemblyReference).GetTypeInfo().Assembly.GetName().Name;
 

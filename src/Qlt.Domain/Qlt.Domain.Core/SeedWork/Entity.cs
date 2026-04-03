@@ -48,11 +48,6 @@ public abstract class Entity
     private List<IDomainEvent>? _domainEvents;
     public IReadOnlyCollection<IDomainEvent>? DomainEvents => _domainEvents?.AsReadOnly();
 
-    private List<AuditLog> _audits = [];
-    [NotMapped]
-    [JsonIgnore]
-    public IReadOnlyCollection<AuditLog> AuditLogs => _audits.AsReadOnly();
-
     public Entity AddDomainEvent(IDomainEvent eventItem)
     {
         _domainEvents ??= [];
@@ -64,7 +59,6 @@ public abstract class Entity
     {
         _domainEvents?.Remove(eventItem);
     }
-    public void RemoveAudits() => _audits.Clear();
 
     public void ClearDomainEvents()
     {

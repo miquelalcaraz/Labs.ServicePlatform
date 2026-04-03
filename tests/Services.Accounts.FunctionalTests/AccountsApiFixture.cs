@@ -39,9 +39,9 @@ public sealed class AccountsApiFixture : WebApplicationFactory<Program>, IAsyncL
             .WithImageTag("latest");
         //.WithLifetime(ContainerLifetime.Persistent);
 
-        AccountDb = SqlServer.AddDatabase("accountDb");
-        IdentityDB = SqlServer.AddDatabase("identityDb");
-        IdentityLogsDB = SqlServer.AddDatabase("identityLogsDb");
+        AccountDb = SqlServer.AddDatabase("AccountsDb");
+        IdentityDB = SqlServer.AddDatabase("IdentityDb");
+        IdentityLogsDB = SqlServer.AddDatabase("IdentityLogsDb");
         RedisCache = appBuilder.AddRedis("cache");
         RabbitMQ = appBuilder.AddRabbitMQ("eventbus");
 

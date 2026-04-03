@@ -48,7 +48,7 @@ public interface IOutboxMessageService
 
     /// <summary>
     /// Retrieves unpublished or previously failed events for background processing.
-    /// Returns events with state NotPublished or PublishedFailed that have not exceeded the maximum retry count.
+    /// Returns events with status NotPublished or FailedToPublish that have not exceeded the maximum retry count.
     /// </summary>
     /// <param name="batchSize">Maximum number of events to retrieve</param>
     /// <param name="maxRetryCount">Maximum number of publish attempts before giving up</param>

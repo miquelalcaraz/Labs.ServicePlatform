@@ -17,19 +17,27 @@ This is NOT a flaw to be corrected. It is an intentional trade-off that eliminat
 
 ## Pipeline Execution Order
 
-All services must register behaviors in this exact order:
+> **Note:** Use `AddQltMediator` instead of manual `AddMediatR` — it registers all platform behaviors in the correct order and includes telemetry automatically. See [20-developer-guide-service-configuration.md](20-developer-guide-service-configuration.md).
 
 ```csharp
-services.AddMediatR(cfg =>
+services.AddQltMediator(cfg =>
 {
     cfg.RegisterServicesFromAssembly(assembly);
-    cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));                        // 1
-    cfg.AddOpenBehavior(typeof(IdempotencyBehavior<,>));                    // 2
-    cfg.AddOpenBehavior(typeof(IntegrationEventProcessorBehavior<,>));      // 3 — OUTSIDE transaction
-    cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));                    // 4 — transaction boundary
-    cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));                     // 5 — INSIDE transaction
-    cfg.AddOpenBehavior(typeof(DomainEventProcessorBehavior<,>));           // 6 — INSIDE transaction
+    cfg.WithLogging(typeof(LoggingBehavior<,>));      // 1 — outermost
+    cfg.WithValidation(typeof(ValidationBehavior<,>)); // 5 — inside transaction
 });
+```
+
+The platform registers the remaining behaviors automatically in this order:
+
+```
+1. LoggingBehavior          (WithLogging — optional, from Domain layer)
+2. IdempotencyBehavior      (automatic)
+3. IntegrationEventProcessorBehavior (automatic — OUTSIDE transaction)
+4. TransactionBehavior      (automatic — transaction boundary)
+5. ValidationBehavior       (WithValidation — optional, INSIDE transaction)
+6. DomainEventProcessorBehavior (automatic — INSIDE transaction)
++ Telemetry (Command, Query, DomainEvent, IntegrationEvent — always implicit)
 ```
 
 The resulting execution (Russian dolls):

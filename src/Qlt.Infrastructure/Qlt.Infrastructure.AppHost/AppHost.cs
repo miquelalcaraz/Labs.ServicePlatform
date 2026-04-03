@@ -29,10 +29,10 @@ var sqlserver = builder.AddSqlServer("sqlserver", sqlPassword, 1444)
     .WithLifetime(ContainerLifetime.Persistent);
 
 //Databases
-var accountDb = sqlserver.AddDatabase("accountDb");
-var identityLogsDb = sqlserver.AddDatabase("identityLogsDb");
-var identityDb = sqlserver.AddDatabase("identityDb");
-var notificationsDb = sqlserver.AddDatabase("notificationsDb");
+var accountDb = sqlserver.AddDatabase("AccountsDb");
+var identityLogsDb = sqlserver.AddDatabase("IdentityLogsDb");
+var identityDb = sqlserver.AddDatabase("IdentityDb");
+var notificationsDb = sqlserver.AddDatabase("NotificationsDb");
 
 
 var launchProfileName = ShouldUseHttpForEndpoints() ? "http" : "https";

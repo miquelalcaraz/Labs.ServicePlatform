@@ -1,3 +1,5 @@
+using Qlt.Platform.Builders;
+using Qlt.Platform.Middleware;
 using Qlt.Platform.ServiceDefaults;
 using Qlt.Services.Notifications.Api;
 using Qlt.Services.Notifications.Extensions;
@@ -7,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
+builder.AddApiServiceDefaults();
 builder.AddApplicationServices();
 
 // Add services to the container.
@@ -20,7 +23,7 @@ builder.AddDefaultOpenApi(withApiVersioning);
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-app.UseExceptionHandler();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Register API endpoints (available in all environments)
 var notifications = app.NewVersionedApi("notifications");

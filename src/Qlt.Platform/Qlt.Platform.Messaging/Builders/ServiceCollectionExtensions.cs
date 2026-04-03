@@ -13,18 +13,20 @@ namespace Qlt.Platform.Messaging.Builders;
 
 /// <summary>
 /// Extension methods for registering telemetry behaviors and decorators.
+/// All methods are idempotent — safe to call multiple times without duplicate registrations.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
-
     /// <summary>
     /// Decorates all registered IIntegrationEventHandler implementations with automatic telemetry (OpenTelemetry activities and metrics).
-    /// This should be called AFTER registering handlers but BEFORE calling ForIntegrationEventHandlers() on idempotency builders to ensure telemetry measures the complete execution including idempotency checks.
     /// </summary>
-    /// <param name="services">The service collection</param>
-    /// <returns>The service collection for chaining</returns>
     public static IServiceCollection AddIntegrationEventTelemetryDecorator(this IServiceCollection services)
     {
+        if (services.Any(d => d.ServiceType == typeof(IntegrationEventTelemetryMarker)))
+            return services;
+
+        services.AddSingleton<IntegrationEventTelemetryMarker>();
+
         services.TryDecorate(typeof(IIntegrationEventHandler<>), (inner, serviceProvider) =>
         {
             var eventType = inner.GetType().GetInterfaces()
@@ -44,39 +46,45 @@ public static class ServiceCollectionExtensions
 
     /// <summary>
     /// Registers TelemetryDomainEventBehavior as MediatR's notification publisher for automatic telemetry on domain event handlers.
-    /// Uses INotificationPublisher because it is MediatR's native extension point for notification cross-cutting concerns,
-    /// equivalent to IPipelineBehavior for the Publish() path. Only adds telemetry for handlers implementing IDomainEventHandler.
     /// </summary>
-    /// <param name="services">The service collection</param>
-    /// <returns>The service collection for chaining</returns>
     public static IServiceCollection AddDomainEventTelemetryBehavior(this IServiceCollection services)
     {
+        if (services.Any(d => d.ServiceType == typeof(DomainEventTelemetryMarker)))
+            return services;
+
+        services.AddSingleton<DomainEventTelemetryMarker>();
         services.AddSingleton<INotificationPublisher, TelemetryDomainEventBehavior>();
         return services;
     }
 
     /// <summary>
     /// Registers TelemetryCommandBehavior as a MediatR pipeline behavior for automatic telemetry on command handlers.
-    /// Uses IPipelineBehavior because MediatR registers command handlers as IRequestHandler&lt;,&gt;, not ICommandHandler&lt;,&gt;,
-    /// making Scrutor TryDecorate ineffective for MediatR-managed handlers.
     /// </summary>
-    /// <param name="services">The service collection</param>
-    /// <returns>The service collection for chaining</returns>
     public static IServiceCollection AddCommandTelemetryBehavior(this IServiceCollection services)
     {
-        services.AddTransient(typeof(MediatR.IPipelineBehavior<,>), typeof(TelemetryCommandBehavior<,>));
+        if (services.Any(d => d.ServiceType == typeof(CommandTelemetryMarker)))
+            return services;
+
+        services.AddSingleton<CommandTelemetryMarker>();
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TelemetryCommandBehavior<,>));
         return services;
     }
 
     /// <summary>
     /// Registers TelemetryQueryBehavior as a MediatR pipeline behavior for automatic telemetry on query handlers.
-    /// Only activates for requests implementing IQuery&lt;TResponse&gt;; commands and other request types pass through.
     /// </summary>
-    /// <param name="services">The service collection</param>
-    /// <returns>The service collection for chaining</returns>
     public static IServiceCollection AddQueryTelemetryBehavior(this IServiceCollection services)
     {
-        services.AddTransient(typeof(MediatR.IPipelineBehavior<,>), typeof(TelemetryQueryBehavior<,>));
+        if (services.Any(d => d.ServiceType == typeof(QueryTelemetryMarker)))
+            return services;
+
+        services.AddSingleton<QueryTelemetryMarker>();
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TelemetryQueryBehavior<,>));
         return services;
     }
+
+    private sealed class IntegrationEventTelemetryMarker;
+    private sealed class DomainEventTelemetryMarker;
+    private sealed class CommandTelemetryMarker;
+    private sealed class QueryTelemetryMarker;
 }

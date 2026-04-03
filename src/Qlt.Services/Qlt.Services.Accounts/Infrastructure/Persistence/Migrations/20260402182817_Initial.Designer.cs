@@ -12,7 +12,7 @@ using Qlt.Services.Accounts.Infrastructure.Persistence;
 namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AccountContext))]
-    [Migration("20260330204241_Initial")]
+    [Migration("20260402182817_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -26,45 +26,7 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Qlt.Domain.SeedWork.AuditLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ActionType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("AggregateId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("AggregateType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Event")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasAlternateKey("AggregateId");
-
-                    b.ToTable("Logs", "audit");
-                });
-
-            modelBuilder.Entity("Qlt.Platform.Messaging.Idempotency.IdempotencyEntry", b =>
+            modelBuilder.Entity("Qlt.Platform.Messaging.Models.IdempotencyEntry", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -95,20 +57,16 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                     b.ToTable("IdempotencyEntry", "infra");
                 });
 
-            modelBuilder.Entity("Qlt.Platform.Messaging.Outbox.OutboxMessage", b =>
+            modelBuilder.Entity("Qlt.Platform.Messaging.Models.OutboxMessage", b =>
                 {
-                    b.Property<Guid>("EventId")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreationTime")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("EventTypeName")
+                    b.Property<string>("Payload")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -118,20 +76,24 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
-                    b.Property<int>("State")
+                    b.Property<int>("SendCount")
                         .HasColumnType("int");
 
-                    b.Property<int>("TimesSent")
+                    b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<Guid>("TransactionId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("EventId");
+                    b.Property<string>("TypeName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("TransactionId");
 
-                    b.HasIndex("State", "CreationTime");
+                    b.HasIndex("Status", "CreatedAt");
 
                     b.ToTable("OutboxMessage", "infra");
                 });

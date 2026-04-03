@@ -1,12 +1,12 @@
 namespace Qlt.Platform.Messaging.Models;
 
 /// <summary>
-/// Represents the state of an integration event in the outbox.
+/// Represents the publishing status of an outbox message.
 /// </summary>
-public enum EventStateEnum
+public enum OutboxMessageStatus
 {
     NotPublished = 0,
     InProgress = 1,
     Published = 2,
-    PublishedFailed = 3
+    FailedToPublish = 3
 }

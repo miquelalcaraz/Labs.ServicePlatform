@@ -8,12 +8,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Platform.TestWebApi.Controllers;
 using Platform.TestWebApi.Infrastructure;
 
-using Qlt.Platform;
 using Qlt.Platform.Messaging.Models;
 
 namespace Platform.FunctionalTests.Tests;
 
-public sealed class DomainEventsTests : IClassFixture<BuildingBlocksFixture>
+[Collection("BuildingBlocks")]
+public sealed class DomainEventsTests
 {
     private readonly WebApplicationFactory<Program> _webApplicationFactory;
     private readonly HttpClient _httpClient;
@@ -28,7 +28,8 @@ public sealed class DomainEventsTests : IClassFixture<BuildingBlocksFixture>
     public async Task CreateEntity_ShouldDispatchDomainEvent_AndGenerateIntegrationEvent()
     {
         var requestId = Guid.NewGuid();
-        var request = new CreateTestEntityRequest("DomainEventTest", 999);
+        var entityName = $"DomainEventTest_{requestId:N}";
+        var request = new CreateTestEntityRequest(entityName, 999);
 
         var content = new StringContent(
             JsonSerializer.Serialize(request),
@@ -40,26 +41,22 @@ public sealed class DomainEventsTests : IClassFixture<BuildingBlocksFixture>
         Assert.True(response.IsSuccessStatusCode);
 
         var resultJson = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        var result = JsonSerializer.Deserialize<Result<int>>(resultJson, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        });
-
-        Assert.True(result!.IsSuccess);
+        using var doc = JsonDocument.Parse(resultJson);
+        Assert.True(doc.RootElement.GetProperty("isSuccess").GetBoolean());
 
         using var scope = _webApplicationFactory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<TestDbContext>();
 
         var entity = await dbContext.TestEntities
-            .FirstOrDefaultAsync(e => e.Id.GetHashCode() == result.Value, TestContext.Current.CancellationToken);
+            .FirstOrDefaultAsync(e => e.Name == entityName, TestContext.Current.CancellationToken);
 
         Assert.NotNull(entity);
-        Assert.Equal("DomainEventTest", entity.Name);
+        Assert.Equal(entityName, entity.Name);
         Assert.Equal(999, entity.Value);
 
         var outboxMessage = await dbContext.Set<OutboxMessage>()
-            .Where(m => m.EventTypeName.Contains("TestEntityCreatedIntegrationEvent"))
-            .OrderByDescending(m => m.CreationTime)
+            .Where(m => m.TypeName.Contains("TestEntityCreatedIntegrationEvent"))
+            .OrderByDescending(m => m.CreatedAt)
             .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(outboxMessage);

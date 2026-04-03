@@ -3,68 +3,46 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Qlt.Infrastructure.Identity.Infrastructure;
+using Platform.TestWebApi.Infrastructure;
 
 #nullable disable
 
-namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
+namespace Platform.TestWebApi.Infrastructure.Migrations
 {
-    [DbContext(typeof(IdentityLogsContext))]
-    [Migration("20260330204221_Initial")]
-    partial class Initial
+    [DbContext(typeof(TestDbContext))]
+    partial class TestDbContextModelSnapshot : ModelSnapshot
     {
-        /// <inheritdoc />
-        protected override void BuildTargetModel(ModelBuilder modelBuilder)
+        protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("identityLogs")
+                .HasDefaultSchema("test")
                 .HasAnnotation("ProductVersion", "10.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Qlt.Domain.SeedWork.AuditLog", b =>
+            modelBuilder.Entity("Platform.TestWebApi.Infrastructure.TestEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("ActionType")
+                    b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
-                    b.Property<Guid>("AggregateId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("AggregateType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Event")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Value")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasAlternateKey("AggregateId");
-
-                    b.ToTable("Logs", "audit");
+                    b.ToTable("TestEntities", "test");
                 });
 
-            modelBuilder.Entity("Qlt.Platform.Messaging.Idempotency.IdempotencyEntry", b =>
+            modelBuilder.Entity("Qlt.Platform.Messaging.Models.IdempotencyEntry", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -95,20 +73,16 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
                     b.ToTable("IdempotencyEntry", "infra");
                 });
 
-            modelBuilder.Entity("Qlt.Platform.Messaging.Outbox.OutboxMessage", b =>
+            modelBuilder.Entity("Qlt.Platform.Messaging.Models.OutboxMessage", b =>
                 {
-                    b.Property<Guid>("EventId")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreationTime")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("EventTypeName")
+                    b.Property<string>("Payload")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -118,20 +92,24 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
-                    b.Property<int>("State")
+                    b.Property<int>("SendCount")
                         .HasColumnType("int");
 
-                    b.Property<int>("TimesSent")
+                    b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<Guid>("TransactionId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("EventId");
+                    b.Property<string>("TypeName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("TransactionId");
 
-                    b.HasIndex("State", "CreationTime");
+                    b.HasIndex("Status", "CreatedAt");
 
                     b.ToTable("OutboxMessage", "infra");
                 });

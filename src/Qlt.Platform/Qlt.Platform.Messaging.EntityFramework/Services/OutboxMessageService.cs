@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,6 +25,9 @@ namespace Qlt.Platform.Messaging.Services;
 public class OutboxMessageService<TContext> : IOutboxMessageService
     where TContext : DbContext, ITransactionalUnitOfWork
 {
+    private static readonly JsonSerializerOptions s_indentedOptions = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions s_caseInsensitiveOptions = new() { PropertyNameCaseInsensitive = true };
+
     private readonly TContext _context;
     private readonly IReadOnlyCollection<Type> _eventTypes;
     private readonly ILogger<IOutboxMessageService> _logger;
@@ -40,7 +44,6 @@ public class OutboxMessageService<TContext> : IOutboxMessageService
 
     public async Task<IEnumerable<OutboxMessage>> RetrieveEventLogsPendingToPublishAsync(Guid transactionId)
     {
-        // Start activity for retrieving pending events from outbox
         using var activity = ApplicationDiagnostics.ActivitySource.StartActivity(
             name: "Retrieve Pending Events from Outbox",
             kind: ActivityKind.Internal);
@@ -50,7 +53,7 @@ public class OutboxMessageService<TContext> : IOutboxMessageService
         var stopwatch = Stopwatch.StartNew();
 
         var result = await _context.Set<OutboxMessage>()
-            .Where(e => e.TransactionId == transactionId && e.State == EventStateEnum.NotPublished)
+            .Where(e => e.TransactionId == transactionId && e.Status == OutboxMessageStatus.NotPublished)
             .ToListAsync();
 
         stopwatch.Stop();
@@ -59,38 +62,13 @@ public class OutboxMessageService<TContext> : IOutboxMessageService
         activity?.SetTag("outbox.pending_count", result.Count);
         activity?.SetTag("outbox.retrieve_duration_ms", elapsedMs);
 
-        // Record metric
         ApplicationDiagnostics.OutboxOperationDuration.Record(elapsedMs,
             new KeyValuePair<string, object?>("operation", "retrieve"));
 
         if (result.Count != 0)
         {
-            return result.OrderBy(o => o.CreationTime)
-                .Select(e =>
-                {
-                    var eventType = _eventTypes.FirstOrDefault(t => t.FullName == e.EventTypeName);
-
-                    if (eventType == null)
-                    {
-                        _logger.LogError(
-                            "Event type '{EventTypeName}' not registered. Event {EventId} cannot be published.",
-                            e.EventTypeName,
-                            e.EventId);
-
-                        activity?.AddEvent(new ActivityEvent("EventTypeNotRegistered",
-                            tags: new ActivityTagsCollection
-                            {
-                                { "event_type_name", e.EventTypeName },
-                                { "event_id", e.EventId.ToString() }
-                            }));
-
-                        throw new InvalidOperationException(
-                            $"Event type '{e.EventTypeName}' is not registered. " +
-                            $"Add it to IntegrationEventLogOptions.RegisterEventTypes()");
-                    }
-
-                    return e.DeserializeJsonContent(eventType);
-                })
+            return result.OrderBy(o => o.CreatedAt)
+                .Select(e => DeserializePayload(e, activity))
                 .ToList();
         }
 
@@ -110,9 +88,18 @@ public class OutboxMessageService<TContext> : IOutboxMessageService
         activity?.SetTag("outbox.event_id", @event.Id.ToString());
         activity?.SetTag("outbox.transaction_id", transactionId.ToString());
 
-        var eventLogEntry = new OutboxMessage(@event, transactionId);
+        var outboxMessage = new OutboxMessage
+        {
+            Id = @event.Id,
+            CreatedAt = @event.CreationDate,
+            TypeName = @event.GetType().FullName!,
+            Payload = JsonSerializer.Serialize(@event, @event.GetType(), s_indentedOptions),
+            Status = OutboxMessageStatus.NotPublished,
+            SendCount = 0,
+            TransactionId = transactionId
+        };
 
-        _context.Set<OutboxMessage>().Add(eventLogEntry);
+        _context.Set<OutboxMessage>().Add(outboxMessage);
 
         ApplicationDiagnostics.OutboxEventsSaved.Add(1,
             new KeyValuePair<string, object?>("event_type", @event.GetType().Name));
@@ -122,20 +109,20 @@ public class OutboxMessageService<TContext> : IOutboxMessageService
 
     public Task MarkEventAsPublishedAsync(Guid eventId)
     {
-        return UpdateEventStatus(eventId, EventStateEnum.Published);
+        return UpdateEventStatus(eventId, OutboxMessageStatus.Published);
     }
 
     public Task MarkEventAsInProgressAsync(Guid eventId)
     {
-        return UpdateEventStatus(eventId, EventStateEnum.InProgress);
+        return UpdateEventStatus(eventId, OutboxMessageStatus.InProgress);
     }
 
     public Task MarkEventAsFailedAsync(Guid eventId)
     {
-        return UpdateEventStatus(eventId, EventStateEnum.PublishedFailed);
+        return UpdateEventStatus(eventId, OutboxMessageStatus.FailedToPublish);
     }
 
-    private async Task UpdateEventStatus(Guid eventId, EventStateEnum status)
+    private async Task UpdateEventStatus(Guid eventId, OutboxMessageStatus status)
     {
         using var activity = ApplicationDiagnostics.ActivitySource.StartActivity(
             name: "Update Outbox Event Status",
@@ -146,21 +133,21 @@ public class OutboxMessageService<TContext> : IOutboxMessageService
 
         var stopwatch = Stopwatch.StartNew();
 
-        var eventLogEntry = await _context.Set<OutboxMessage>()
-            .SingleOrDefaultAsync(ie => ie.EventId == eventId);
+        var outboxMessage = await _context.Set<OutboxMessage>()
+            .SingleOrDefaultAsync(ie => ie.Id == eventId);
 
-        if (eventLogEntry == null)
+        if (outboxMessage == null)
         {
             _logger.LogWarning("Event {EventId} not found when updating status to {Status}", eventId, status);
             return;
         }
 
-        eventLogEntry.State = status;
+        outboxMessage.Status = status;
 
-        if (status == EventStateEnum.InProgress)
+        if (status == OutboxMessageStatus.InProgress)
         {
-            eventLogEntry.TimesSent++;
-            activity?.SetTag("outbox.times_sent", eventLogEntry.TimesSent);
+            outboxMessage.SendCount++;
+            activity?.SetTag("outbox.send_count", outboxMessage.SendCount);
         }
 
         try
@@ -206,14 +193,13 @@ public class OutboxMessageService<TContext> : IOutboxMessageService
 
         var stopwatch = Stopwatch.StartNew();
 
-        // Step 1: Get candidate event IDs (read-only query)
         var candidateEventIds = await _context.Set<OutboxMessage>()
             .Where(e =>
-                (e.State == EventStateEnum.NotPublished || e.State == EventStateEnum.PublishedFailed)
-                && e.TimesSent < maxRetryCount)
-            .OrderBy(e => e.CreationTime)
+                (e.Status == OutboxMessageStatus.NotPublished || e.Status == OutboxMessageStatus.FailedToPublish)
+                && e.SendCount < maxRetryCount)
+            .OrderBy(e => e.CreatedAt)
             .Take(batchSize)
-            .Select(e => e.EventId)
+            .Select(e => e.Id)
             .ToListAsync(cancellationToken);
 
         if (candidateEventIds.Count == 0)
@@ -224,14 +210,13 @@ public class OutboxMessageService<TContext> : IOutboxMessageService
             return [];
         }
 
-        // Step 2: Atomically claim events by transitioning to InProgress
         var claimedCount = await _context.Set<OutboxMessage>()
-            .Where(e => candidateEventIds.Contains(e.EventId)
-                && (e.State == EventStateEnum.NotPublished || e.State == EventStateEnum.PublishedFailed)
-                && e.TimesSent < maxRetryCount)
+            .Where(e => candidateEventIds.Contains(e.Id)
+                && (e.Status == OutboxMessageStatus.NotPublished || e.Status == OutboxMessageStatus.FailedToPublish)
+                && e.SendCount < maxRetryCount)
             .ExecuteUpdateAsync(setters => setters
-                .SetProperty(e => e.State, EventStateEnum.InProgress)
-                .SetProperty(e => e.TimesSent, e => e.TimesSent + 1),
+                .SetProperty(e => e.Status, OutboxMessageStatus.InProgress)
+                .SetProperty(e => e.SendCount, e => e.SendCount + 1),
                 cancellationToken);
 
         activity?.SetTag("outbox.claimed_count", claimedCount);
@@ -246,10 +231,9 @@ public class OutboxMessageService<TContext> : IOutboxMessageService
             return [];
         }
 
-        // Step 3: Read the claimed events with their full data
         var result = await _context.Set<OutboxMessage>()
-            .Where(e => candidateEventIds.Contains(e.EventId) && e.State == EventStateEnum.InProgress)
-            .OrderBy(e => e.CreationTime)
+            .Where(e => candidateEventIds.Contains(e.Id) && e.Status == OutboxMessageStatus.InProgress)
+            .OrderBy(e => e.CreatedAt)
             .ToListAsync(cancellationToken);
 
         stopwatch.Stop();
@@ -263,34 +247,37 @@ public class OutboxMessageService<TContext> : IOutboxMessageService
 
         if (result.Count != 0)
         {
-            return result.Select(e =>
-            {
-                var eventType = _eventTypes.FirstOrDefault(t => t.FullName == e.EventTypeName);
-
-                if (eventType == null)
-                {
-                    _logger.LogError(
-                        "Event type '{EventTypeName}' not registered. Event {EventId} cannot be published.",
-                        e.EventTypeName,
-                        e.EventId);
-
-                    activity?.AddEvent(new ActivityEvent("EventTypeNotRegistered",
-                        tags: new ActivityTagsCollection
-                        {
-                            { "event_type_name", e.EventTypeName },
-                            { "event_id", e.EventId.ToString() }
-                        }));
-
-                    throw new InvalidOperationException(
-                        $"Event type '{e.EventTypeName}' is not registered. " +
-                        $"Add it to IntegrationEventLogOptions.RegisterEventTypes()");
-                }
-
-                return e.DeserializeJsonContent(eventType);
-            })
-            .ToList();
+            return result.Select(e => DeserializePayload(e, activity))
+                .ToList();
         }
 
         return [];
+    }
+
+    private OutboxMessage DeserializePayload(OutboxMessage message, Activity? activity)
+    {
+        var eventType = _eventTypes.FirstOrDefault(t => t.FullName == message.TypeName);
+
+        if (eventType == null)
+        {
+            _logger.LogError(
+                "Event type '{TypeName}' not registered. Event {EventId} cannot be published.",
+                message.TypeName,
+                message.Id);
+
+            activity?.AddEvent(new ActivityEvent("EventTypeNotRegistered",
+                tags: new ActivityTagsCollection
+                {
+                    { "event_type_name", message.TypeName },
+                    { "event_id", message.Id.ToString() }
+                }));
+
+            throw new InvalidOperationException(
+                $"Event type '{message.TypeName}' is not registered. " +
+                $"Add it to IntegrationEventLogOptions.RegisterEventTypes()");
+        }
+
+        message.DeserializedEvent = JsonSerializer.Deserialize(message.Payload, eventType, s_caseInsensitiveOptions) as IntegrationEvent;
+        return message;
     }
 }
