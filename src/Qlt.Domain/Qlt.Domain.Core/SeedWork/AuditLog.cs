@@ -1,6 +1,4 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json;
 
 namespace Qlt.Domain.SeedWork
 {
@@ -9,74 +7,23 @@ namespace Qlt.Domain.SeedWork
         None,
         Create,
         Update,
-        Delete,
-        Block,
-        UnBlock
+        Delete
     }
 
-    public class AuditLog : Entity
+    /// <summary>
+    /// Placeholder POCO for audit log entries.
+    /// Pending redesign: automatic capture via EF ChangeTracker + IUserHttpContext.
+    /// See docs/21-audit-log-proposal.md for the design proposal.
+    /// </summary>
+    public class AuditLog
     {
-        public Guid AggregateId { get; private set; }
-        public string AggregateType { get; private set; } = null!;
-        public string UserId { get; private set; } = null!;
-        public AuditActionType ActionType { get; private set; }
-        public DateTime Timestamp { get; private set; }
-
-        public string Event { get; set; } = null!;
-        public string EventType { get; set; } = null!;
-
-        [NotMapped]
-        public IDomainEvent Changes
-        {
-            get
-            {
-                var type = Type.GetType(EventType);
-                if (type == null)
-                {
-                    throw new InvalidOperationException(
-                        $"Cannot load type '{EventType}'. " +
-                        $"Ensure the assembly containing the type is loaded.");
-                }
-
-                var deserialized = JsonSerializer.Deserialize(Event, type);
-                if (deserialized is not IDomainEvent domainEvent)
-                {
-                    throw new InvalidOperationException(
-                        $"Deserialized event of type '{type.Name}' " +
-                        $"does not implement IDomainEvent.");
-                }
-
-                return domainEvent;
-            }
-            private set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value),
-                        "Domain event cannot be null");
-                }
-
-                Event = JsonSerializer.Serialize(value, value.GetType());
-                EventType = value.GetType().AssemblyQualifiedName
-                    ?? throw new InvalidOperationException(
-                        $"Cannot get AssemblyQualifiedName for type '{value.GetType().Name}'");
-            }
-        }
-
-        private AuditLog() { }
-
-        public static AuditLog Create(Guid aggregateId, string aggregateType, string userId, AuditActionType actionType, IDomainEvent changes)
-        {
-            return new AuditLog
-            {
-                AggregateId = aggregateId,
-                AggregateType = aggregateType,
-                UserId = userId,
-                ActionType = actionType,
-                Timestamp = DateTime.UtcNow,
-                Changes = changes
-            };
-        }
+        public Guid Id { get; set; }
+        public Guid EntityId { get; set; }
+        public string EntityType { get; set; } = null!;
+        public string UserId { get; set; } = null!;
+        public AuditActionType ActionType { get; set; }
+        public DateTime Timestamp { get; set; }
+        public string? Changes { get; set; }
     }
 
 }

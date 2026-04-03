@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -15,9 +16,6 @@ namespace Qlt.Services.Notifications.Infrastructure.Migrations
 
             migrationBuilder.EnsureSchema(
                 name: "infra");
-
-            migrationBuilder.EnsureSchema(
-                name: "audit");
 
             migrationBuilder.CreateTable(
                 name: "EmailNotification",
@@ -55,42 +53,22 @@ namespace Qlt.Services.Notifications.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Logs",
-                schema: "audit",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    AggregateId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    AggregateType = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ActionType = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Event = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    EventType = table.Column<string>(type: "nvarchar(max)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Logs", x => x.Id);
-                    table.UniqueConstraint("AK_Logs_AggregateId", x => x.AggregateId);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "OutboxMessage",
                 schema: "infra",
                 columns: table => new
                 {
-                    EventId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    EventTypeName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    State = table.Column<int>(type: "int", nullable: false),
-                    TimesSent = table.Column<int>(type: "int", nullable: false),
-                    CreationTime = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Content = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TypeName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    SendCount = table.Column<int>(type: "int", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Payload = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     TransactionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OutboxMessage", x => x.EventId);
+                    table.PrimaryKey("PK_OutboxMessage", x => x.Id);
                 });
 
             migrationBuilder.CreateIndex(
@@ -106,10 +84,10 @@ namespace Qlt.Services.Notifications.Infrastructure.Migrations
                 column: "ProcessedAt");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OutboxMessage_State_CreationTime",
+                name: "IX_OutboxMessage_Status_CreatedAt",
                 schema: "infra",
                 table: "OutboxMessage",
-                columns: new[] { "State", "CreationTime" });
+                columns: new[] { "Status", "CreatedAt" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_OutboxMessage_TransactionId",
@@ -128,10 +106,6 @@ namespace Qlt.Services.Notifications.Infrastructure.Migrations
             migrationBuilder.DropTable(
                 name: "IdempotencyEntry",
                 schema: "infra");
-
-            migrationBuilder.DropTable(
-                name: "Logs",
-                schema: "audit");
 
             migrationBuilder.DropTable(
                 name: "OutboxMessage",

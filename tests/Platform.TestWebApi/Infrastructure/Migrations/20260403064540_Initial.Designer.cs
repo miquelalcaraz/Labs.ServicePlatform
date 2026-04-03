@@ -12,7 +12,7 @@ using Platform.TestWebApi.Infrastructure;
 namespace Platform.TestWebApi.Infrastructure.Migrations
 {
     [DbContext(typeof(TestDbContext))]
-    [Migration("20260402195954_Initial")]
+    [Migration("20260403064540_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -43,44 +43,6 @@ namespace Platform.TestWebApi.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("TestEntities", "test");
-                });
-
-            modelBuilder.Entity("Qlt.Domain.SeedWork.AuditLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ActionType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("AggregateId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("AggregateType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Event")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasAlternateKey("AggregateId");
-
-                    b.ToTable("Logs", "audit");
                 });
 
             modelBuilder.Entity("Qlt.Platform.Messaging.Models.IdempotencyEntry", b =>
@@ -116,18 +78,14 @@ namespace Platform.TestWebApi.Infrastructure.Migrations
 
             modelBuilder.Entity("Qlt.Platform.Messaging.Models.OutboxMessage", b =>
                 {
-                    b.Property<Guid>("EventId")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreationTime")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("EventTypeName")
+                    b.Property<string>("Payload")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -137,20 +95,24 @@ namespace Platform.TestWebApi.Infrastructure.Migrations
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
-                    b.Property<int>("State")
+                    b.Property<int>("SendCount")
                         .HasColumnType("int");
 
-                    b.Property<int>("TimesSent")
+                    b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<Guid>("TransactionId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("EventId");
+                    b.Property<string>("TypeName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("TransactionId");
 
-                    b.HasIndex("State", "CreationTime");
+                    b.HasIndex("Status", "CreatedAt");
 
                     b.ToTable("OutboxMessage", "infra");
                 });

@@ -15,27 +15,19 @@ The Transactional Outbox pattern ensures reliable publishing of integration even
 
 **Core Components**:
 
-1. **OutboxMessage Entity**:
+1. **OutboxMessage Entity** (persistence-ignorant POCO):
 ```csharp
 public class OutboxMessage
 {
-    public Guid EventId { get; private set; }
-    public string EventTypeName { get; private set; }
-    public string Content { get; private set; } // JSON serialized event
-    public EventStateEnum State { get; set; } // NotPublished, InProgress, Published, PublishedFailed
-    public int TimesSent { get; set; }
-    public DateTime CreationTime { get; private set; }
-    public Guid TransactionId { get; private set; }
-
-    public OutboxMessage(IntegrationEvent @event, Guid transactionId)
-    {
-        EventId = @event.Id;
-        CreationTime = @event.CreationDate;
-        EventTypeName = @event.GetType().FullName;
-        Content = JsonSerializer.Serialize(@event, @event.GetType());
-        State = EventStateEnum.NotPublished;
-        TransactionId = transactionId;
-    }
+    public Guid Id { get; set; }
+    public string TypeName { get; set; }
+    public string Payload { get; set; }           // JSON serialized event
+    public OutboxMessageStatus Status { get; set; } // NotPublished, InProgress, Published, FailedToPublish
+    public int SendCount { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public Guid TransactionId { get; set; }
+    public byte[] RowVersion { get; set; }
+    public IntegrationEvent? DeserializedEvent { get; set; } // Transient, not persisted
 }
 ```
 
@@ -78,30 +70,30 @@ public class OutboxMessageService<TContext> : IOutboxMessageService
     public async Task<IEnumerable<OutboxMessage>> RetrieveEventLogsPendingToPublishAsync(Guid transactionId)
     {
         var events = await _context.Set<OutboxMessage>()
-            .Where(e => e.TransactionId == transactionId && e.State == EventStateEnum.NotPublished)
+            .Where(e => e.TransactionId == transactionId && e.Status == OutboxMessageStatus.NotPublished)
             .ToListAsync();
 
-        return events.OrderBy(o => o.CreationTime)
+        return events.OrderBy(o => o.CreatedAt)
             .Select(e =>
             {
-                var eventType = _eventTypes.FirstOrDefault(t => t.FullName == e.EventTypeName);
+                var eventType = _eventTypes.FirstOrDefault(t => t.FullName == e.TypeName);
                 if (eventType == null)
-                    throw new InvalidOperationException($"Event type '{e.EventTypeName}' is not registered");
+                    throw new InvalidOperationException($"Event type '{e.TypeName}' is not registered");
 
-                return e.DeserializeJsonContent(eventType);
+                return e.DeserializePayload(eventType);
             })
             .ToList();
     }
 
-    private async Task UpdateEventStatus(Guid eventId, EventStateEnum status)
+    private async Task UpdateEventStatus(Guid eventId, OutboxMessageStatus status)
     {
         var eventLogEntry = await _context.Set<OutboxMessage>()
-            .SingleAsync(ie => ie.EventId == eventId);
+            .SingleAsync(ie => ie.Id == eventId);
 
-        eventLogEntry.State = status;
+        eventLogEntry.Status = status;
 
-        if (status == EventStateEnum.InProgress)
-            eventLogEntry.TimesSent++;
+        if (status == OutboxMessageStatus.InProgress)
+            eventLogEntry.SendCount++;
 
         await _context.SaveChangesAsync();
     }
@@ -129,18 +121,18 @@ public class EventBusOutboxService<TContext> : IEventBusOutboxService
 
         foreach (var evt in pendingEvents)
         {
-            _logger.LogInformation("Publishing integration event: {EventId}", evt.EventId);
+            _logger.LogInformation("Publishing integration event: {EventId}", evt.Id);
 
             try
             {
-                await _eventLogService.MarkEventAsInProgressAsync(evt.EventId);
-                await _eventBus.PublishAsync(evt.IntegrationEvent);
-                await _eventLogService.MarkEventAsPublishedAsync(evt.EventId);
+                await _eventLogService.MarkEventAsInProgressAsync(evt.Id);
+                await _eventBus.PublishAsync(evt.DeserializedEvent);
+                await _eventLogService.MarkEventAsPublishedAsync(evt.Id);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error publishing integration event: {EventId}", evt.EventId);
-                await _eventLogService.MarkEventAsFailedAsync(evt.EventId);
+                _logger.LogError(ex, "Error publishing integration event: {EventId}", evt.Id);
+                await _eventLogService.MarkEventAsFailedAsync(evt.Id);
             }
         }
     }
@@ -211,7 +203,7 @@ public class OrganizationCreatedDomainEventHandler : IDomainEventHandler<Organiz
 
 3. **⚠️ No Background Processor**:
    - Events only published immediately after transaction
-   - No background job to retry failed events (State = PublishedFailed)
+   - No background job to retry failed events (Status = FailedToPublish)
    - **Risk**: HIGH - Failed events never republished
    - **Impact**: CRITICAL - Messages lost if broker temporarily unavailable
 
@@ -221,8 +213,8 @@ public class OrganizationCreatedDomainEventHandler : IDomainEventHandler<Organiz
    - **Risk**: Medium - Events could be published multiple times
    - **Impact**: Medium - Requires idempotent consumers
 
-5. **⚠️ TimesSent Incremented on InProgress**:
-   - `TimesSent++` when marked as InProgress, not on actual publish success
+5. **⚠️ SendCount Incremented on InProgress**:
+   - `SendCount++` when marked as InProgress, not on actual publish success
    - If publish fails between InProgress and Failed states, count is inaccurate
    - **Risk**: Low - Informational field only
    - **Impact**: Low - Metrics/monitoring affected
@@ -277,9 +269,9 @@ public class OutboxProcessorBackgroundService : BackgroundService
 
                 // Find failed or stuck events
                 var pendingEvents = await context.Set<OutboxMessage>()
-                    .Where(e => (e.State == EventStateEnum.PublishedFailed && e.TimesSent < MaxRetries) ||
-                                (e.State == EventStateEnum.InProgress && e.CreationTime < DateTime.UtcNow.AddMinutes(-5)))
-                    .OrderBy(e => e.CreationTime)
+                    .Where(e => (e.Status == OutboxMessageStatus.FailedToPublish && e.SendCount < MaxRetries) ||
+                                (e.Status == OutboxMessageStatus.InProgress && e.CreatedAt < DateTime.UtcNow.AddMinutes(-5)))
+                    .OrderBy(e => e.CreatedAt)
                     .Take(BatchSize)
                     .ToListAsync(stoppingToken);
 
@@ -287,23 +279,23 @@ public class OutboxProcessorBackgroundService : BackgroundService
                 {
                     try
                     {
-                        var eventType = GetEventType(outboxMessage.EventTypeName);
-                        var integrationEvent = outboxMessage.DeserializeJsonContent(eventType);
+                        var eventType = GetEventType(outboxMessage.TypeName);
+                        var integrationEvent = outboxMessage.DeserializePayload(eventType);
 
-                        outboxMessage.State = EventStateEnum.InProgress;
-                        outboxMessage.TimesSent++;
+                        outboxMessage.Status = OutboxMessageStatus.InProgress;
+                        outboxMessage.SendCount++;
                         await context.SaveChangesAsync(stoppingToken);
 
-                        await eventBus.PublishAsync(integrationEvent.IntegrationEvent);
+                        await eventBus.PublishAsync(integrationEvent.DeserializedEvent);
 
-                        outboxMessage.State = EventStateEnum.Published;
+                        outboxMessage.Status = OutboxMessageStatus.Published;
                         await context.SaveChangesAsync(stoppingToken);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Failed to publish outbox event {EventId}", outboxMessage.EventId);
+                        _logger.LogError(ex, "Failed to publish outbox event {EventId}", outboxMessage.Id);
                         
-                        outboxMessage.State = EventStateEnum.PublishedFailed;
+                        outboxMessage.Status = OutboxMessageStatus.FailedToPublish;
                         await context.SaveChangesAsync(stoppingToken);
                     }
                 }
@@ -334,7 +326,7 @@ public class OutboxMessage
 builder.Property(e => e.Version).IsConcurrencyToken();
 
 // In UpdateEventStatus:
-private async Task UpdateEventStatus(Guid eventId, EventStateEnum status)
+private async Task UpdateEventStatus(Guid eventId, OutboxMessageStatus status)
 {
     var maxRetries = 3;
     for (int i = 0; i < maxRetries; i++)
@@ -342,11 +334,11 @@ private async Task UpdateEventStatus(Guid eventId, EventStateEnum status)
         try
         {
             var eventLogEntry = await _context.Set<OutboxMessage>()
-                .SingleAsync(ie => ie.EventId == eventId);
+                .SingleAsync(ie => ie.Id == eventId);
 
-            eventLogEntry.State = status;
-            if (status == EventStateEnum.InProgress)
-                eventLogEntry.TimesSent++;
+            eventLogEntry.Status = status;
+            if (status == OutboxMessageStatus.InProgress)
+                eventLogEntry.SendCount++;
 
             await _context.SaveChangesAsync();
             return;
@@ -363,9 +355,9 @@ private async Task UpdateEventStatus(Guid eventId, EventStateEnum status)
 3. **Add Indexing for Efficient Queries**:
 ```csharp
 // In OutboxMessageConfiguration
-builder.HasIndex(e => new { e.State, e.CreationTime });
-builder.HasIndex(e => new { e.TransactionId, e.State });
-builder.HasIndex(e => e.EventTypeName); // For filtering by event type
+builder.HasIndex(e => new { e.Status, e.CreatedAt });
+builder.HasIndex(e => new { e.TransactionId, e.Status });
+builder.HasIndex(e => e.TypeName); // For filtering by event type
 ```
 
 4. **Add Outbox Cleanup Job**:
@@ -383,8 +375,8 @@ public class OutboxCleanupBackgroundService : BackgroundService
 
                 // Delete published events older than 30 days
                 var deleted = await context.Set<OutboxMessage>()
-                    .Where(e => e.State == EventStateEnum.Published && 
-                                e.CreationTime < DateTime.UtcNow.AddDays(-30))
+                    .Where(e => e.Status == OutboxMessageStatus.Published && 
+                                e.CreatedAt < DateTime.UtcNow.AddDays(-30))
                     .ExecuteDeleteAsync(stoppingToken);
 
                 _logger.LogInformation("Cleaned up {Count} published outbox messages", deleted);
@@ -491,18 +483,18 @@ public class OutboxMessage
 {
     public Guid EventId { get; set; }
     // ... other properties
-    public int PartitionKey => CreationTime.Year * 10000 + CreationTime.Month * 100 + CreationTime.Day; // YYYYMMDD
+    public int PartitionKey => CreatedAt.Year * 10000 + CreatedAt.Month * 100 + CreatedAt.Day; // YYYYMMDD
 }
 
 // Configuration
-builder.HasKey(e => new { e.EventId, e.PartitionKey });
-builder.HasIndex(e => new { e.PartitionKey, e.State, e.CreationTime });
+builder.HasKey(e => new { e.Id, e.PartitionKey });
+builder.HasIndex(e => new { e.PartitionKey, e.Status, e.CreatedAt });
 
 // Query with partition
 var events = await context.Set<OutboxMessage>()
     .Where(e => e.PartitionKey >= startPartition && 
                 e.PartitionKey <= endPartition &&
-                e.State == EventStateEnum.NotPublished)
+                e.Status == OutboxMessageStatus.NotPublished)
     .ToListAsync();
 ```
 
@@ -517,13 +509,13 @@ public async Task PublishEventsThroughEventBusAsync(Guid transactionId)
     // Batch publish if event bus supports it
     try
     {
-        var events = pendingEvents.Select(e => e.IntegrationEvent).ToList();
+        var events = pendingEvents.Select(e => e.DeserializedEvent).ToList();
         await _eventBus.PublishBatchAsync(events);
 
         // Mark all as published
         foreach (var evt in pendingEvents)
         {
-            await _eventLogService.MarkEventAsPublishedAsync(evt.EventId);
+            await _eventLogService.MarkEventAsPublishedAsync(evt.Id);
         }
     }
     catch

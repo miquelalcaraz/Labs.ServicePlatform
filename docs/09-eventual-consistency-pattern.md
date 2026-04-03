@@ -224,7 +224,7 @@ public class OrganizationCreatedIntegrationEventHandler
    - **Impact**: Medium - Performance limitation for complex queries
 
 10. **⚠️ No Dead Letter Queue**:
-    - Failed events marked as `PublishedFailed` but no separate queue
+    - Failed events marked as `FailedToPublish` but no separate queue
     - No mechanism to inspect and manually reprocess failed events
     - **Risk**: Medium - Lost visibility into failures
     - **Impact**: Medium - Difficult to diagnose consistency issues
@@ -249,41 +249,41 @@ public class OutboxProcessorBackgroundService : BackgroundService
                 var pendingEvents = await context.Set<OutboxMessage>()
                     .Where(e => 
                         // Failed events with retries remaining
-                        (e.State == EventStateEnum.PublishedFailed && e.TimesSent < 10) ||
+                        (e.Status == OutboxMessageStatus.FailedToPublish && e.SendCount < 10) ||
                         // Stuck in-progress events (>5 minutes)
-                        (e.State == EventStateEnum.InProgress && 
-                         e.CreationTime < DateTime.UtcNow.AddMinutes(-5)))
-                    .OrderBy(e => e.CreationTime)
+                        (e.Status == OutboxMessageStatus.InProgress && 
+                         e.CreatedAt < DateTime.UtcNow.AddMinutes(-5)))
+                    .OrderBy(e => e.CreatedAt)
                     .Take(100)
                     .ToListAsync(stoppingToken);
 
                 foreach (var outboxMessage in pendingEvents)
                 {
                     // Calculate exponential backoff
-                    var delayMs = Math.Pow(2, outboxMessage.TimesSent) * 1000;
-                    if (DateTime.UtcNow < outboxMessage.CreationTime.AddMilliseconds(delayMs))
+                    var delayMs = Math.Pow(2, outboxMessage.SendCount) * 1000;
+                    if (DateTime.UtcNow < outboxMessage.CreatedAt.AddMilliseconds(delayMs))
                         continue; // Too soon to retry
 
                     try
                     {
-                        var eventType = GetEventType(outboxMessage.EventTypeName);
-                        var integrationEvent = outboxMessage.DeserializeJsonContent(eventType);
+                        var eventType = GetEventType(outboxMessage.TypeName);
+                        var integrationEvent = outboxMessage.DeserializePayload(eventType);
 
-                        outboxMessage.State = EventStateEnum.InProgress;
-                        outboxMessage.TimesSent++;
+                        outboxMessage.Status = OutboxMessageStatus.InProgress;
+                        outboxMessage.SendCount++;
                         await context.SaveChangesAsync(stoppingToken);
 
-                        await eventBus.PublishAsync(integrationEvent.IntegrationEvent);
+                        await eventBus.PublishAsync(integrationEvent.DeserializedEvent);
 
-                        outboxMessage.State = EventStateEnum.Published;
+                        outboxMessage.Status = OutboxMessageStatus.Published;
                         await context.SaveChangesAsync(stoppingToken);
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex, "Failed to republish outbox event {EventId}", 
-                            outboxMessage.EventId);
+                            outboxMessage.Id);
                         
-                        outboxMessage.State = EventStateEnum.PublishedFailed;
+                        outboxMessage.Status = OutboxMessageStatus.FailedToPublish;
                         await context.SaveChangesAsync(stoppingToken);
                     }
                 }
@@ -474,21 +474,21 @@ public class DeadLetterQueue
 }
 
 // In outbox processor:
-if (outboxMessage.TimesSent >= 10) // Max retries exceeded
+if (outboxMessage.SendCount >= 10) // Max retries exceeded
 {
     // Move to dead letter queue
     await _deadLetterQueue.AddAsync(new DeadLetterQueue
     {
-        OriginalEventId = outboxMessage.EventId,
-        EventType = outboxMessage.EventTypeName,
+        OriginalEventId = outboxMessage.Id,
+        EventType = outboxMessage.TypeName,
         EventData = outboxMessage.Content,
         ErrorMessage = "Max retries exceeded",
-        RetryCount = outboxMessage.TimesSent,
+        RetryCount = outboxMessage.SendCount,
         FailedAt = DateTime.UtcNow
     });
 
     // Remove from outbox or mark as permanently failed
-    outboxMessage.State = EventStateEnum.MovedToDeadLetter;
+    outboxMessage.Status = OutboxMessageStatus.MovedToDeadLetter;
     await context.SaveChangesAsync();
 }
 ```

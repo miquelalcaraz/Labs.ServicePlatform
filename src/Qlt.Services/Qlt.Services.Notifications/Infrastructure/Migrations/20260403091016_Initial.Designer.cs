@@ -5,14 +5,14 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Qlt.Infrastructure.Identity.Infrastructure;
+using Qlt.Services.Notifications.Infrastructure;
 
 #nullable disable
 
-namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
+namespace Qlt.Services.Notifications.Infrastructure.Migrations
 {
-    [DbContext(typeof(IdentityLogsContext))]
-    [Migration("20260330204221_Initial")]
+    [DbContext(typeof(NotificationsContext))]
+    [Migration("20260403091016_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -20,51 +20,13 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("identityLogs")
+                .HasDefaultSchema("notifications")
                 .HasAnnotation("ProductVersion", "10.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Qlt.Domain.SeedWork.AuditLog", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ActionType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("AggregateId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("AggregateType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Event")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("Timestamp")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasAlternateKey("AggregateId");
-
-                    b.ToTable("Logs", "audit");
-                });
-
-            modelBuilder.Entity("Qlt.Platform.Messaging.Idempotency.IdempotencyEntry", b =>
+            modelBuilder.Entity("Qlt.Platform.Messaging.Models.IdempotencyEntry", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -95,20 +57,16 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
                     b.ToTable("IdempotencyEntry", "infra");
                 });
 
-            modelBuilder.Entity("Qlt.Platform.Messaging.Outbox.OutboxMessage", b =>
+            modelBuilder.Entity("Qlt.Platform.Messaging.Models.OutboxMessage", b =>
                 {
-                    b.Property<Guid>("EventId")
+                    b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreationTime")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("EventTypeName")
+                    b.Property<string>("Payload")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -118,22 +76,60 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("rowversion");
 
-                    b.Property<int>("State")
+                    b.Property<int>("SendCount")
                         .HasColumnType("int");
 
-                    b.Property<int>("TimesSent")
+                    b.Property<int>("Status")
                         .HasColumnType("int");
 
                     b.Property<Guid>("TransactionId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("EventId");
+                    b.Property<string>("TypeName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("TransactionId");
 
-                    b.HasIndex("State", "CreationTime");
+                    b.HasIndex("Status", "CreatedAt");
 
                     b.ToTable("OutboxMessage", "infra");
+                });
+
+            modelBuilder.Entity("Qlt.Services.Notifications.Models.EmailNotification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("To")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EmailNotification", "notifications");
                 });
 #pragma warning restore 612, 618
         }

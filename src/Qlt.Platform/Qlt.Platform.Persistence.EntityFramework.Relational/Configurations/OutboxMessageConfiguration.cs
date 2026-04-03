@@ -17,15 +17,15 @@ public static class OutboxMessageConfiguration
     {
         entity.ToTable("OutboxMessage", "infra");
 
-        entity.HasKey(e => e.EventId);
+        entity.HasKey(e => e.Id);
 
-        entity.Property(e => e.EventTypeName)
+        entity.Property(e => e.TypeName)
             .IsRequired();
 
-        entity.Property(e => e.Content)
+        entity.Property(e => e.Payload)
             .IsRequired();
 
-        entity.Property(e => e.CreationTime)
+        entity.Property(e => e.CreatedAt)
             .IsRequired();
 
         entity.Property(e => e.TransactionId)
@@ -35,12 +35,10 @@ public static class OutboxMessageConfiguration
             .IsRowVersion()
             .IsRequired();
 
-        entity.Ignore(e => e.IntegrationEvent);
-
-        // Index for querying by transaction
         entity.HasIndex(e => e.TransactionId);
 
-        // Index for querying pending events
-        entity.HasIndex(e => new { e.State, e.CreationTime });
+        entity.HasIndex(e => new { e.Status, e.CreatedAt });
+
+        entity.Ignore(e => e.DeserializedEvent);
     }
 }

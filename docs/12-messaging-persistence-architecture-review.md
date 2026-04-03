@@ -90,7 +90,7 @@ The refactoring introduces a **5-layer architecture** for messaging and persiste
   - `IntegrationEventInbox` - POCO for inbox tracking
   - `IdempotencyEntry` - POCO for unified idempotency (commands + events)
   - `OutboxMessage` - POCO for outbox pattern
-  - `EventStateEnum` - Outbox states
+  - `OutboxMessageStatus` - Outbox states
 - **MediatR Behaviors**:
   - `IdempotencyBehavior<TRequest, TResponse>` - Duplicate detection with pattern matching (`is IIdempotentRequest`)
 - **Base Handlers**:
@@ -713,10 +713,10 @@ Shared.Persistence.EntityFramework.Cosmos/
 ├── Configurations/
 │   ├── CosmosInboxConfiguration.cs
 │   │   └── .ToContainer("inbox")
-│   │   └── .HasPartitionKey(e => e.EventId)
+│   │   └── .HasPartitionKey(e => e.Id)
 │   ├── CosmosOutboxConfiguration.cs
 │   │   └── .ToContainer("outbox")
-│   │   └── .HasPartitionKey(e => e.EventId)
+│   │   └── .HasPartitionKey(e => e.Id)
 │   └── CosmosRequestIdempotencyConfiguration.cs
 │       └── .ToContainer("idempotency")
 │       └── .HasPartitionKey(e => e.RequestId)
@@ -858,7 +858,7 @@ public class IntegrationEventInboxConfiguration : IEntityTypeConfiguration<Integ
     public void Configure(EntityTypeBuilder<IntegrationEventInbox> builder)
     {
         builder.ToTable("IntegrationEventInbox", "infra");
-        builder.HasKey(e => new { e.EventId, e.HandlerName });
+        builder.HasKey(e => new { e.Id, e.HandlerName });
         // ... other mappings
     }
 }

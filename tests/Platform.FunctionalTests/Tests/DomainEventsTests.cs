@@ -55,8 +55,8 @@ public sealed class DomainEventsTests
         Assert.Equal(999, entity.Value);
 
         var outboxMessage = await dbContext.Set<OutboxMessage>()
-            .Where(m => m.EventTypeName.Contains("TestEntityCreatedIntegrationEvent"))
-            .OrderByDescending(m => m.CreationTime)
+            .Where(m => m.TypeName.Contains("TestEntityCreatedIntegrationEvent"))
+            .OrderByDescending(m => m.CreatedAt)
             .FirstOrDefaultAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(outboxMessage);

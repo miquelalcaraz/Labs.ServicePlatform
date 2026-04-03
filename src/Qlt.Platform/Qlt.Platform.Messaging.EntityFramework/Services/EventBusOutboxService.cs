@@ -63,25 +63,24 @@ public class EventBusOutboxService<TContext> : IEventBusOutboxService
 
         foreach (var logEvt in eventsList)
         {
-            _logger.LogInformation("Publishing integration event: {IntegrationEventId} - ({@IntegrationEvent})", logEvt.EventId, logEvt.IntegrationEvent);
+            _logger.LogInformation("Publishing integration event: {IntegrationEventId} - ({@IntegrationEvent})", logEvt.Id, logEvt.DeserializedEvent);
 
             try
             {
-                await _eventLogService.MarkEventAsInProgressAsync(logEvt.EventId);
-                await _eventBus.PublishAsync(logEvt.IntegrationEvent);
-                await _eventLogService.MarkEventAsPublishedAsync(logEvt.EventId);
+                await _eventLogService.MarkEventAsInProgressAsync(logEvt.Id);
+                await _eventBus.PublishAsync(logEvt.DeserializedEvent);
+                await _eventLogService.MarkEventAsPublishedAsync(logEvt.Id);
                 successCount++;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error publishing integration event: {IntegrationEventId}", logEvt.EventId);
+                _logger.LogError(ex, "Error publishing integration event: {IntegrationEventId}", logEvt.Id);
 
-                await _eventLogService.MarkEventAsFailedAsync(logEvt.EventId);
+                await _eventLogService.MarkEventAsFailedAsync(logEvt.Id);
                 failureCount++;
 
-                // Record failed event metric
                 ApplicationDiagnostics.OutboxEventsFailed.Add(1,
-                    new KeyValuePair<string, object?>("event_type", logEvt.IntegrationEvent.GetType().Name));
+                    new KeyValuePair<string, object?>("event_type", logEvt.DeserializedEvent.GetType().Name));
             }
         }
 

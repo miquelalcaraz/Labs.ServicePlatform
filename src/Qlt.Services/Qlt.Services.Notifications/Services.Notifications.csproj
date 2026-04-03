@@ -22,6 +22,7 @@
 	<ItemGroup> 
 		<ProjectReference Include="..\..\Qlt.Domain\Qlt.Domain.Application\Domain.Application.csproj" /> 
 		<ProjectReference Include="..\..\Qlt.Platform\Qlt.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" /> 
+		<ProjectReference Include="..\..\Qlt.Platform\Qlt.Platform.WebApi\Platform.WebApi.csproj" /> 
 		<ProjectReference Include="..\Qlt.Services.Accounts\Contracts\Services.Accounts.Contracts.csproj" /> 
 		<ProjectReference Include="..\..\Qlt.Platform\Qlt.Platform.Persistence.EntityFramework.Relational\Platform.Persistence.EntityFramework.Relational.csproj" />
 		<ProjectReference Include="..\..\Qlt.Platform\Qlt.Platform.ServiceDefaults\Platform.ServiceDefaults.csproj" />

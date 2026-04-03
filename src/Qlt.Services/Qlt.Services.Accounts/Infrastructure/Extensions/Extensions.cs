@@ -21,7 +21,7 @@ namespace Qlt.Services.Accounts.Infrastructure.Extensions
         {
             var services = builder.Services;
 
-            var connectionString = builder.Configuration.GetConnectionString("accountdb");
+            var connectionString = builder.Configuration.GetConnectionString("AccountsDb");
             var readConnectionString = builder.Configuration.GetConnectionString("accountdb-readonly")
                 ?? connectionString;
 
@@ -49,11 +49,6 @@ namespace Qlt.Services.Accounts.Infrastructure.Extensions
 
             builder.AddServiceBusEventBus("eventbus")
                 .AddEventBusSubscriptions();
-
-            services.AddIntegrationEventTelemetryDecorator();
-            services.AddDomainEventTelemetryBehavior();
-            services.AddCommandTelemetryBehavior();
-            services.AddQueryTelemetryBehavior();
 
             services.AddRedisIdempotencyCache(builder.Configuration)
                    .ForApiRequests()

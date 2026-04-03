@@ -72,21 +72,23 @@ public abstract class IntegrationTestBase : IAsyncLifetime
     }
 
     protected async Task<Guid> SeedOutboxMessageAsync(
-        EventStateEnum state = EventStateEnum.NotPublished,
+        OutboxMessageStatus state = OutboxMessageStatus.NotPublished,
         int timesSent = 0,
         DateTime? creationTime = null)
     {
         var @event = new TestIntegrationEvent { Id = Guid.NewGuid() };
-        var message = new OutboxMessage(@event, Guid.NewGuid());
-
-        var entry = DbContext.Set<OutboxMessage>().Add(message);
-        entry.Property("State").CurrentValue = state;
-        entry.Property("TimesSent").CurrentValue = timesSent;
-
-        if (creationTime.HasValue)
+        var message = new OutboxMessage
         {
-            entry.Property("CreationTime").CurrentValue = creationTime.Value;
-        }
+            Id = @event.Id,
+            CreatedAt = creationTime ?? @event.CreationDate,
+            TypeName = @event.GetType().FullName!,
+            Payload = System.Text.Json.JsonSerializer.Serialize(@event),
+            Status = state,
+            SendCount = timesSent,
+            TransactionId = Guid.NewGuid()
+        };
+
+        DbContext.Set<OutboxMessage>().Add(message);
 
         await DbContext.SaveChangesAsync();
         DbContext.ChangeTracker.Clear();

@@ -7,14 +7,13 @@ using Npgsql;
 using Qlt.Domain.SeedWork;
 using Qlt.Platform.Persistence.Configurations;
 using Qlt.Platform.Persistence.Exceptions;
-using Qlt.Platform.Persistence.Extensions;
 using Qlt.Platform.Persistence.Options;
 
 namespace Qlt.Platform.Persistence;
 
 /// <summary>
 /// Base DbContext for all Qlt contexts. 
-/// Provides common functionality like domain events dispatching, audit logging, and transaction management.
+/// Provides common functionality like domain events dispatching and transaction management.
 /// </summary>
 public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityChangeTracker
 {
@@ -51,10 +50,6 @@ public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityCh
             modelBuilder.HasDefaultSchema(_configuration.DefaultSchema);
         }
 
-        if (_configuration.UseAuditLogs)
-        {
-            modelBuilder.ConfigureAuditLogs();
-        }
         if (_configuration.UseIdempotency)
         {
             modelBuilder.ConfigureIdempotencyEntry();
@@ -109,12 +104,6 @@ public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityCh
         try
         {
             await base.SaveChangesAsync(cancellationToken);
-
-            if (_configuration.UseAuditLogs)
-            {
-                await this.SaveAuditLogsAsync(cancellationToken);
-            }
-
             await transaction.CommitAsync(cancellationToken);
             LastCommittedTransactionId = transaction.TransactionId;
         }

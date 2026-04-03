@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 
 using Qlt.Domain.Behaviors;
+using Qlt.Platform.Builders;
 using Qlt.Platform.EventBus;
 using Qlt.Platform.EventBus.Builders;
 using Qlt.Platform.EventBus.Extensions;
-using Qlt.Platform.Messaging.Behaviors;
 using Qlt.Platform.Messaging.Builders;
 using Qlt.Platform.Persistence.Builders;
 using Qlt.Platform.Persistence.Migrations;
@@ -21,7 +21,25 @@ namespace Qlt.Services.Notifications.Extensions
         {
             var services = builder.Services;
 
-            var connectionString = builder.Configuration.GetConnectionString("notificationsdb");
+            builder.AddInfrastructureServices();
+           
+            services.AddHttpContextAccessor();
+
+            services.AddQltMediator(cfg =>
+            {
+                cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly);
+                cfg.WithLogging(typeof(LoggingBehavior<,>));
+            });
+
+            services.AddScoped<IEmailService, EmailService>();
+            services.AddScoped<IEmailRepository, EmailRepository>();
+        }
+
+        private static void AddInfrastructureServices(this IHostApplicationBuilder builder)
+        {
+            var services = builder.Services;
+
+            var connectionString = builder.Configuration.GetConnectionString("NotificationsDb");
 
             services.AddQltSDBContext<NotificationsContext>(
                 conf => conf
@@ -35,28 +53,8 @@ namespace Qlt.Services.Notifications.Extensions
 
             services.AddMigration<NotificationsContext, NotificationsContextSeed>();
 
-
             builder.AddServiceBusEventBus("eventbus")
                     .AddEventBusSubscriptions();
-
-            services.AddHttpContextAccessor();
-
-            services.AddMediatR(cfg =>
-            {
-                cfg.RegisterServicesFromAssemblyContaining(typeof(AssemblyReference));
-                cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
-                cfg.AddOpenBehavior(typeof(IdempotencyBehavior<,>));
-                cfg.AddOpenBehavior(typeof(IntegrationEventProcessorBehavior<,>));
-                cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
-                cfg.AddOpenBehavior(typeof(DomainEventProcessorBehavior<,>));
-            });
-
-
-
-            services.AddIntegrationEventTelemetryDecorator();
-            services.AddDomainEventTelemetryBehavior();
-            services.AddCommandTelemetryBehavior();
-            services.AddQueryTelemetryBehavior();
 
             services.AddIdempotencyEntityFramework<NotificationsContext>()
                 .ForIntegrationEventHandlers();
@@ -65,11 +63,6 @@ namespace Qlt.Services.Notifications.Extensions
             {
                 options.RegisterEventTypes(typeof(Accounts.Contracts.AssemblyReference).Assembly);
             });
-
-
-            // Register repositories (in-memory for now)
-            services.AddScoped<IEmailService, EmailService>();
-            services.AddScoped<IEmailRepository, EmailRepository>();
         }
 
         private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)

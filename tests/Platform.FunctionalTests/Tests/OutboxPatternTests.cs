@@ -46,10 +46,10 @@ public sealed class OutboxPatternTests
         var dbContext = scope.ServiceProvider.GetRequiredService<TestDbContext>();
 
         var outboxMessages = await dbContext.Set<OutboxMessage>()
-            .Where(m => m.EventTypeName.Contains("TestEntityCreatedIntegrationEvent"))
+            .Where(m => m.TypeName.Contains("TestEntityCreatedIntegrationEvent"))
             .ToListAsync(TestContext.Current.CancellationToken);
 
         Assert.NotEmpty(outboxMessages);
-        Assert.Contains(outboxMessages, m => m.EventTypeName.Contains("TestEntityCreatedIntegrationEvent"));
+        Assert.Contains(outboxMessages, m => m.TypeName.Contains("TestEntityCreatedIntegrationEvent"));
     }
 }

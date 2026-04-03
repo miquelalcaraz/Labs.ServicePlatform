@@ -114,24 +114,24 @@ public class OutboxProcessor : BackgroundService
 
             _logger.LogInformation(
                 "Outbox processor publishing integration event: {IntegrationEventId} (attempt {Attempt})",
-                logEvt.EventId,
-                logEvt.TimesSent);
+                logEvt.Id,
+                logEvt.SendCount);
 
             try
             {
-                await eventBus.PublishAsync(logEvt.IntegrationEvent!);
-                await outboxService.MarkEventAsPublishedAsync(logEvt.EventId);
+                await eventBus.PublishAsync(logEvt.DeserializedEvent!);
+                await outboxService.MarkEventAsPublishedAsync(logEvt.Id);
                 successCount++;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Outbox processor failed to publish integration event: {IntegrationEventId}", logEvt.EventId);
+                _logger.LogError(ex, "Outbox processor failed to publish integration event: {IntegrationEventId}", logEvt.Id);
 
-                await outboxService.MarkEventAsFailedAsync(logEvt.EventId);
+                await outboxService.MarkEventAsFailedAsync(logEvt.Id);
                 failureCount++;
 
                 ApplicationDiagnostics.OutboxEventsFailed.Add(1,
-                    new KeyValuePair<string, object?>("event_type", logEvt.IntegrationEvent?.GetType().Name ?? logEvt.EventTypeName));
+                    new KeyValuePair<string, object?>("event_type", logEvt.DeserializedEvent?.GetType().Name ?? logEvt.TypeName));
             }
         }
 
