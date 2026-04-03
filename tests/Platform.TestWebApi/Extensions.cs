@@ -58,9 +58,9 @@ public static class Extensions
         {
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
             cfg.AddOpenBehavior(typeof(LoggingBehavior<,>));
-            cfg.AddOpenBehavior(typeof(DomainEventProcessorBehavior<,>));
             cfg.AddOpenBehavior(typeof(IdempotencyBehavior<,>));
             cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
+            cfg.AddOpenBehavior(typeof(DomainEventProcessorBehavior<,>));
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
 

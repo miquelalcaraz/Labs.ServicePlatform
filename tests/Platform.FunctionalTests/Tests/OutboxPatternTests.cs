@@ -12,7 +12,8 @@ using Qlt.Platform.Messaging.Models;
 
 namespace Platform.FunctionalTests.Tests;
 
-public sealed class OutboxPatternTests : IClassFixture<BuildingBlocksFixture>
+[Collection("BuildingBlocks")]
+public sealed class OutboxPatternTests
 {
     private readonly WebApplicationFactory<Program> _webApplicationFactory;
     private readonly HttpClient _httpClient;
@@ -27,7 +28,8 @@ public sealed class OutboxPatternTests : IClassFixture<BuildingBlocksFixture>
     public async Task CreateEntity_ShouldStoreIntegrationEventInOutbox()
     {
         var requestId = Guid.NewGuid();
-        var request = new CreateTestEntityRequest("OutboxTest", 100);
+        var entityName = $"OutboxTest_{requestId:N}";
+        var request = new CreateTestEntityRequest(entityName, 100);
 
         var content = new StringContent(
             JsonSerializer.Serialize(request),
@@ -44,7 +46,7 @@ public sealed class OutboxPatternTests : IClassFixture<BuildingBlocksFixture>
         var dbContext = scope.ServiceProvider.GetRequiredService<TestDbContext>();
 
         var outboxMessages = await dbContext.Set<OutboxMessage>()
-            .Where(m => m.State == EventStateEnum.NotPublished || m.State == EventStateEnum.InProgress)
+            .Where(m => m.EventTypeName.Contains("TestEntityCreatedIntegrationEvent"))
             .ToListAsync(TestContext.Current.CancellationToken);
 
         Assert.NotEmpty(outboxMessages);
