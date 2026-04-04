@@ -23,6 +23,7 @@
   <Folder Name="/src/" />
   <Folder Name="/src/Infrastructure/">
     <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.AppHost/Qlt.Infrastructure.AppHost.csproj" />
+    <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.Identity.Contracts/Infrastructure.Identity.Contracts.csproj" />
     <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.Identity/Qlt.Infrastructure.Identity.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
@@ -42,11 +43,15 @@
   <Folder Name="/src/WebApp/">
     <Project Path="src/Qlt.WebApps/Qlt.WebApps.BackOffice/Qlt.WebApps.BackOffice.csproj" />
   </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/Platform.FunctionalTests/Platform.FunctionalTests.csproj" />
-    <Project Path="tests/Platform.IntegrationTests/Platform.IntegrationTests.csproj" />
-    <Project Path="tests/Platform.TestWebApi/Platform.TestWebApi.csproj" />
-    <Project Path="tests/Platform.UnitTests/Platform.UnitTests.csproj" />
-    <Project Path="tests/Services.Accounts.FunctionalTests/Services.Accounts.FunctionalTests.csproj" />
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/Platform/">
+    <Project Path="tests/Platform/Platform.FunctionalTests/Platform.FunctionalTests.csproj" />
+    <Project Path="tests/Platform/Platform.IntegrationTests/Platform.IntegrationTests.csproj" />
+    <Project Path="tests/Platform/Platform.TestWebApi/Platform.TestWebApi.csproj" />
+    <Project Path="tests/Platform/Platform.UnitTests/Platform.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/tests/Services/">
+    <Project Path="tests/Services/Services.FunctionalTests/Services.FunctionalTests.csproj" />
+    <Project Path="tests/Services/Services.UnitTests/Services.UnitTests.csproj" />
   </Folder>
 </Solution>

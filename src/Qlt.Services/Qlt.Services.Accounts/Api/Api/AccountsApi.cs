@@ -5,10 +5,7 @@ using Qlt.Platform;
 using Qlt.Platform.Extensions;
 using Qlt.Services.Accounts.Application.Commands;
 using Qlt.Services.Accounts.Application.Queries;
-using Qlt.Services.Accounts.Domain.Models.OrganizationAggregate;
-
-using OrganizationViewModel = Qlt.Services.Accounts.Application.Queries.Organization;
-
+using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
 
 namespace Qlt.Services.Accounts.Api
 {
@@ -16,74 +13,63 @@ namespace Qlt.Services.Accounts.Api
     {
         public static RouteGroupBuilder MapAccountsApiV1(this IEndpointRouteBuilder app)
         {
-            var api = app.MapGroup("api/accounts").HasApiVersion(1.0);
-            api.MapPut("/", CreateOrganizationAsync);
-            api.MapGet("/{id:guid}", GetOrganizationByIdAsync);
-            api.MapGet("/", GetAllOrganizationsAsync);
+            var api = app.MapGroup("api/accounts/companies").HasApiVersion(1.0);
+            api.MapPut("/", CreateCompanyAsync);
+            api.MapGet("/{id:guid}", GetCompanyByIdAsync);
+            api.MapGet("/", GetAllCompaniesAsync);
             return api;
         }
 
-        public static async Task<Results<Ok<bool>, ValidationProblem, BadRequest<string>>> CreateOrganizationAsync(
+        public static async Task<Results<Ok<bool>, ValidationProblem, BadRequest<string>>> CreateCompanyAsync(
             [FromHeader(Name = "x-requestid")] Guid requestId,
-            CreateOrganizationRequest request,
+            CreateCompanyRequest request,
             [AsParameters] AccountsServices services)
         {
-
             services.Logger.LogInformation(
                 "Sending command: {CommandName} - {IdProperty}: {CommandId}",
                 request.GetGenericTypeName(),
-                nameof(request.TaxIdNumber),
-                request.TaxIdNumber);
+                nameof(request.TaxId),
+                request.TaxId);
 
             if (requestId == Guid.Empty)
             {
-                services.Logger.LogWarning("Invalid IntegrationEvent - RequestId is missing - {@IntegrationEvent}", request);
+                services.Logger.LogWarning("Invalid request - RequestId is missing - {@Request}", request);
                 return TypedResults.BadRequest("Empty GUID is not valid for request ID");
             }
 
-
             using (services.Logger.BeginScope(new List<KeyValuePair<string, object>> { new("IdentifiedCommandId", requestId) }))
             {
-                var createOrganizationCommand = new CreateOrganizationCommand(
-                request.TaxIdNumber,
-                request.Name,
-                request.LegalName,
-                request.Street,
-                request.City,
-                request.State,
-                request.Country,
-                request.ZipCode,
-                request.OrganizationType,
-                request.TaxNumberType,
-               requestId: requestId);
+                var command = new CreateCompanyCommand(
+                    request.TenantId,
+                    request.LegalName,
+                    request.TradeName,
+                    request.TaxId,
+                    request.Country,
+                    request.CountryCode,
+                    request.CompanyType,
+                    request.TaxNumberType,
+                    request.State,
+                    request.PostalCode,
+                    request.City,
+                    request.Street,
+                    requestId: requestId);
 
-                var result = await services.Mediator.Send(createOrganizationCommand);
-
-                services.Logger.LogInformation(
-                        "Sending command: {CommandName} - {IdProperty}: {CommandId} ({@Command})",
-                        createOrganizationCommand.GetGenericTypeName(),
-                        nameof(createOrganizationCommand.RequestId),
-                        createOrganizationCommand.RequestId,
-                        createOrganizationCommand);
+                var result = await services.Mediator.Send(command);
 
                 if (result.IsFailure)
-                {
-                    services.Logger.LogWarning("CreateCreateOrganizationCommand failed - RequestId: {RequestId}", requestId);
-                }
+                    services.Logger.LogWarning("CreateCompanyCommand failed - RequestId: {RequestId}", requestId);
                 else
-                {
-                    services.Logger.LogInformation("CreateCreateOrganizationCommand succeeded - RequestId: {RequestId}", requestId);
-                }
+                    services.Logger.LogInformation("CreateCompanyCommand succeeded - RequestId: {RequestId}", requestId);
 
                 return result.ToHttpResult();
             }
         }
 
-        public static async Task<Results<Ok<OrganizationViewModel>, NotFound>> GetOrganizationByIdAsync(
+        public static async Task<Results<Ok<CompanyDetail>, NotFound>> GetCompanyByIdAsync(
             Guid id,
             [AsParameters] AccountsServices services)
         {
-            var result = await services.Mediator.Send(new GetOrganizationByIdQuery(id));
+            var result = await services.Mediator.Send(new GetCompanyByIdQuery(id));
 
             if (result.IsFailure)
                 return TypedResults.NotFound();
@@ -91,27 +77,25 @@ namespace Qlt.Services.Accounts.Api
             return TypedResults.Ok(result.Value);
         }
 
-        public static async Task<Ok<IEnumerable<OrganizationSummary>>> GetAllOrganizationsAsync(
+        public static async Task<Ok<IEnumerable<CompanySummary>>> GetAllCompaniesAsync(
             [AsParameters] AccountsServices services)
         {
-            var result = await services.Mediator.Send(new GetAllOrganizationsQuery());
+            var result = await services.Mediator.Send(new GetAllCompaniesQuery());
             return TypedResults.Ok(result.Value);
         }
     }
 
-
-    public record CreateOrganizationRequest
-    (
-        string TaxIdNumber,
-        TaxNumberType TaxNumberType,
-        string Name,
+    public record CreateCompanyRequest(
+        Guid TenantId,
         string LegalName,
-        string Street,
-        string City,
-        string State,
+        string TradeName,
+        string TaxId,
+        TaxNumberType TaxNumberType,
         string Country,
-        string ZipCode,
-        OrganizationType OrganizationType
-    );
-
+        string CountryCode,
+        CompanyType CompanyType = CompanyType.Owner,
+        string? State = null,
+        string? PostalCode = null,
+        string? City = null,
+        string? Street = null);
 }

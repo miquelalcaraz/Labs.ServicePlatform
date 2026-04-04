@@ -61,7 +61,9 @@ namespace Qlt.Infrastructure.Identity.Extensions
 
             services.AddTransactionalOutbox<IdentityLogsContext>(options =>
             {
-                options.RegisterEventTypes(typeof(Qlt.Services.Accounts.Contracts.AssemblyReference).Assembly);
+                options.RegisterEventTypes(
+                    typeof(Qlt.Services.Accounts.Contracts.AssemblyReference).Assembly,
+                    typeof(global::Qlt.Infrastructure.Identity.Contracts.AssemblyReference).Assembly);
             });
         }
         private static void AddDbContext(this IHostApplicationBuilder builder)
@@ -152,7 +154,9 @@ namespace Qlt.Infrastructure.Identity.Extensions
         }
         private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)
         {
-            eventBus.AddSubscription<OrganizationCreatedIntegrationEvent, OrganizationCreatedIntegrationEventHandler>();
+            eventBus.AddSubscription<CompanyCreatedIntegrationEvent, CompanyCreatedIntegrationEventHandler>();
+            eventBus.AddSubscription<TenantCreatedIntegrationEvent, TenantCreatedIntegrationEventHandler>();
+            eventBus.AddSubscription<CustomerAdminProvisioningRequestedIntegrationEvent, CustomerAdminProvisioningRequestedIntegrationEventHandler>();
         }
     }
 }

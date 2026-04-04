@@ -5,7 +5,7 @@ namespace Qlt.Infrastructure.Identity.Models
     public class Tenant
     {
         public Guid Id { get; private set; }
-        public Guid OrganizationId { get; private set; }
+        public Guid CompanyId { get; private set; }
         public string Name { get; private set; } = string.Empty;
         public DateTime CreatedAt { get; private set; }
 
@@ -22,11 +22,11 @@ namespace Qlt.Infrastructure.Identity.Models
             Id = id ?? Guid.NewGuid();
         }
 
-        public static Tenant Create(Guid? id, Guid organizationId, string name)
+        public static Tenant Create(Guid? id, Guid companyId, string name)
         {
             return new Tenant(id)
             {
-                OrganizationId = organizationId,
+                CompanyId = companyId,
                 Name = name,
                 CreatedAt = DateTime.UtcNow
             };

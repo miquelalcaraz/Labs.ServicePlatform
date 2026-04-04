@@ -27,9 +27,9 @@ public class TenantRepository : ITenantRepository
             .FirstOrDefaultAsync(t => t.Id == id);
     }
 
-    public async Task<Tenant?> GetByOrganizationIdAsync(Guid organizationId)
+    public async Task<Tenant?> GetByCompanyIdAsync(Guid companyId)
     {
         return await _context.Tenants
-            .FirstOrDefaultAsync(t => t.OrganizationId == organizationId);
+            .FirstOrDefaultAsync(t => t.CompanyId == companyId);
     }
 }

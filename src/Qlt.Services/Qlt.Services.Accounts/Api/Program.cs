@@ -30,6 +30,10 @@ var accounts = app.NewVersionedApi("accounts");
 accounts.MapAccountsApiV1()
      .RequireAuthorization();
 
+var subscriptions = app.NewVersionedApi("subscriptions");
+subscriptions.MapSubscriptionsApiV1()
+     .RequireAuthorization();
+
 // OpenAPI/Swagger UI only in Development
 if (app.Environment.IsDevelopment())
 {

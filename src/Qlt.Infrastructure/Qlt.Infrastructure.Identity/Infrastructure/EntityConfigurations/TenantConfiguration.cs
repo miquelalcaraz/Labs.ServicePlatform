@@ -21,10 +21,10 @@ internal sealed class TenantConfiguration : IEntityTypeConfiguration<Tenant>
             .IsRequired()
             .HasMaxLength(200);
 
-        entity.Property(t => t.OrganizationId)
+        entity.Property(t => t.CompanyId)
             .IsRequired();
 
-        entity.HasIndex(t => t.OrganizationId)
+        entity.HasIndex(t => t.CompanyId)
             .IsUnique();
 
         entity.Property(t => t.CreatedAt)

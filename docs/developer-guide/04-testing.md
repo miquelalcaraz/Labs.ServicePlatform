@@ -2,19 +2,23 @@
 
 ## Overview
 
-Testing strategy for QltS platform components and business services. Tests are organized by scope: unit tests for isolated component logic, integration tests for infrastructure interactions, and functional tests for end-to-end API verification.
+Testing strategy for QltS platform components and business services. Tests are split into two top-level groups under `tests/`:
+
+- **`Platform/`** — architecture and infrastructure tests (independent of any business service)
+- **`Services/`** — business service tests (Accounts, Identity, Notifications)
 
 ---
 
 ## Test Projects
 
-| Project | Scope | Frameworks |
-|---------|-------|------------|
-| `Platform.UnitTests` | Unit | xUnit, Moq, FluentAssertions, EF InMemory |
-| `Platform.IntegrationTests` | Integration | xUnit, Testcontainers (SQL Server, Service Bus) |
-| `Platform.FunctionalTests` | Functional | Aspire AppHost, xUnit v3, WebApplicationFactory |
-| `Platform.TestWebApi` | Test host | Web API host used by FunctionalTests |
-| `Services.Accounts.FunctionalTests` | Functional | Aspire AppHost, xUnit v3, end-to-end API tests |
+| Project | Path | Scope | Frameworks |
+|---------|------|-------|------------|
+| `Platform.UnitTests` | `tests/Platform/` | Unit | xUnit, Moq, FluentAssertions, EF InMemory |
+| `Platform.IntegrationTests` | `tests/Platform/` | Integration | xUnit, Testcontainers (SQL Server, Service Bus) |
+| `Platform.FunctionalTests` | `tests/Platform/` | Functional | Aspire AppHost, xUnit v3, WebApplicationFactory |
+| `Platform.TestWebApi` | `tests/Platform/` | Test host | Web API host used by Platform.FunctionalTests |
+| `Services.FunctionalTests` | `tests/Services/` | Functional | Aspire AppHost, xUnit v3, end-to-end API tests (Accounts, Identity, Notifications) |
+| `Services.UnitTests` | `tests/Services/` | Unit | xUnit, Moq, FluentAssertions (Accounts, Identity, Notifications) |
 
 ---
 
@@ -75,11 +79,18 @@ collection.Should().HaveCount(3);
 # All tests
 dotnet test
 
-# Specific project
-dotnet test tests/Platform.UnitTests
+# All Platform tests
+dotnet test tests/Platform/Platform.UnitTests
+dotnet test tests/Platform/Platform.IntegrationTests
+dotnet test tests/Platform/Platform.FunctionalTests
+
+# All Services tests
+dotnet test tests/Services/Services.UnitTests
+dotnet test tests/Services/Services.FunctionalTests
 
 # Specific test class
-dotnet test --filter "FullyQualifiedName~RedisIdempotencyCacheTests"
+dotnet test --filter "FullyQualifiedName~IdempotencyTests"
+dotnet test --filter "FullyQualifiedName~SubscriptionsApiTests"
 
 # With coverage
 dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
@@ -87,20 +98,58 @@ dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
 
 ---
 
-## Unit Test Structure
+## Test Structure
+
+### Platform
 
 ```
-Platform.UnitTests/
-├── Messaging/
-│   ├── Redis/
-│   │   └── RedisIdempotencyCacheTests.cs
-│   ├── EntityFramework/
-│   │   └── RequestIdempotencyServiceTests.cs
-│   └── Behaviors/
-│       └── (IdempotencyBehaviorTests, TransactionBehaviorTests)
-└── Persistence/
-    └── EntityFramework/
-        └── (RepositoryTests, QltDBContextTests)
+tests/Platform/
+├── Platform.UnitTests/
+│   ├── Behaviors/
+│   │   └── ValidationBehaviorTests.cs
+│   ├── Core/
+│   │   ├── ErrorTests.cs
+│   │   ├── ResultTests.cs
+│   │   └── ValidationErrorTests.cs
+│   └── Messaging/
+│       ├── EntityFramework/
+│       │   ├── IdempotencyEfServiceTests.cs
+│       │   └── OutboxMessageServiceConcurrencyTests.cs
+│       └── Redis/
+│           └── IdempotencyRedisServiceTests.cs
+├── Platform.IntegrationTests/
+│   ├── EventBus/
+│   │   └── ServiceBusEventBusTests.cs
+│   ├── Messaging/
+│   │   └── OutboxConcurrencyIntegrationTests.cs
+│   └── Persistence/
+│       └── EntityAuditIntegrationTests.cs
+└── Platform.FunctionalTests/
+    └── Tests/
+        ├── DomainEventsTests.cs
+        ├── IdempotencyTests.cs
+        └── OutboxPatternTests.cs
+```
+
+### Services
+
+```
+tests/Services/
+├── Services.UnitTests/
+│   ├── Accounts/
+│   │   └── (AccountsTestBase.cs + tests per use case)
+│   ├── Identity/
+│   │   └── (IdentityTestBase.cs + tests)
+│   └── Notifications/
+│       └── (NotificationsTestBase.cs + tests)
+└── Services.FunctionalTests/
+    ├── Accounts/
+    │   ├── AccountsApiTests.cs
+    │   └── SubscriptionsApiTests.cs
+    ├── Identity/
+    │   └── (IdentityFixture.cs + tests)
+    └── Notifications/
+        └── (NotificationsFixture.cs + tests)
 ```
 
 ### Template
@@ -142,12 +191,28 @@ public class ComponentNameTests
 
 ## Current Coverage
 
-| Component | Tests | Status |
-|-----------|-------|--------|
-| RedisIdempotencyCache | 10 | ✅ Complete |
-| RequestIdempotencyService | 8 | ✅ Complete |
-| OutboxMessageService | — | Pending |
-| IdempotencyBehavior | — | Pending |
-| TransactionBehavior | — | Pending |
-| QltDBContext | — | Pending |
-| Repository | — | Pending |
+### Platform
+
+| Component | Project | Tests | Status |
+|-----------|---------|------:|--------|
+| Result / Error / ValidationError | `Platform.UnitTests` | 3 classes | ✅ Complete |
+| ValidationBehavior | `Platform.UnitTests` | ✅ | ✅ Complete |
+| IdempotencyEfService | `Platform.UnitTests` | ✅ | ✅ Complete |
+| OutboxMessageService (concurrency) | `Platform.UnitTests` | ✅ | ✅ Complete |
+| IdempotencyRedisService | `Platform.UnitTests` | ✅ | ✅ Complete |
+| EntityAudit (integration) | `Platform.IntegrationTests` | ✅ | ✅ Complete |
+| OutboxConcurrency (integration) | `Platform.IntegrationTests` | ✅ | ✅ Complete |
+| ServiceBusEventBus (integration) | `Platform.IntegrationTests` | ✅ | ✅ Complete |
+| DomainEvents (functional) | `Platform.FunctionalTests` | ✅ | ✅ Complete |
+| Idempotency (functional) | `Platform.FunctionalTests` | ✅ | ✅ Complete |
+| OutboxPattern (functional) | `Platform.FunctionalTests` | ✅ | ✅ Complete |
+
+### Services
+
+| Component | Project | Tests | Status |
+|-----------|---------|------:|--------|
+| AccountsApi (functional) | `Services.FunctionalTests` | ✅ | ✅ Complete |
+| SubscriptionsApi (functional) | `Services.FunctionalTests` | ✅ | ✅ Complete |
+| Accounts unit tests | `Services.UnitTests` | — | Pending |
+| Identity unit tests | `Services.UnitTests` | — | Pending |
+| Notifications unit tests | `Services.UnitTests` | — | Pending |
