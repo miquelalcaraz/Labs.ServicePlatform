@@ -12,7 +12,7 @@ using Qlt.Infrastructure.Identity.Infrastructure;
 namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
 {
     [DbContext(typeof(IdentityLogsContext))]
-    [Migration("20260402182800_Initial")]
+    [Migration("20260403192211_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -20,7 +20,6 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("identityLogs")
                 .HasAnnotation("ProductVersion", "10.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 

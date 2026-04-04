@@ -58,10 +58,14 @@ public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityCh
         {
             modelBuilder.ConfigureTransactionalOutbox();
         }
+
+        modelBuilder.ConfigureEntityAuditProperties();
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        ApplyAuditTimestamps();
+
         try
         {
             return await base.SaveChangesAsync(cancellationToken);
@@ -103,6 +107,7 @@ public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityCh
 
         try
         {
+            ApplyAuditTimestamps();
             await base.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             LastCommittedTransactionId = transaction.TransactionId;
@@ -190,6 +195,26 @@ public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityCh
         return ChangeTracker.Entries<Entity>()
             .Select(x => x.Entity)
             .ToList();
+    }
+
+    private void ApplyAuditTimestamps()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        foreach (var entry in ChangeTracker.Entries<Entity>())
+        {
+            switch (entry.State)
+            {
+                case EntityState.Added:
+                    entry.Property(nameof(Entity.CreatedAt)).CurrentValue = now;
+                    break;
+
+                case EntityState.Modified:
+                    entry.Property(nameof(Entity.UpdatedAt)).CurrentValue = now;
+                    entry.Property(nameof(Entity.CreatedAt)).IsModified = false;
+                    break;
+            }
+        }
     }
 
 }

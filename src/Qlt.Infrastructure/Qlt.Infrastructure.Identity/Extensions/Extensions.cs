@@ -68,13 +68,11 @@ namespace Qlt.Infrastructure.Identity.Extensions
         {
             var services = builder.Services;
 
-            var connectionString = builder.Configuration.GetConnectionString("IdentityLogsDb");
+            var connectionString = builder.Configuration.GetConnectionString("IdentityDb");
 
             // Register IdentityContext with Qlt configuration
             services.AddQltSDBContext<IdentityLogsContext>(
-                    conf =>
-                    conf.SetDefaultSchema("identityLogs")
-                    .WithIdempotency(),
+                    conf => conf.WithIdempotency(),
                 options => options.UseSqlServer(connectionString, sqlOptions =>
                 {
                     sqlOptions.MigrationsAssembly(typeof(AssemblyReference).Assembly);

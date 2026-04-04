@@ -13,6 +13,16 @@ This document explains:
 - The primary mission: Build stable components that evolve without breaking services
 - Architectural principles and decision framework
 - Non-breaking evolution strategies
+
+## 🛠️ Service Development
+**When implementing features in `Qlt.Services.*` microservices**, follow the rules in [Copilot Development Rules](../docs/developer-guide/06-copilot-development-rules.md).
+
+This document defines:
+- Service project structure (Api, Application, Domain, Infrastructure, Contracts)
+- Command, Query, Domain Event, and Integration Event patterns
+- DI configuration templates
+- Entity configuration rules and what NOT to create (platform tables)
+- API endpoint patterns
 - Success metrics for the base architecture
 
 **Key principle:** "Platform evolves, services sleep peacefully" - Infrastructure changes must be transparent to business services through proper abstraction layers and dependency inversion.
@@ -69,7 +79,7 @@ public Task CreateRequestForCommandAsync<T>(Guid id)
   - CQRS with MediatR (Commands with ICommand<T>)
   - Domain Events with IDomainEvent
   - Idempotency with database-enforced unique constraint
-  - Generic RequestManager<TContext> for any DbContext
+  - Unified Idempotency with IIdempotencyService (DB + Cache)
   - Transactional Outbox
   - Idempotent Consumer
   - Unit of Work
@@ -85,7 +95,7 @@ The project follows a **5-layer architecture** for messaging and persistence. **
 #### 1️⃣ Platform.Messaging.Abstractions (Pure Contracts)
 **Responsibilities:**
 - Define interfaces: `IIntegrationEventHandler<T>`, `ICommandHandler<T,R>`, `IDomainEventHandler<T>`
-- Define service contracts: `IIntegrationEventInbox`, `IRequestIdempotencyService`, `IEventBusOutboxService`
+- Define service contracts: `IIdempotencyService`, `IEventBusOutboxService`
 - Define base types: `IntegrationEvent`, `ICommand`, `IDomainEvent`
 
 **MUST NOT:**
@@ -101,9 +111,11 @@ The project follows a **5-layer architecture** for messaging and persistence. **
 #### 2️⃣ Platform.Messaging (Messaging Logic - No Persistence)
 **Responsibilities:**
 - Domain models as POCOs: `IdempotencyEntry`, `OutboxMessage`, `OutboxMessageStatus`
-- MediatR behaviors: `IdempotencyBehavior<TRequest, TResponse>`
-- Base handlers: `CommandHandler<T,R>`, `DomainEventHandler<T>`
-- Decorators without persistence: `TelemetryIntegrationEventHandlerDecorator<T>`
+- MediatR behaviors: `IdempotencyBehavior<TRequest, TResponse>`, `TelemetryCommandBehavior`, `TelemetryQueryBehavior`
+- Domain event telemetry: `TelemetryDomainEventBehavior` (custom `INotificationPublisher`)
+- Domain event dispatch: `DomainEventsDispatcherExtension` (IMediator extension method)
+- Decorators without persistence: `TelemetryIntegrationEventHandlerDecorator<T>`, `IdempotencyIntegrationEventDecorator<T>`
+- Command abstractions: `IdempotentCommand<T>`
 - DI registration extensions
 
 **MUST NOT:**
@@ -121,9 +133,10 @@ The project follows a **5-layer architecture** for messaging and persistence. **
 
 #### 3️⃣ Platform.Messaging.EntityFramework (Messaging + EF, DB-Agnostic)
 **Responsibilities:**
-- Services using EF with generic constraints: `IntegrationEventInboxService<TContext>`, `RequestIdempotencyService<TContext>`, `OutboxMessageService<TContext>`
-- Decorators with persistence: `IdempotentIntegrationEventHandlerDecorator<T>`
-- Transactional behaviors: `TransactionBehavior<TRequest, TResponse, TContext>`
+- Services using EF with generic constraints: `IdempotencyEfService<TContext>`, `OutboxMessageService<TContext>`, `EventBusOutboxService<TContext>`
+- Decorators with persistence: `IdempotencyIntegrationEventEfDecorator<T>`
+- Pipeline behaviors: `TransactionBehavior<TRequest, TResponse>`, `DomainEventProcessorBehavior<TRequest, TResponse>`, `IntegrationEventProcessorBehavior<TRequest, TResponse>`
+- Background services: `OutboxProcessor` (hosted service for pending outbox events)
 - DI registration for EF-based services
 
 **MUST:**
@@ -148,10 +161,9 @@ The project follows a **5-layer architecture** for messaging and persistence. **
 #### 4️⃣ Platform.Persistence.EntityFramework (EF Abstractions)
 **Responsibilities:**
 - Transaction interfaces: `ITransactionalUnitOfWork` (extends `IUnitOfWork` from Domain.Core with transaction capabilities)
-- Configuration: `QltDbContextConfiguration` (fluent API for features)
-- Extensions: `DomainEventsDispatcherExtension`
+- Domain entity tracking: `IDomainEntityChangeTracker` (exposes tracked entities for domain event dispatch)
+- Configuration: `QltDbContextConfiguration`, `QltReadDbContextConfiguration` (fluent API for features)
 - Exception abstractions: `UniqueConstraintViolationException`
-- Audit abstractions: `AuditLogsExtension`
 
 **MUST NOT:**
 - ❌ Reference database providers (SQL Server, PostgreSQL, Cosmos)
@@ -168,7 +180,7 @@ The project follows a **5-layer architecture** for messaging and persistence. **
 #### 5️⃣ Platform.Persistence.EntityFramework.Relational (SQL/PostgreSQL Specifics)
 **Responsibilities:**
 - Concrete DbContext: `QltDBContext` with relational features
-- Entity Configurations: `IntegrationEventInboxConfiguration`, `RequestIdempotencyConfiguration`, `OutboxMessageConfiguration`, `AuditLogConfiguration`
+- Entity Configurations: `IdempotencyEntryConfiguration`, `OutboxMessageConfiguration`, `AuditLogConfiguration`
 - Resilient transactions: `ResilientTransaction` (retry logic)
 - Generic repositories: `Repository<T>`
 - Migrations: `MigrateDbContextExtensions`
@@ -195,17 +207,23 @@ The project follows a **5-layer architecture** for messaging and persistence. **
 1. **Adding EF attributes to POCOs in Platform.Messaging**
    ```csharp
    // ❌ WRONG - Violates persistence ignorance
-   public class IntegrationEventInbox
+   public class IdempotencyEntry
    {
        [Key]
-       [Column("event_id")]
-       public Guid EventId { get; set; }
+       [Column("idempotency_id")]
+       public Guid Id { get; set; }
+
+       [Required]
+       [MaxLength(20)]
+       public IdempotencyScope Scope { get; set; }
    }
 
    // ✅ CORRECT - POCO without attributes
-   public class IntegrationEventInbox
+   public class IdempotencyEntry
    {
-       public Guid EventId { get; set; }
+       public Guid Id { get; set; }
+       public IdempotencyScope Scope { get; set; }
+       public string Qualifier { get; set; } = string.Empty;
    }
    ```
 
@@ -213,24 +231,25 @@ The project follows a **5-layer architecture** for messaging and persistence. **
    ```csharp
    // ❌ WRONG - Couples to SQL Server
    var result = await context.Database.ExecuteSqlRawAsync(
-       "SELECT * FROM IntegrationEventInbox WHERE EventId = {0}", eventId);
+       "SELECT * FROM IdempotencyEntry WHERE Id = {0} AND Scope = {1}", id, scope);
 
    // ✅ CORRECT - EF Core API (works with any provider)
-   var result = await context.Set<IntegrationEventInbox>()
-       .FirstOrDefaultAsync(e => e.EventId == eventId);
+   var result = await context.Set<IdempotencyEntry>()
+       .FirstOrDefaultAsync(e => e.Id == id && e.Scope == scope);
    ```
 
 3. **Hardcoding table names outside configurations**
    ```csharp
    // ❌ WRONG - Should be in Entity Configuration
-   modelBuilder.Entity<IntegrationEventInbox>().ToTable("IntegrationEventInbox");
+   modelBuilder.Entity<IdempotencyEntry>().ToTable("IdempotencyEntry");
 
    // ✅ CORRECT - In Platform.Persistence.EntityFramework.Relational/Configurations/
-   public class IntegrationEventInboxConfiguration : IEntityTypeConfiguration<IntegrationEventInbox>
+   internal static class IdempotencyEntryConfiguration
    {
-       public void Configure(EntityTypeBuilder<IntegrationEventInbox> builder)
+       public static void Configure(this EntityTypeBuilder<IdempotencyEntry> entity)
        {
-           builder.ToTable("IntegrationEventInbox", "infra");
+           entity.ToTable("IdempotencyEntry", "infra");
+           entity.HasKey(e => new { e.Id, e.Scope, e.Qualifier });
        }
    }
    ```
@@ -238,13 +257,13 @@ The project follows a **5-layer architecture** for messaging and persistence. **
 4. **Using concrete DbContext in services**
    ```csharp
    // ❌ WRONG - Couples to specific context
-   public class InboxService
+   public class IdempotencyService
    {
-       private readonly NotificationsContext _context;
+       private readonly AccountsContext _context;
    }
 
    // ✅ CORRECT - Generic constraint
-   public class InboxService<TContext> where TContext : DbContext
+   public class IdempotencyEfService<TContext> where TContext : DbContext
    {
        private readonly TContext _context;
    }
@@ -274,8 +293,8 @@ Before committing changes to messaging/persistence layers:
 - Only add Cosmos-specific Entity Configurations
 
 **Adding new idempotency mechanism (e.g., Redis):**
-- Create `Platform.Messaging.Redis` project
-- Implement `IIntegrationEventInbox` interface
+- Create `Platform.Messaging.Redis` project (already exists)
+- Implement `IIdempotencyService` interface
 - NO modifications to `Platform.Messaging.Abstractions`
 - Reuse POCOs from `Platform.Messaging`
 

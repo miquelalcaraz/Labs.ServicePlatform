@@ -25,12 +25,28 @@ public abstract class Entity
     }
 
     /// <summary>
+    /// UTC timestamp of when the entity was created. Set automatically by the constructor.
+    /// </summary>
+    public DateTimeOffset CreatedAt { get; private set; }
+
+    /// <summary>
+    /// UTC timestamp of the last modification. Set automatically by the persistence layer on update.
+    /// </summary>
+    public DateTimeOffset? UpdatedAt { get; private set; }
+
+    /// <summary>
+    /// Optimistic concurrency token managed by the database engine.
+    /// </summary>
+    public byte[] RowVersion { get; private set; } = null!;
+
+    /// <summary>
     /// Protected constructor that automatically generates a new GUID for the entity.
     /// This ensures every entity has an identity from the moment it's created.
     /// </summary>
     protected Entity()
     {
         _id = Guid.NewGuid();
+        CreatedAt = DateTimeOffset.UtcNow;
     }
 
     /// <summary>
@@ -41,6 +57,7 @@ public abstract class Entity
     protected Entity(Guid id)
     {
         _id = id;
+        CreatedAt = DateTimeOffset.UtcNow;
     }
 
     [NotMapped]

@@ -53,29 +53,49 @@ We are building the architectural foundation **before** knowing all final techno
 ```
 src/
 ├── Qlt.Platform/                       ← Infrastructure Components
+│   ├── Platform.Core                   ← Result, Error, ValidationError
+│   ├── Platform.Telemetry              ← OpenTelemetry, ActivitySource, Meters
 │   ├── Platform.Messaging.Abstractions ← Stable contracts
-│   ├── Platform.Messaging              ← Core logic
-│   ├── Platform.Messaging.EntityFramework
-│   ├── Platform.Messaging.Redis
+│   ├── Platform.Messaging              ← Core logic, POCOs, Behaviors
+│   ├── Platform.Messaging.EntityFramework ← EF-based services, Outbox, Transactions
+│   ├── Platform.Messaging.Redis        ← Redis-based idempotency
 │   ├── Platform.EventBus               ← Event bus abstraction
 │   ├── Platform.EventBus.RabbitMQ      ← Swappable implementation
-│   ├── Platform.Persistence.EntityFramework
-│   └── Platform.Persistence.EntityFramework.Relational
+│   ├── Platform.EventBus.ServiceBus    ← Swappable implementation
+│   ├── Platform.Persistence.EntityFramework ← EF abstractions
+│   ├── Platform.Persistence.EntityFramework.Relational ← SQL/PostgreSQL
+│   ├── Platform.WebApi                 ← API helpers, middleware
+│   ├── Platform.Infrastructure         ← Cross-cutting infrastructure
+│   └── Platform.ServiceDefaults        ← .NET Aspire service defaults
 │
 ├── Qlt.Domain/                         ← DDD Building Blocks
-│   ├── Domain.Core                     ← Entity, ValueObject, Result
+│   ├── Domain.Core                     ← Entity, ValueObject, IDomainEvent
 │   └── Domain.Application              ← Behaviors, Validation
 │
-└── Qlt.Services/                       ← Business Microservices
-    ├── Services.Accounts               ← Example service
-    └── Services.Notifications
+├── Qlt.Services/                       ← Business Microservices
+│   ├── Services.Accounts               ← (Api, Application, Domain, Infrastructure, Contracts)
+│   └── Services.Notifications
+│
+├── Qlt.Infrastructure/                 ← Shared Infrastructure Services
+│   ├── Infrastructure.Identity         ← IdentityServer, Tenants, Users
+│   └── Infrastructure.AppHost          ← .NET Aspire orchestrator
+│
+└── Qlt.WebApps/                        ← Frontend Applications
+    └── WebApps.BackOffice              ← Blazor BackOffice
+
+tests/
+├── Platform.UnitTests                  ← xUnit, Moq, FluentAssertions, EF InMemory
+├── Platform.IntegrationTests           ← xUnit, Testcontainers (SQL Server, Service Bus)
+├── Platform.FunctionalTests            ← Aspire AppHost, xUnit v3, WebApplicationFactory
+├── Platform.TestWebApi                 ← Test Web API host (used by FunctionalTests)
+└── Services.Accounts.FunctionalTests   ← Aspire AppHost, xUnit v3, end-to-end API tests
 ```
 
 ---
 
 ## 🔄 Example: Event Bus Evolution (Non-Breaking)
 
-### Scenario: Switching from RabbitMQ to Azure EventHub
+### Scenario: Switching from RabbitMQ to Azure Service Bus
 
 **Today (RabbitMQ):**
 ```csharp
@@ -92,10 +112,10 @@ public class MyHandler : IIntegrationEventHandler<MyEvent>
 }
 ```
 
-**Tomorrow (Azure EventHub):**
+**Tomorrow (Azure Service Bus) — Already implemented:**
 ```csharp
 // AppHost configuration - ONLY CHANGE
-services.AddAzureEventHubEventBus(config);
+services.AddAzureServiceBusEventBus(config);
 
 // Service code - NO CHANGES NEEDED
 public class MyHandler : IIntegrationEventHandler<MyEvent>
@@ -116,10 +136,11 @@ public class MyHandler : IIntegrationEventHandler<MyEvent>
 | Component | Status | Planned Evolution |
 |-----------|--------|-------------------|
 | **Domain.Core** | ✅ Stable | Add Specification pattern, more DDD patterns |
+| **Platform.Core** | ✅ Stable | Result pattern, Error types |
 | **Platform.Messaging** | ✅ Functional | Add retries, circuit breaker, dead letter queue |
-| **Platform.EventBus** | ⚠️ Basic | Switch tech stack (RabbitMQ → EventHub/MassTransit?) |
+| **Platform.EventBus** | ✅ Functional | RabbitMQ + ServiceBus implementations available |
 | **Platform.Persistence.EF** | ✅ Functional | Add Cosmos DB support, read replicas |
-| **Idempotency Pattern** | ✅ Complete | Performance optimizations, cache layer |
+| **Idempotency Pattern** | ✅ Complete | Unified IIdempotencyService (DB + Cache) |
 | **Outbox Pattern** | ✅ Complete | Batch processing, parallelization |
 | **Idempotent Consumer** | ✅ Complete | TTL configuration, Redis optimization |
 
@@ -310,7 +331,7 @@ services.AddDomainEventTelemetryDecorator();
 **Impact:**
 - ✅ Removed 1 base class (`DomainEventHandler<T>`)
 - ✅ Refactored 3 existing handlers (OrganizationCreated, TestEntityCreated, TestEntityUpdated)
-- ✅ Created 1 decorator (`TelemetryDomainEventHandlerDecorator<T>`)
+- ✅ Created `TelemetryDomainEventBehavior` (custom `INotificationPublisher` replacing MediatR's default publisher)
 - ✅ Updated 4 DI registrations (Accounts, Notifications, Identity, TestWebApi)
 - ✅ Consistent with Integration Events pattern
 - ✅ Zero risk of telemetry bypass
@@ -319,112 +340,110 @@ services.AddDomainEventTelemetryDecorator();
 
 ---
 
-### ADR-005: Domain Events Dispatched After Transaction Commit (+ Architectural Refactoring)
-**Decision:** Domain Events are dispatched by `MessagingBehavior` AFTER transaction commit, not during `SaveEntitiesAsync()`
+### ADR-005: Separated Pipeline for Domain Events and Integration Events (+ Architectural Refactoring)
+**Decision:** Domain Events and Integration Events are dispatched by two separate pipeline behaviors. Domain events are dispatched by `DomainEventProcessorBehavior` WITHIN the active transaction (after `SaveChangesAsync`, before `CommitAsync`). Integration events are published by `IntegrationEventProcessorBehavior` AFTER transaction commit.
 
 **Context:**
-- Previously: Domain Events dispatched in `QltDBContext.SaveEntitiesAsync()` AFTER `SaveChanges()` but BEFORE `CommitAsync()`
-- Problem: Handler failures caused full transaction rollback of already-saved data
-- Risk: Data inconsistency if handler modifies other entities or publishes to outbox before failing
+- Previously: Domain Events dispatched in `QltDBContext.SaveEntitiesAsync()` mixed with persistence logic
+- Problem: Handler failures caused full transaction rollback of already-saved data, and single behavior mixed two concerns
+- Risk: Data inconsistency if dispatch and publishing were coupled
 
 **Rationale:**
-- **Data Integrity**: Changes are guaranteed to be persisted before events dispatch
-- **DDD Best Practice**: Domain Event Handlers should NOT modify aggregates (enforced by architecture)
-- **Consistency**: Same pattern as Integration Events (dispatched after commit in `MessagingBehavior`)
-- **Eventual Consistency**: Handlers publish Integration Events to outbox for cross-service communication
-- **Robustness**: If handler fails, data is already committed (no rollback)
+- **Separation of Concerns**: Two independent behaviors instead of one monolithic `MessagingBehavior`
+- **Domain Events WITHIN Transaction**: Handlers can modify aggregates and add integration events to the outbox as part of the same transaction
+- **Integration Events AFTER Commit**: Published to the event bus only after the transaction is guaranteed to be persisted
+- **Cascading Support**: `DomainEventProcessorBehavior` re-checks for new domain events after each dispatch cycle
+- **Eventual Consistency**: Domain event handlers publish Integration Events to outbox for cross-service communication
 
 **Architectural Refactoring (Post-Implementation Review):**
 
-During implementation review, two critical architectural violations were identified and fixed:
+During implementation review, critical architectural violations were identified and fixed:
 
 1. **SRP Violation**: `ITransactionalUnitOfWork` was holding Domain Events (`GetPendingDomainEvents()`)
    - **Issue**: Mixed transaction management with domain event collection (two responsibilities)
-   - **Fix**: Created `IDomainEventCollector` interface to separate concerns
+   - **Fix**: Created `IDomainEntityChangeTracker` interface to separate concerns
 
 2. **Layer Violation**: `DomainEventsDispatcherExtension` was in `Platform.Persistence.EntityFramework`
    - **Issue**: Dispatch is a messaging concern, not persistence
-   - **Fix**: Moved to `Platform.Messaging.EntityFramework` (correct layer)
+   - **Fix**: Moved to `Platform.Messaging` (messaging layer, no EF dependency needed)
 
-3. **DDD Purity Improvement**: Storing events prematurely extracted from entities
-   - **Issue**: Events extracted in `SaveEntitiesAsync()` before transaction commit
-   - **Fix**: Store `List<Entity>` instead of `List<IDomainEvent>`, events remain in entities until dispatch
+3. **Single Behavior Split**: `MessagingBehavior` handled both domain events and integration events
+   - **Issue**: Two responsibilities in one behavior, hard to configure independently
+   - **Fix**: Split into `DomainEventProcessorBehavior` (inside transaction) and `IntegrationEventProcessorBehavior` (after commit)
 
-**Implementation (Refactored Architecture):**
+**Implementation (Current Architecture):**
 
 ```csharp
-// 1. IDomainEventCollector Interface - Separates responsibilities (SRP)
-public interface IDomainEventCollector
+// 1. IDomainEntityChangeTracker - Exposes tracked entities from DbContext (SRP)
+public interface IDomainEntityChangeTracker
 {
-    IReadOnlyList<Entity> GetEntitiesWithPendingEvents();
+    IReadOnlyList<Entity> GetEntitiesWithChanges();
 }
 
-// 2. QltDBContext - Implements IDomainEventCollector, stores entities (not events)
-public async Task<bool> SaveEntitiesAsync(CancellationToken ct = default)
+// 2. QltDBContext - Implements IDomainEntityChangeTracker, reads directly from ChangeTracker
+public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityChangeTracker
 {
-    // Collect entities with events (events remain in entities)
-    _entitiesWithEvents = ChangeTracker
-        .Entries<Entity>()
-        .Where(x => x.Entity.DomainEvents != null && x.Entity.DomainEvents.Any())
-        .Select(x => x.Entity)
-        .ToList();
-
-    await base.SaveChangesAsync(ct);  // Persist changes
-    return true;                       // DO NOT dispatch yet
+    public IReadOnlyList<Entity> GetEntitiesWithChanges()
+    {
+        return ChangeTracker.Entries<Entity>()
+            .Select(x => x.Entity)
+            .ToList();
+    }
 }
 
-public IReadOnlyList<Entity> GetEntitiesWithPendingEvents()
-{
-    var entities = _entitiesWithEvents ?? new List<Entity>();
-    _entitiesWithEvents = null;  // Clear after reading
-    return entities;
-}
-
-// 3. DomainEventsDispatcherExtension - Moved to Messaging layer, centralized telemetry
+// 3. DomainEventsDispatcherExtension - In Platform.Messaging, centralized telemetry
 public static class DomainEventsDispatcherExtension
 {
     public static async Task DispatchDomainEventsAsync(
         this IMediator mediator,
         IReadOnlyList<Entity> entities,
-        CancellationToken ct = default)
+        CancellationToken cancellationToken)
     {
-        using var activity = ActivityHelper.StartActivity("DispatchDomainEvents");
-
-        // Extract events AFTER commit
         var domainEvents = entities
-            .SelectMany(e => e.DomainEvents ?? Array.Empty<IDomainEvent>())
+            .Where(x => x.DomainEvents != null && x.DomainEvents.Any())
+            .SelectMany(x => x.DomainEvents!)
             .ToList();
 
-        // Clear events from entities
-        foreach (var entity in entities)
-            entity.ClearDomainEvents();
+        if (domainEvents.Count == 0) return;
 
-        // Dispatch with centralized telemetry
-        ApplicationDiagnostics.DomainEventsDispatched.Add(domainEvents.Count);
+        entities.Where(x => x.DomainEvents != null)
+            .ToList().ForEach(entity => entity.ClearDomainEvents());
 
         foreach (var domainEvent in domainEvents)
-            await mediator.Publish(domainEvent, ct);
+            await mediator.Publish(domainEvent, cancellationToken);
     }
 }
 
-// 4. MessagingBehavior - Uses IDomainEventCollector + extension method
+// 4. DomainEventProcessorBehavior - INSIDE TransactionBehavior (same transaction)
+//    Dispatches domain events with cascading support (re-checks for new events)
 public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
 {
-    var response = await next(ct);  // Transaction already committed here ✅
+    var response = await next(ct);
+
+    if (_eventCollector is not null)
+    {
+        var entities = _eventCollector.GetEntitiesWithChanges()
+            .Where(x => x.DomainEvents != null && x.DomainEvents.Any()).ToList();
+
+        while (entities.Count > 0)
+        {
+            await _mediator.DispatchDomainEventsAsync(entities, ct);
+            entities = _eventCollector.GetEntitiesWithChanges()
+                .Where(x => x.DomainEvents != null && x.DomainEvents.Any()).ToList();
+        }
+    }
+
+    return response;
+}
+
+// 5. IntegrationEventProcessorBehavior - OUTSIDE TransactionBehavior (after commit)
+//    Publishes outbox events to event bus after transaction is committed
+public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
+{
+    var response = await next(ct);
 
     if (_unitOfWork.LastCommittedTransactionId is { } transactionId)
     {
-        // Dispatch Domain Events FIRST (using IDomainEventCollector)
-        if (_eventCollector is not null)
-        {
-            var entities = _eventCollector.GetEntitiesWithPendingEvents();
-            if (entities.Count > 0)
-            {
-                await _mediator.DispatchDomainEventsAsync(entities, ct);
-            }
-        }
-
-        // Publish Integration Events SECOND
         await _outboxService.PublishEventsThroughEventBusAsync(transactionId);
     }
 
@@ -432,80 +451,46 @@ public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TRe
 }
 ```
 
-**DDD Restriction (enforced by architecture):**
-Domain Event Handlers MUST NOT modify aggregates directly. Instead:
-```csharp
-// ✅ CORRECT: Publish Integration Event for eventual consistency
-public async Task Handle(OrganizationCreatedDomainEvent evt, CancellationToken ct)
-{
-    await _eventBus.PublishAsync(new OrganizationCreatedIntegrationEvent(...));
-}
+**Pipeline execution order:**
+```
+IntegrationEventProcessorBehavior (OUTSIDE)
+  └── TransactionBehavior (BEGIN/COMMIT)
+        └── DomainEventProcessorBehavior (INSIDE)
+              └── CommandHandler (business logic)
+```
 
-// ❌ INCORRECT: Modify aggregate (no active transaction)
+**Domain Event Handlers CAN modify aggregates** (they run within the active transaction):
+```csharp
+// ✅ CORRECT: Modify aggregates within the same transaction
 public async Task Handle(OrganizationCreatedDomainEvent evt, CancellationToken ct)
 {
-    var user = await _context.Users.FindAsync(evt.UserId);
-    user.AddOrganization(evt.OrgId);  // ❌ Will fail or create new transaction
-    await _context.SaveChangesAsync();
+    // Save integration event to outbox (same transaction)
+    await _outboxService.AddAndSaveEventAsync(new OrganizationCreatedIntegrationEvent(...));
 }
 ```
 
 **Impact:**
-- ✅ **CREATED** `IDomainEventCollector` interface - Separates event collection from transaction management (SRP)
-- ✅ **CREATED** `DomainEventsDispatcherExtension` in `Platform.Messaging.EntityFramework` - Centralized telemetry
-- ✅ **DELETED** `DomainEventsDispatcherExtension` from `Platform.Persistence.EntityFramework` - Removed from wrong layer
-- ✅ **REFACTORED** `QltDBContext` - Implements `IDomainEventCollector`, stores `List<Entity>` (events remain in entities)
-- ✅ **CLEANED** `ITransactionalUnitOfWork` - Removed `GetPendingDomainEvents()` (no longer responsible for Domain Events)
-- ✅ **REFACTORED** `MessagingBehavior` - Injects `IDomainEventCollector`, uses extension method for centralized telemetry
-- ✅ **UPDATED** Test mocks - Implement `GetEntitiesWithPendingEvents()`
-- ✅ Data integrity guaranteed (transaction committed before event dispatch)
-- ✅ Follows DDD principles (handlers cannot modify aggregates, events live in entities)
-- ✅ Separation of Responsibilities: `ITransactionalUnitOfWork` = transactions only, `IDomainEventCollector` = events only
-- ✅ Layer Separation: Dispatch logic in `Platform.Messaging.EntityFramework` (correct layer)
-- ✅ Consistent with Integration Events pattern
-- ✅ Centralized telemetry preserved (ActivitySource + ApplicationDiagnostics)
-- ⚠️ Breaking change for handlers that modify aggregates (must use Integration Events instead)
+- ✅ **CREATED** `IDomainEntityChangeTracker` interface in `Platform.Persistence.EntityFramework`
+- ✅ **MOVED** `DomainEventsDispatcherExtension` to `Platform.Messaging`
+- ✅ **DELETED** `DomainEventsDispatcherExtension` from `Platform.Persistence.EntityFramework`
+- ✅ **SPLIT** `MessagingBehavior` into `DomainEventProcessorBehavior` + `IntegrationEventProcessorBehavior`
+- ✅ **REFACTORED** `QltDBContext` - Implements `IDomainEntityChangeTracker`, reads directly from ChangeTracker
+- ✅ **CLEANED** `ITransactionalUnitOfWork` - Removed `GetPendingDomainEvents()`
+- ✅ Separation of Responsibilities: `ITransactionalUnitOfWork` = transactions, `IDomainEntityChangeTracker` = entity tracking
+- ✅ Layer Separation: Dispatch extension in `Platform.Messaging`, behaviors in `Platform.Messaging.EntityFramework`
+- ✅ Cascading domain events supported (re-check loop)
+- ✅ Integration events published only after successful commit
 
-**Migration Guide:**
-If existing Domain Event Handler modifies aggregates:
-```csharp
-// BEFORE (violates DDD):
-public async Task Handle(MyDomainEvent evt, CancellationToken ct)
-{
-    var entity = await _context.Entities.FindAsync(evt.Id);
-    entity.DoSomething();
-    await _context.SaveChangesAsync();  // ❌ Will fail
-}
-
-// AFTER (correct DDD):
-public async Task Handle(MyDomainEvent evt, CancellationToken ct)
-{
-    // Publish Integration Event for cross-aggregate changes
-    await _eventBus.PublishAsync(new MyIntegrationEvent(evt.Id));
-}
-
-// In another bounded context/service:
-public async Task Handle(MyIntegrationEvent evt, CancellationToken ct)
-{
-    var command = new UpdateEntityCommand(evt.Id);
-    await _mediator.Send(command);  // ✅ New transaction
-}
-```
-
-**Date:** 2025-01-25
+**Date:** 2025-01-25 (Updated: 2025-06-25)
 
 ---
 
 ## 📚 Reference Documentation
 
 For detailed patterns implementation, see:
-- [CQRS Pattern](../docs/02-cqrs-pattern.md)
-- [Domain Events Pattern](../docs/03-domain-events-pattern.md)
-- [Idempotency Pattern](../docs/04-idempotency-pattern.md)
-- [Transactional Outbox Pattern](../docs/05-transactional-outbox-pattern.md)
-- [Idempotent Consumer Pattern](../docs/06-idempotent-consumer-pattern.md)
-- [Unit of Work Pattern](../docs/07-unit-of-work-pattern.md)
-- [Pipeline Behavior Pattern](../docs/08-pipeline-behavior-pattern.md)
+- [Architecture Documentation](../docs/architecture/README.md) — Messaging layers, pipeline, domain events, idempotency, outbox, telemetry, event bus, CQRS read model
+- [Developer Guide](../docs/developer-guide/README.md) — Service configuration, transactional pipeline, end-to-end flow, testing, known gaps
+- [Backlog](../docs/backlog/README.md) — Future proposals and parked improvements
 
 ---
 
@@ -526,6 +511,6 @@ For detailed patterns implementation, see:
 
 ---
 
-**Last Updated:** 2025-01-24  
+**Last Updated:** 2025-06-24  
 **Maintained By:** Architecture Team  
 **Review Cycle:** Quarterly or when major architectural decisions are made

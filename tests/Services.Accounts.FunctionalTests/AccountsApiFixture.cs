@@ -13,7 +13,6 @@ public sealed class AccountsApiFixture : WebApplicationFactory<Program>, IAsyncL
     public IResourceBuilder<SqlServerServerResource> SqlServer { get; private set; }
     //    public IResourceBuilder<SqlServerServerResource> IdentityDB { get; private set; }
 
-    public IResourceBuilder<SqlServerDatabaseResource> IdentityLogsDB { get; private set; }
     public IResourceBuilder<SqlServerDatabaseResource> IdentityDB { get; private set; }
     public IResourceBuilder<SqlServerDatabaseResource> AccountDb { get; private set; }
     public IResourceBuilder<RabbitMQServerResource> RabbitMQ { get; private set; }
@@ -41,7 +40,6 @@ public sealed class AccountsApiFixture : WebApplicationFactory<Program>, IAsyncL
 
         AccountDb = SqlServer.AddDatabase("AccountsDb");
         IdentityDB = SqlServer.AddDatabase("IdentityDb");
-        IdentityLogsDB = SqlServer.AddDatabase("IdentityLogsDb");
         RedisCache = appBuilder.AddRedis("cache");
         RabbitMQ = appBuilder.AddRabbitMQ("eventbus");
 
@@ -49,7 +47,6 @@ public sealed class AccountsApiFixture : WebApplicationFactory<Program>, IAsyncL
             .WithReference(IdentityDB)
             .WaitFor(AccountDb)
             .WaitFor(IdentityDB)
-            .WaitFor(IdentityLogsDB)
             .WaitFor(RedisCache)
             .WaitFor(RabbitMQ);
 
