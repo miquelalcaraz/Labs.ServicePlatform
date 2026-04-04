@@ -5,6 +5,11 @@
 		<Nullable>enable</Nullable>
 		<RootNamespace>Qlt.Services.Accounts.Domain</RootNamespace>
 	</PropertyGroup>
+	<ItemGroup>
+	  <Compile Remove="Models\OrganizationAggregate\**" />
+	  <EmbeddedResource Remove="Models\OrganizationAggregate\**" />
+	  <None Remove="Models\OrganizationAggregate\**" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\Qlt.Domain\Qlt.Domain.Core\Domain.Core.csproj" />

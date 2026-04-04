@@ -67,7 +67,7 @@ namespace Qlt.Services.Notifications.Extensions
 
         private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)
         {
-            eventBus.AddSubscription<OrganizationCreatedIntegrationEvent, OrganizationCreatedIntegrationEventHandler>();
+            eventBus.AddSubscription<CompanyCreatedIntegrationEvent, CompanyCreatedIntegrationEventHandler>();
         }
     }
 }

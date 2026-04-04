@@ -3,12 +3,15 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
+using Qlt.Infrastructure.Identity.Contracts.IntegrationEvents;
 using Qlt.Platform.EventBus;
 using Qlt.Platform.EventBus.Builders;
+using Qlt.Platform.EventBus.Extensions;
 using Qlt.Platform.Messaging.Builders;
 using Qlt.Platform.Persistence.Builders;
 using Qlt.Platform.Persistence.Migrations;
 using Qlt.Services.Accounts.Domain.Repositories;
+using Qlt.Services.Accounts.Infrastructure.IntegrationEvents.EventHandling;
 using Qlt.Services.Accounts.Infrastructure.Persistence;
 using Qlt.Services.Accounts.Infrastructure.Persistence.Repositories;
 using Qlt.Services.Accounts.Infrastructure.Persistence.Seed;
@@ -60,16 +63,23 @@ namespace Qlt.Services.Accounts.Infrastructure.Extensions
 
             services.AddTransactionalOutbox<AccountContext>(options =>
             {
-                options.RegisterEventTypes(typeof(Contracts.AssemblyReference).Assembly);
+                options.RegisterEventTypes(
+                    typeof(Contracts.AssemblyReference).Assembly,
+                    typeof(Qlt.Infrastructure.Identity.Contracts.AssemblyReference).Assembly);
             });
 
 
-            services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+            services.AddScoped<ICompanyRepository, CompanyRepository>();
+            services.AddScoped<ITenantRepository, TenantRepository>();
+            services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+            services.AddScoped<IUserMembershipRepository, UserMembershipRepository>();
+            services.AddScoped<IOnboardingProcessRepository, OnboardingProcessRepository>();
 
         }
 
         private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)
         {
+            eventBus.AddSubscription<ExternalUserProvisionedIntegrationEvent, ExternalUserProvisionedIntegrationEventHandler>();
         }
     }
 

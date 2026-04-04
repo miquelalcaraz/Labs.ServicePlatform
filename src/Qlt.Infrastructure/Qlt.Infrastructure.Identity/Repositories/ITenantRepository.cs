@@ -6,6 +6,6 @@ namespace Qlt.Infrastructure.Identity.Repositories
     {
         Task<Tenant> CreateAsync(Tenant tenant);
         Task<Tenant?> GetByIdAsync(Guid id);
-        Task<Tenant?> GetByOrganizationIdAsync(Guid organizationId);
+        Task<Tenant?> GetByCompanyIdAsync(Guid companyId);
     }
 }

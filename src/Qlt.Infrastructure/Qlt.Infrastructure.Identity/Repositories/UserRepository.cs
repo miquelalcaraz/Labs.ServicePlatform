@@ -27,6 +27,12 @@ public class UserRepository : IUserRepository
             .FirstOrDefaultAsync(u => u.Id == id);
     }
 
+    public async Task<ApplicationUser?> GetByEmailAsync(string email)
+    {
+        return await _context.ApplicationUser
+            .FirstOrDefaultAsync(u => u.Email == email);
+    }
+
     public async Task<IEnumerable<ApplicationUser>> GetByTenantIdAsync(Guid tenantId)
     {
         return await _context.ApplicationUser
