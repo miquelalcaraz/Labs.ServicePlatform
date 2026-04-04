@@ -12,7 +12,7 @@ using Qlt.Services.Accounts.Infrastructure.Persistence;
 namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AccountContext))]
-    [Migration("20260402182817_Initial")]
+    [Migration("20260403192228_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -103,6 +103,9 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("CurrencyCode")
                         .HasMaxLength(10)
                         .HasColumnType("nvarchar(10)");
@@ -130,6 +133,11 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("TaxNumber")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -142,6 +150,9 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
                     b.HasKey("Id");
 
                     b.ToTable("Organization", "accounts");
@@ -151,6 +162,9 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -178,6 +192,14 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
 

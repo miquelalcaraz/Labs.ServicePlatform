@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
+using Qlt.Platform.Persistence.Configurations;
 using Qlt.Platform.Persistence.Options;
 
 namespace Qlt.Platform.Persistence;
@@ -33,6 +34,8 @@ public abstract class QltReadDbContext : DbContext
         {
             modelBuilder.HasDefaultSchema(_configuration.DefaultSchema);
         }
+
+        modelBuilder.ConfigureEntityAuditProperties();
     }
 
     public sealed override int SaveChanges() =>

@@ -30,7 +30,6 @@ var sqlserver = builder.AddSqlServer("sqlserver", sqlPassword, 1444)
 
 //Databases
 var accountDb = sqlserver.AddDatabase("AccountsDb");
-var identityLogsDb = sqlserver.AddDatabase("IdentityLogsDb");
 var identityDb = sqlserver.AddDatabase("IdentityDb");
 var notificationsDb = sqlserver.AddDatabase("NotificationsDb");
 
@@ -41,8 +40,6 @@ var identity = builder.AddProject<Projects.Qlt_Infrastructure_Identity>("identit
    .WithExternalHttpEndpoints()
     .WithReference(identityDb)
     .WaitFor(identityDb)
-    .WithReference(identityLogsDb)
-    .WaitFor(identityLogsDb)
     .WithReference(eventbus).WaitFor(eventbus);
 
 var identityEndpoint = identity.GetEndpoint(launchProfileName);
