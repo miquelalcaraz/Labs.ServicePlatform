@@ -23,7 +23,8 @@
   <Folder Name="/src/" />
   <Folder Name="/src/Infrastructure/">
     <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.AppHost/Qlt.Infrastructure.AppHost.csproj" />
-    <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.Identity.Contracts/Infrastructure.Identity.Contracts.csproj" />
+    <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.Bff.BackOffice/Qlt.Infrastructure.Bff.BackOffice.csproj" />
+    <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.Identity.Contracts/Qlt.Infrastructure.Identity.Contracts.csproj" />
     <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.Identity/Qlt.Infrastructure.Identity.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />

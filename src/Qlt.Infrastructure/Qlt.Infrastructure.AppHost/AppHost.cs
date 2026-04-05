@@ -42,8 +42,6 @@ var identity = builder.AddProject<Projects.Qlt_Infrastructure_Identity>("identit
     .WaitFor(identityDb)
     .WithReference(eventbus).WaitFor(eventbus);
 
-var identityEndpoint = identity.GetEndpoint(launchProfileName);
-
 var notifications = builder.AddProject<Projects.Services_Notifications>("notifications")
    .WithHttpHealthCheck("/health")
     .WithReference(notificationsDb)
@@ -57,8 +55,7 @@ var accountApiService = builder.AddProject<Projects.Services_Accounts_API>("acco
     .WithReference(cache)
     .WaitFor(cache)
     .WithReference(eventbus).WaitFor(eventbus)
-    .WaitFor(identity)
-    .WithEnvironment("Identity__Url", identityEndpoint);
+    .WaitFor(identity);
 
 var webApp = builder.AddProject<Projects.Qlt_WebApps_BackOffice>("webfrontend")
     .WithExternalHttpEndpoints()
@@ -67,8 +64,22 @@ var webApp = builder.AddProject<Projects.Qlt_WebApps_BackOffice>("webfrontend")
     .WaitFor(cache)
     .WithReference(accountApiService)
     .WaitFor(accountApiService)
-    .WaitFor(identity)
-    .WithEnvironment("IdentityUrl", identityEndpoint);
+    .WaitFor(identity);
+
+var backofficeBff = builder.AddProject<Projects.Qlt_Infrastructure_Bff_BackOffice>("backoffice-bff")
+    .WithExternalHttpEndpoints()
+    .WithHttpHealthCheck("/health")
+    .WithReference(accountApiService)
+    .WaitFor(accountApiService)
+    .WithReference(identity)
+    .WaitFor(identity);
+
+var bffEndpoint = backofficeBff.GetEndpoint(launchProfileName);
+
+// Wire up Identity URLs through the BFF
+accountApiService.WithEnvironment("Identity__Url", bffEndpoint);
+webApp.WithEnvironment("IdentityUrl", bffEndpoint);
+identity.WithEnvironment("IssuerUri", bffEndpoint);
 
 // Wire up the callback urls (self referencing)
 webApp.WithEnvironment("CallBackUrl", webApp.GetEndpoint(launchProfileName));

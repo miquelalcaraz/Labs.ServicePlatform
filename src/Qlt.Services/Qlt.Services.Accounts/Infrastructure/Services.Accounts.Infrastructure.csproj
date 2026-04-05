@@ -30,7 +30,7 @@
 		<ProjectReference Include="..\..\..\Qlt.Platform\Qlt.Platform.EventBus.ServiceBus\Platform.EventBus.ServiceBus.csproj" />
 		<ProjectReference Include="..\..\..\Qlt.Platform\Qlt.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
 		<ProjectReference Include="..\..\..\Qlt.Platform\Qlt.Platform.Messaging.Redis\Platform.Messaging.Redis.csproj" />
-		<ProjectReference Include="..\..\..\Qlt.Infrastructure\Qlt.Infrastructure.Identity.Contracts\Infrastructure.Identity.Contracts.csproj" />
+		<ProjectReference Include="..\..\..\Qlt.Infrastructure\Qlt.Infrastructure.Identity.Contracts\Qlt.Infrastructure.Identity.Contracts.csproj" />
 		<ProjectReference Include="..\Application\Services.Accounts.Application.csproj" />
 		<ProjectReference Include="..\Domain\Services.Accounts.Domain.csproj" />
 		<ProjectReference Include="..\..\..\Qlt.Platform\Qlt.Platform.Persistence.EntityFramework.Relational\Platform.Persistence.EntityFramework.Relational.csproj" />

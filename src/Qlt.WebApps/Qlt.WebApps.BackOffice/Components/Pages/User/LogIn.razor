@@ -1,5 +1,4 @@
 ﻿@page "/user/login"
-@inject NavigationManager Nav
 @attribute [Authorize]
 @code {
     [SupplyParameterFromQuery]
@@ -8,14 +7,18 @@
     [CascadingParameter]
     public HttpContext? HttpContext { get; set; }
 
-    protected override async Task OnInitializedAsync()
-    { 
-        var returnUrl = string.IsNullOrWhiteSpace(ReturnUrl) ? "/" : ReturnUrl;
-        var url = new Uri(returnUrl, UriKind.RelativeOrAbsolute);
-        Nav.NavigateTo(url.IsAbsoluteUri ? "/" : returnUrl);
-        await base.OnInitializedAsync();
+    protected override Task OnInitializedAsync()
+    {
+        if (HttpContext is not null)
+        {
+            var returnUrl = string.IsNullOrWhiteSpace(ReturnUrl) ? "/" : ReturnUrl;
+            var url = new Uri(returnUrl, UriKind.RelativeOrAbsolute);
+            HttpContext.Response.Redirect(url.IsAbsoluteUri ? "/" : returnUrl);
+        }
+
+        return Task.CompletedTask;
     }
 
     public static string Url(NavigationManager nav)
-        => $"user/login?returnUrl={Uri.EscapeDataString(nav.ToBaseRelativePath(nav.Uri))}";
+        => $"/user/login?returnUrl={Uri.EscapeDataString(nav.ToBaseRelativePath(nav.Uri))}";
 }
