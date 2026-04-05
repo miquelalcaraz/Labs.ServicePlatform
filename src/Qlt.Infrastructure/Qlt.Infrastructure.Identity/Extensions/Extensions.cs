@@ -106,9 +106,16 @@ namespace Qlt.Infrastructure.Identity.Extensions
                 .AddUserManager<ApplicationUserManager>()
                 .AddDefaultTokenProviders();
 
+            var issuerUri = builder.Configuration["IssuerUri"];
+
             var identityServerBuilder = builder.Services
                 .AddIdentityServer(options =>
                 {
+                    if (!string.IsNullOrEmpty(issuerUri))
+                    {
+                        options.IssuerUri = issuerUri;
+                    }
+
                     options.Discovery.CustomEntries.Add("local_api", "~/localapi");
                     options.Events.RaiseErrorEvents = true;
                     options.Events.RaiseInformationEvents = true;

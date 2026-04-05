@@ -1,19 +1,19 @@
-﻿.Qlt.BackOffice-header {
+.qlt-backoffice-header {
     position: relative;
     max-width: 120rem;
     margin: auto;
     background-color: #fff;
 }
 
-.Qlt.BackOffice-header.home .Qlt.BackOffice-header-container {
+.qlt-backoffice-header.home .qlt-backoffice-header-container {
     margin-bottom: 0;
 }
 
-.Qlt.BackOffice-header .Qlt.BackOffice-header-container {
+.qlt-backoffice-header .qlt-backoffice-header-container {
     margin-bottom: 4rem;
 }
 
-.Qlt.BackOffice-header-hero {
+.qlt-backoffice-header-hero {
     overflow: hidden;
     position: absolute;
     max-width: 100%;
@@ -21,20 +21,19 @@
     top: 0;
 }
 
-.Qlt.BackOffice-header-container {
+.qlt-backoffice-header-container {
     position: relative;
-    margin: auto;
     margin: 0 5rem;
 }
 
-.Qlt.BackOffice-header-intro {
+.qlt-backoffice-header-intro {
     position: absolute;
     max-width: 48rem;
     bottom: 3rem;
     white-space: nowrap;
 }
 
-.Qlt.BackOffice-header-intro h1 {
+.qlt-backoffice-header-intro h1 {
     color: #000;
     font-size: 3.5rem;
     font-style: normal;
@@ -43,7 +42,7 @@
     margin: 0;
 }
 
-.Qlt.BackOffice-header-intro p {
+.qlt-backoffice-header-intro p {
     color: #000;
     font-size: 2rem;
     font-style: normal;
@@ -52,7 +51,7 @@
     margin: 0;
 }
 
-.Qlt.BackOffice-header .logo-header {
+.qlt-backoffice-header .logo-header {
     color: black;
 
     width: 20vw;
@@ -61,7 +60,7 @@
     min-width: 40px;
 }
 
-.Qlt.BackOffice-header-navbar {
+.qlt-backoffice-header-navbar {
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
@@ -70,91 +69,90 @@
     gap: 1rem;
 }
 
-    .Qlt.BackOffice-header-navbar h1 {
+    .qlt-backoffice-header-navbar h1 {
         font-size: 1.5rem;
         font-style: normal;
         font-weight: 700;
         line-height: 100%;
         margin-right: auto;
     }
-    .Qlt.BackOffice-header-navbar img {
+    .qlt-backoffice-header-navbar img {
         margin-top: 10px;
     }
 @media only screen and (max-width: 480px) { 
-    .Qlt.BackOffice-header-hero {
+    .qlt-backoffice-header-hero {
         height: 18rem;
     }
 
-    .Qlt.BackOffice-header-hero img {
+    .qlt-backoffice-header-hero img {
         width: 100%;
         height: 100%;
         object-fit: cover;
         object-position: center;
     }
 
-    .Qlt.BackOffice-header .Qlt.BackOffice-header-container {
+    .qlt-backoffice-header .qlt-backoffice-header-container {
         height: 15rem;
         margin-bottom: 4rem;
     }
 
-    .Qlt.BackOffice-header-container {
+    .qlt-backoffice-header-container {
         margin: 0 1rem;
     }
 
-    .Qlt.BackOffice-header.home .Qlt.BackOffice-header-container {
+    .qlt-backoffice-header.home .qlt-backoffice-header-container {
         height: 18rem;
         margin: 0 1rem;
     }
 
-    .Qlt.BackOffice-header-intro {
+    .qlt-backoffice-header-intro {
         white-space: wrap;
         bottom: 0;
     }
 
-    .Qlt.BackOffice-header-intro h1 {
+    .qlt-backoffice-header-intro h1 {
         font-size: 2rem;
     }
     
-    .Qlt.BackOffice-header-intro p {
+    .qlt-backoffice-header-intro p {
         font-size: 1.5rem;
     }
 }
 
 @media only screen and (min-width: 481px) and (max-width: 1024px) { 
-    .Qlt.BackOffice-header.home .Qlt.BackOffice-header-hero {
+    .qlt-backoffice-header.home .qlt-backoffice-header-hero {
         height: 24rem;
     }
 
-    .Qlt.BackOffice-header .Qlt.BackOffice-header-hero {
+    .qlt-backoffice-header .qlt-backoffice-header-hero {
         height: 15rem;
     }
 
-    .Qlt.BackOffice-header-hero img {
+    .qlt-backoffice-header-hero img {
         width: 100%;
         height: 100%;
         object-fit: cover;
         object-position: center;
     }
 
-    .Qlt.BackOffice-header-container {
-        margin: 0 1rem;
+    .qlt-backoffice-header-container {
         margin: 0 3rem;
     }
 
-    .Qlt.BackOffice-header.home .Qlt.BackOffice-header-container {
+    .qlt-backoffice-header.home .qlt-backoffice-header-container {
         height: 24rem;
         margin: 0 3rem;
     }
 
-    .Qlt.BackOffice-header-intro {
+    .qlt-backoffice-header-intro {
         white-space: wrap;
     }
 
-    .Qlt.BackOffice-header-intro h1 {
+    .qlt-backoffice-header-intro h1 {
         font-size: 2rem;
     }
     
-    .Qlt.BackOffice-header-intro p {
+    .qlt-backoffice-header-intro p {
         font-size: 1.5rem;
     }
 }

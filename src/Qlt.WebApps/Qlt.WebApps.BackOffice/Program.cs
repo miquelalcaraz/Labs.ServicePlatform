@@ -43,7 +43,8 @@ public class Program
         app.MapStaticAssets();
 
         app.MapRazorComponents<App>()
-            .AddInteractiveServerRenderMode();
+            .AddInteractiveServerRenderMode()
+            .RequireAuthorization();
 
         app.MapDefaultEndpoints();
 
