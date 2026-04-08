@@ -20,7 +20,13 @@ public class Program
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
-        builder.Services.AddRadzenComponents();
+
+
+        builder.Services.AddRadzenComponents()
+                .AddScoped<DialogService>()
+                .AddScoped<NotificationService>()
+                .AddScoped<TooltipService>()
+                .AddScoped<ContextMenuService>();
 
         builder.AddApplicationServices();
 
@@ -43,8 +49,11 @@ public class Program
         app.MapStaticAssets();
 
         app.MapRazorComponents<App>()
-            .AddInteractiveServerRenderMode()
-            .RequireAuthorization();
+            .AddInteractiveServerRenderMode();
+
+        //app.MapRazorComponents<App>()
+        //    .AddInteractiveServerRenderMode()
+        //    .RequireAuthorization();
 
         app.MapDefaultEndpoints();
 

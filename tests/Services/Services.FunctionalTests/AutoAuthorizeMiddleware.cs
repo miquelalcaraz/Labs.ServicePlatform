@@ -18,6 +18,8 @@ class AutoAuthorizeMiddleware
         identity.AddClaim(new Claim("sub", IDENTITY_ID));
         identity.AddClaim(new Claim("unique_name", IDENTITY_ID));
         identity.AddClaim(new Claim(ClaimTypes.Name, IDENTITY_ID));
+        identity.AddClaim(new Claim(ClaimTypes.Role, "PlatformAdmin"));
+        identity.AddClaim(new Claim("role", "PlatformAdmin"));
 
         httpContext.User.AddIdentity(identity);
 

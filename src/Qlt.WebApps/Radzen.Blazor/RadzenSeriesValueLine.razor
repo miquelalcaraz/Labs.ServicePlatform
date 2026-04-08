@@ -1,0 +1,158 @@
+@using Radzen.Blazor.Rendering
+@inherits RadzenGridLines
+@implements IChartSeriesOverlay
+@implements IDisposable
+
+@code {
+    public RadzenSeriesValueLine()
+    {
+        Visible = true;
+    }
+
+    [Parameter]
+    public virtual double Value { get; set; }
+
+    [Parameter]
+    public RenderFragment<double>? TooltipTemplate { get; set; }
+
+    IChartSeries? series;
+    [CascadingParameter]
+    protected IChartSeries? Series
+    {
+        get
+        {
+            return series;
+        }
+            set
+            {
+                if (value == null)
+                {
+                    series = null;
+                    return;
+                }
+                if (value.CoordinateSystem != CoordinateSystem.Cartesian)
+                {
+                    throw new ArgumentException($"Series must use Cartesian coordinate system");
+                }
+                series = value;
+                if (!series.Overlays.Contains(this))
+                {
+                    series.Overlays.Add(this);
+                }
+            }
+    }
+
+    protected virtual string Name => "Value";
+
+    public RenderFragment Render(ScaleBase categoryScale, ScaleBase valueScale)
+    {
+        if (Chart == null)
+        {
+            return null!;
+        }
+
+        double x1, x2, y1, y2;
+        if (Chart.ShouldInvertAxes())
+        {
+            x1 = x2 = categoryScale.Scale(Value);
+            if (x1 < 0 || x1 > Chart.CategoryScale.OutputSize)
+            {
+                return null!;
+            }
+            y1 = 0; y2 = Chart.ValueScale.OutputSize;
+        }
+        else
+        {
+            y1 = y2 = valueScale.Scale(Value);
+            if (y1 < 0 || y1 > Chart.ValueScale.OutputSize)
+            {
+                return null!;
+            }
+            x1 = 0; x2 = Chart.CategoryScale.OutputSize;
+        }
+
+        var path = $"M{x1.ToInvariantString()} {y1.ToInvariantString()} L{x2.ToInvariantString()} {y2.ToInvariantString()}";
+        return
+    @<g>
+        <Path @key="@($"{path}-{(series != null ? Chart.Series.IndexOf(series) : -1)}")" D="@path" Stroke="@Stroke" StrokeWidth="@StrokeWidth" LineType="@LineType" />
+    </g>
+    ;
+    }
+
+    public bool Contains(double mouseX, double mouseY, int tolerance)
+    {
+        if (double.IsNaN(Value) || Chart == null)
+        {
+            return false;
+        }
+
+        if (Chart.ShouldInvertAxes())
+        {
+            var a = Chart.CategoryScale.Scale(Value);
+            return (mouseY >= -tolerance && mouseY <= Chart.ValueScale.OutputSize + tolerance) && (a >= mouseX - tolerance && a <= mouseX + tolerance);
+        }
+        else
+        {
+            var a = Chart.ValueScale.Scale(Value);
+            return (mouseX >= -tolerance && mouseX <= Chart.CategoryScale.OutputSize + tolerance) && (a >= mouseY - tolerance && a <= mouseY + tolerance);
+        }
+    }
+
+    public RenderFragment RenderTooltip(double mouseX, double mouseY)
+    {
+        if (Chart == null)
+        {
+            return null!;
+        }
+
+        string text;
+        if (Chart.ShouldInvertAxes())
+        {
+            text = Chart.ValueAxis.Format(Chart.CategoryScale, Value);
+        }
+        else
+        {
+            text = Chart.ValueAxis.Format(Chart.ValueScale, Value);
+        }
+
+        return builder =>
+        {
+            builder.OpenComponent<ChartTooltip>(0);
+
+            builder.AddAttribute(1, nameof(ChartTooltip.ChildContent), TooltipTemplate?.Invoke(Value));
+
+            builder.AddAttribute(6, nameof(ChartTooltip.Title), series?.GetTitle());
+            builder.AddAttribute(2, nameof(ChartTooltip.Label), Name);
+            builder.AddAttribute(3, nameof(ChartTooltip.Value), text);
+
+            builder.AddAttribute(4, nameof(ChartTooltip.Style), $"border: 1px solid {Stroke};");
+            builder.AddAttribute(5, nameof(ChartTooltip.Class), "");
+
+            builder.CloseComponent();
+        };
+    }
+
+    /// <inheritdoc />
+    public Point GetTooltipPosition(double mouseX, double mouseY)
+    {
+        if (Chart == null)
+        {
+            return new Point { X = mouseX, Y = mouseY };
+        }
+
+        if (Chart.ShouldInvertAxes())
+        {
+            mouseX = Chart.CategoryScale.Scale(Value);
+            mouseY = Math.Max(0, Math.Min(Chart.ValueScale.OutputSize, mouseY));
+        }
+        else
+        {
+            mouseY = Chart.ValueScale.Scale(Value);
+            mouseX = Math.Max(0, Math.Min(Chart.CategoryScale.OutputSize, mouseX));
+        }
+
+        return new Point { X = mouseX, Y = mouseY };
+    }
+
+    public void Dispose() => series?.Overlays.Remove(this);
+}

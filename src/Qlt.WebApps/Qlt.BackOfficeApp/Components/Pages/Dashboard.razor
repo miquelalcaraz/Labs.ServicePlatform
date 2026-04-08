@@ -1,0 +1,104 @@
+@page "/dashboard"
+@attribute [Authorize]
+
+<PageTitle>Dashboard</PageTitle>
+
+<RadzenStack Gap="1.5rem">
+    <RadzenStack Gap="0.25rem">
+        <RadzenText TextStyle="TextStyle.H4" TagName="TagName.H1" Style="font-weight: 700; color: var(--rz-base-900); letter-spacing: -0.02em;">
+            Welcome back@(!string.IsNullOrEmpty(Security.UserName) ? $", {Security.UserName}" : "")
+        </RadzenText>
+        <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-base-500);">
+            Here's an overview of your workspace.
+        </RadzenText>
+    </RadzenStack>
+
+    <RadzenRow Gap="1rem" RowGap="1rem">
+        <RadzenColumn Size="12" SizeSM="6" SizeLG="3">
+            <RadzenCard Style="padding: 1.25rem;">
+                <RadzenStack Gap="0.75rem">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-base-500); font-weight: 500;" class="rz-mb-0">Total Users</RadzenText>
+                        <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--rz-base-100); display: flex; align-items: center; justify-content: center;">
+                            <RadzenIcon Icon="people_outline" Style="font-size: 18px; color: var(--rz-base-600);" />
+                        </div>
+                    </RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H4" Style="font-weight: 700; color: var(--rz-base-900);" class="rz-mb-0">—</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-base-400);" class="rz-mb-0">Managed by Identity Server</RadzenText>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeSM="6" SizeLG="3">
+            <RadzenCard Style="padding: 1.25rem;">
+                <RadzenStack Gap="0.75rem">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-base-500); font-weight: 500;" class="rz-mb-0">Active Sessions</RadzenText>
+                        <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--rz-success-lighter); display: flex; align-items: center; justify-content: center;">
+                            <RadzenIcon Icon="wifi_tethering" Style="font-size: 18px; color: var(--rz-success-dark);" />
+                        </div>
+                    </RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H4" Style="font-weight: 700; color: var(--rz-base-900);" class="rz-mb-0">1</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-success);" class="rz-mb-0">● Your session is active</RadzenText>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeSM="6" SizeLG="3">
+            <RadzenCard Style="padding: 1.25rem;">
+                <RadzenStack Gap="0.75rem">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-base-500); font-weight: 500;" class="rz-mb-0">System Status</RadzenText>
+                        <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--rz-success-lighter); display: flex; align-items: center; justify-content: center;">
+                            <RadzenIcon Icon="check_circle_outline" Style="font-size: 18px; color: var(--rz-success-dark);" />
+                        </div>
+                    </RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H4" Style="font-weight: 700; color: var(--rz-base-900);" class="rz-mb-0">Healthy</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-base-400);" class="rz-mb-0">All services operational</RadzenText>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeSM="6" SizeLG="3">
+            <RadzenCard Style="padding: 1.25rem;">
+                <RadzenStack Gap="0.75rem">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                        <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-base-500); font-weight: 500;" class="rz-mb-0">Environment</RadzenText>
+                        <div style="width: 36px; height: 36px; border-radius: 8px; background: var(--rz-info-lighter); display: flex; align-items: center; justify-content: center;">
+                            <RadzenIcon Icon="dns" Style="font-size: 18px; color: var(--rz-info-dark);" />
+                        </div>
+                    </RadzenStack>
+                    <RadzenText TextStyle="TextStyle.H4" Style="font-weight: 700; color: var(--rz-base-900);" class="rz-mb-0">Dev</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-base-400);" class="rz-mb-0">localhost:5011</RadzenText>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenRow Gap="1rem" RowGap="1rem">
+        <RadzenColumn Size="12" SizeLG="8">
+            <RadzenCard Style="padding: 1.5rem; min-height: 280px;">
+                <RadzenStack Gap="1rem">
+                    <RadzenText TextStyle="TextStyle.H6" Style="font-weight: 600; color: var(--rz-base-800);" class="rz-mb-0">Recent Activity</RadzenText>
+                    <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Style="min-height: 200px;">
+                        <RadzenIcon Icon="inbox" Style="font-size: 48px; color: var(--rz-base-300);" />
+                        <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-base-400);" class="rz-mb-0">No recent activity to display</RadzenText>
+                    </RadzenStack>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeLG="4">
+            <RadzenCard Style="padding: 1.5rem; min-height: 280px;">
+                <RadzenStack Gap="1rem">
+                    <RadzenText TextStyle="TextStyle.H6" Style="font-weight: 600; color: var(--rz-base-800);" class="rz-mb-0">Quick Actions</RadzenText>
+                    <RadzenStack Gap="0.5rem">
+                        <RadzenButton Text="View Profile" Icon="person_outline" ButtonStyle="ButtonStyle.Light"
+                                      Variant="Variant.Flat" Style="justify-content: flex-start; width: 100%;"
+                                      Click='@(() => NavigationManager.NavigateTo("/profile"))' />
+                        <RadzenButton Text="System Settings" Icon="settings" ButtonStyle="ButtonStyle.Light"
+                                      Variant="Variant.Flat" Style="justify-content: flex-start; width: 100%;" Disabled="true" />
+                        <RadzenButton Text="View Logs" Icon="description" ButtonStyle="ButtonStyle.Light"
+                                      Variant="Variant.Flat" Style="justify-content: flex-start; width: 100%;" Disabled="true" />
+                    </RadzenStack>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+</RadzenStack>

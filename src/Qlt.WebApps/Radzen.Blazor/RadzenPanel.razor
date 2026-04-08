@@ -1,0 +1,51 @@
+@using Radzen.Blazor.Rendering
+@inherits RadzenComponentWithChildren
+@if (Visible)
+{
+    <div @ref="@Element" style="@Style" @attributes="Attributes" class="@GetCssClass()" id="@GetId()">
+        <div class="rz-panel-titlebar">
+            @if (!string.IsNullOrEmpty(Text) || !string.IsNullOrEmpty(Icon))
+            {
+                <div>
+                    @if (!string.IsNullOrEmpty(Icon))
+                    {
+                        <i class="notranslate rzi" style="@(!string.IsNullOrEmpty(IconColor) ? $"color:{IconColor}" : null)">@Icon</i>
+                    }
+                    @if (!string.IsNullOrEmpty(Text))
+                    {
+                        <span>@Text</span>
+                    }
+                </div>
+            }
+            @HeaderTemplate
+            @if (AllowCollapse)
+            {
+                <button id="@(GetId() + "expc")" type="button" @onclick=@Toggle class="rz-panel-titlebar-icon rz-panel-titlebar-toggler"
+                        aria-controls="@($"{GetId()}-content")"
+                        aria-expanded="@(collapsed ? "false" : "true")" aria-label="@(collapsed ? ExpandAriaLabel : CollapseAriaLabel)" title="@(collapsed ? ExpandTitle : CollapseTitle)"
+                        @onkeypress="@(args => OnKeyPress(args, Toggle(new MouseEventArgs())))" @onkeypress:preventDefault=preventKeyPress @onkeypress:stopPropagation="stopKeypressPropagation">
+                    <span class="notranslate rzi @(collapsed ? "rzi-plus" : "rzi-minus")"></span>
+                </button>
+            }
+        </div>
+        <Expander Expanded=@(!collapsed) CssClass="rz-panel-content-wrapper" id="@($"{GetId()}-content")">
+            <div class="rz-panel-content">
+                @ChildContent
+            </div>
+            @if (FooterTemplate != null)
+            {
+                <div class="rz-panel-footer">
+                    @FooterTemplate
+                </div>
+            }
+        </Expander>
+        @if (SummaryTemplate != null)
+        {
+            <Expander Expanded=@collapsed>
+                <div class="rz-panel-content rz-panel-content-summary">
+                    @SummaryTemplate
+                </div>
+            </Expander>
+        }
+    </div>
+}

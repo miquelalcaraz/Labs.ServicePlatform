@@ -1,0 +1,53 @@
+﻿@implements IDisposable
+@using System.Collections.Specialized
+
+<div aria-live="polite" class="rz-notification" style="@Style">
+@if (Service?.Messages != null)
+{
+    @for (var i = 0; i < Service.Messages.Count; i++)
+    {
+        <div @key="Service.Messages[i]">
+            @DrawMessage(i, Service.Messages[i])
+        </div>
+    }
+}
+</div>
+@code {
+    [Inject] private NotificationService? Service { get; set; }
+
+    [Parameter]
+    public string? Style { get; set; }
+
+    RenderFragment DrawMessage(int index, NotificationMessage m)
+    {
+        return new RenderFragment(builder =>
+        {
+            var i = 0;
+            builder.OpenComponent(i, typeof(RadzenNotificationMessage));
+            builder.AddAttribute(i++, "Message", m);
+            builder.AddAttribute(i++, "Style", m.Style);
+            builder.CloseComponent();
+        });
+    }
+
+    void Update(object? sender, NotifyCollectionChangedEventArgs args)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        if (Service?.Messages != null)
+        {
+            Service.Messages.CollectionChanged -= Update;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        if (Service?.Messages != null)
+        {
+            Service.Messages.CollectionChanged += Update;
+        }
+    }
+}

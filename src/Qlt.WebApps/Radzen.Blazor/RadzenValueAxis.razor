@@ -1,0 +1,39 @@
+@using Radzen.Blazor.Rendering
+
+@inherits AxisBase
+<CascadingValue Value="@this">
+  @ChildContent
+</CascadingValue>
+@code {
+    internal double Measure(RadzenChart chart)
+    {
+        if (chart.ShouldInvertAxes())
+        {
+            return AxisMeasurer.YAxis(chart.ValueScale, chart.CategoryAxis, chart.CategoryAxis.Title);
+        }
+        else if (Visible == false)
+        {
+            return 0;
+        }
+        else
+        {
+            return AxisMeasurer.YAxis(chart.ValueScale, chart.ValueAxis, Title);
+        }
+    }
+
+    internal override double Size
+    {
+        get
+        {
+            return Chart != null ? Measure(Chart) : 0;
+        }
+    }
+
+    protected override void Initialize()
+    {
+        if (Chart != null)
+        {
+            Chart.ValueAxis = this;
+        }
+    }
+}

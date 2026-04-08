@@ -1,0 +1,50 @@
+@using Radzen.Blazor
+@using Radzen.Blazor.Rendering
+@typeparam TItem
+@inherits Radzen.Blazor.CartesianSeries<TItem>
+<CascadingValue Value="@this">
+  @ChildContent
+</CascadingValue>
+@code {
+  public override RenderFragment Render(ScaleBase categoryScale, ScaleBase valueScale)
+  {
+    var chart = RequireChart();
+    var category = ComposeCategory(categoryScale);
+
+    var value = ComposeValue(valueScale);
+
+    var pathGenerator = GetPathGenerator();
+
+    var data = Items.Select(item =>
+    {
+      var x = category(item);
+      var y = value(item);
+
+      return new Point<TItem> { X = x, Y = y, Data = item };
+    });
+
+    var ticks = chart.CategoryScale.Ticks(chart.CategoryAxis.TickDistance);
+    var index = chart.Series.IndexOf(this);
+    var className = $"rz-area-series rz-series-{index}";
+
+    return
+    @<g class="@className">
+      @if (Items.Any())
+      {
+        var x1 = category(Items.First()).ToInvariantString();
+        var x2 = category(Items.Last()).ToInvariantString();
+        var valueTicks = chart.ValueScale.Ticks(chart.ValueAxis.TickDistance);
+        var start = Math.Max(0, valueTicks.Start);
+        var y = chart.ValueScale.Scale(start).ToInvariantString();
+        var style = $"clip-path: url(#{chart.ClipPath}); -webkit-clip-path: url(#{chart.ClipPath});";
+        var path = pathGenerator.Path(data);
+        var area = $"M {x1} {y} {path} L {x2} {y}";
+        var line = $"M {path}";
+
+        <path @key="@area" style="@style" d="@area" fill="@Fill" stroke="none"></path>
+        <Path @key="@line" D="@line" Stroke="@Stroke" StrokeWidth="@StrokeWidth" LineType="@LineType" Style="@style" Fill="none" />
+      }
+      <Markers Visible="@Markers.Visible" Series="@this" Data="@data" MarkerType="@MarkerType" Stroke="@Markers.Stroke" Fill="@(Markers.Fill ?? Stroke)" StrokeWidth="@Markers.StrokeWidth" Size="@Markers.Size" />
+    </g>;
+  }
+}

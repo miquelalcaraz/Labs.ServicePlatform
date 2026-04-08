@@ -212,8 +212,27 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("ActivationDeliveredAtUtc")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<string>("AdminEmail")
+                        .HasMaxLength(320)
+                        .HasColumnType("nvarchar(320)");
+
+                    b.Property<string>("AdminFirstName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("AdminLastName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid?>("AdminMembershipId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid?>("AdminUserId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CompanyLegalName")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.Property<DateTimeOffset?>("CompletedAtUtc")
                         .HasColumnType("datetimeoffset");
@@ -272,8 +291,16 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("SubscriptionId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("SubscriptionPlanCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TenantName")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
@@ -282,6 +309,8 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId");
 
                     b.HasIndex("SubscriptionId")
                         .IsUnique();

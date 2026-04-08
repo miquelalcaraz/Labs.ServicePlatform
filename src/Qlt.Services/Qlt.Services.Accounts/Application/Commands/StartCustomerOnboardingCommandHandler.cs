@@ -59,7 +59,17 @@ public class StartCustomerOnboardingCommandHandler : ICommandHandler<StartCustom
         tenant.SetOwnerCompany(company.Id);
         subscription.SetOwnerCompany(company.Id);
 
-        var onboarding = OnboardingProcess.Create(subscription.Id, tenant.Id, message.CreatedByInternalUserId);
+        var onboarding = OnboardingProcess.Create(
+            subscription.Id,
+            tenant.Id,
+            message.CreatedByInternalUserId,
+            companyLegalName: message.CompanyLegalName,
+            subscriptionPlanCode: message.PlanCode,
+            adminEmail: message.AdminEmail,
+            adminFirstName: message.AdminFirstName,
+            adminLastName: message.AdminLastName,
+            tenantName: tenantName,
+            correlationId: message.RequestId);
         onboarding.Start();
         onboarding.MarkSubscriptionCreated();
         onboarding.MarkTenantCreated();

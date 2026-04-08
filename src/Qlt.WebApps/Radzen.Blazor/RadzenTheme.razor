@@ -1,0 +1,11 @@
+@inject ThemeService ThemeService
+@inject IServiceProvider ServiceProvider
+@if (PreloadIconFont)
+{
+<link rel="preload" href="@IconFontHref" as="font" type="font/woff2" crossorigin="anonymous" />
+}
+<link id="radzen-theme-link" rel="stylesheet" href="@Href" />
+@if (wcag)
+{
+<link id="radzen-wcag-theme-link" rel="stylesheet" href="@WcagHref" />
+}

@@ -1,0 +1,41 @@
+@using Radzen.Blazor.Rendering
+<g class="rz-arc-gauge-scale">
+<GaugeScale
+    Radius=@CurrentScaleRadius
+    StrokeWidth=@CurrentStrokeWidth
+    Stroke=@Stroke
+    Center=@CurrentCenter
+    StartAngle=@StartAngle
+    EndAngle=@EndAngle
+    TickPosition=@TickPosition
+    ShowFirstTick=@ShowFirstTick
+    ShowLastTick=@ShowLastTick
+    ShowTickLabels=@ShowTickLabels
+    TickLength=@TickLength
+    TickLabelOffset=@TickLabelOffset
+    Min=@Min
+    Max=@Max
+    Step=@Step
+    MinorStep=@MinorStep
+    FormatString=@FormatString
+    Formatter=@Formatter
+    MinorTickLength=@MinorTickLength
+/>
+<GaugeBand 
+    From=@Min
+    To=@Max
+    Fill=@Fill
+    Stroke=@Stroke
+    StrokeWidth=@CurrentStrokeWidth
+    Radius=@CurrentRadius
+    Center=@CurrentCenter
+    StartAngle=@StartAngle
+    EndAngle=@EndAngle
+    Min=@Min
+    Max=@Max
+    Size=@CurrentSize
+/>
+</g>
+<CascadingValue Value=@this>
+    @ChildContent
+</CascadingValue>

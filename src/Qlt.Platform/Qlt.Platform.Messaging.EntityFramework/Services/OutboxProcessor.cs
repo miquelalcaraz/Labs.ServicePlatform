@@ -1,10 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -13,6 +6,14 @@ using Microsoft.Extensions.Options;
 using Qlt.Platform.EventBus;
 using Qlt.Platform.Messaging.Options;
 using Qlt.Platform.Meters;
+using Qlt.Platform.Persistence;
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Qlt.Platform.Messaging.Services;
 
@@ -24,21 +25,26 @@ namespace Qlt.Platform.Messaging.Services;
 public class OutboxProcessor : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly MigrationReadySignal _migrationReady;
     private readonly OutboxProcessorOptions _options;
     private readonly ILogger<OutboxProcessor> _logger;
 
     public OutboxProcessor(
         IServiceScopeFactory scopeFactory,
+        MigrationReadySignal migrationReady,
         IOptions<OutboxProcessorOptions> options,
         ILogger<OutboxProcessor> logger)
     {
         _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
+        _migrationReady = migrationReady ?? throw new ArgumentNullException(nameof(migrationReady));
         _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        await _migrationReady.WaitAsync(stoppingToken);
+
         _logger.LogInformation(
             "Outbox processor started. Polling interval: {PollingInterval}, batch size: {BatchSize}, max retries: {MaxRetries}",
             _options.PollingInterval,

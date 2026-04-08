@@ -1,13 +1,13 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-
-using Duende.IdentityModel;
+﻿using Duende.IdentityModel;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
 
 using Microsoft.AspNetCore.Identity;
 
 using Qlt.Infrastructure.Identity.Models;
+
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace Qlt.Infrastructure.Identity.Services
 {

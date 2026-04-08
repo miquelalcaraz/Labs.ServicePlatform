@@ -1,0 +1,12 @@
+﻿@using Microsoft.JSInterop
+@using System.Globalization
+@inherits RadzenComponent
+
+@if (Visible)
+{
+    <div @ref="@Element" @attributes="Attributes" class="@GetCssClass()" id="@GetId()" style="@Style">
+        <CascadingValue Value=this>
+            @ChildContent
+        </CascadingValue>
+    </div>
+}

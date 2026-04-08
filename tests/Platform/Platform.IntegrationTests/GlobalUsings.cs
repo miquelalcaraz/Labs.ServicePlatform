@@ -1,10 +1,7 @@
-global using FluentAssertions;
-
 global using Azure.Messaging.ServiceBus;
 global using Azure.Messaging.ServiceBus.Administration;
 
-global using DotNet.Testcontainers.Builders;
-global using DotNet.Testcontainers.Containers;
+global using FluentAssertions;
 
 global using Microsoft.EntityFrameworkCore;
 global using Microsoft.Extensions.DependencyInjection;

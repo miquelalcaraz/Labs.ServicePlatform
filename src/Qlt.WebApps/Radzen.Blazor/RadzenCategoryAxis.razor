@@ -1,0 +1,43 @@
+@using Radzen.Blazor
+@using Radzen.Blazor.Rendering
+@inherits AxisBase
+<CascadingValue Value="@this">
+  @ChildContent
+</CascadingValue>
+@code {
+  internal double Measure(RadzenChart chart)
+      {
+          if (Visible == false)
+          {
+              return 0;
+          }
+
+          if (chart.ShouldInvertAxes())
+          {
+              return AxisMeasurer.XAxis(chart.ValueScale, chart.ValueAxis, chart.ValueAxis.Title);
+          }
+          else
+          {
+              return AxisMeasurer.XAxis(chart.CategoryScale, this, Title);
+          }
+      }
+
+      [Parameter]
+      public double Padding { get; set; }
+
+      internal override double Size
+      {
+          get
+          {
+              return Chart != null ? Measure(Chart) : 0;
+          }
+      }
+
+      protected override void Initialize()
+      {
+          if (Chart != null)
+          {
+              Chart.CategoryAxis = this;
+          }
+      }
+}

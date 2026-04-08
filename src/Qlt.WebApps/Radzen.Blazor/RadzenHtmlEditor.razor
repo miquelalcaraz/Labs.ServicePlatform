@@ -1,0 +1,60 @@
+@using Radzen
+@using Radzen.Blazor
+@using Radzen.Blazor.Rendering
+@using Microsoft.JSInterop
+@inherits FormComponent<string>
+
+@if(Visible)
+{
+    <div @ref=Element style=@Style @attributes=@Attributes class=@GetCssClass() id=@GetId()>
+        @if (ShowToolbar)
+        {
+        <div class="rz-html-editor-toolbar">
+            <CascadingValue Value=@this>
+            @if (ChildContent != null)
+            {
+                @ChildContent
+            }
+            else
+            {
+                <RadzenHtmlEditorUndo />
+                <RadzenHtmlEditorRedo />
+                <RadzenHtmlEditorSeparator />
+                <RadzenHtmlEditorBold />
+                <RadzenHtmlEditorItalic />
+                <RadzenHtmlEditorUnderline />
+                <RadzenHtmlEditorStrikeThrough />
+                <RadzenHtmlEditorSeparator />
+                <RadzenHtmlEditorAlignLeft />
+                <RadzenHtmlEditorAlignCenter />
+                <RadzenHtmlEditorAlignRight />
+                <RadzenHtmlEditorJustify />
+                <RadzenHtmlEditorSeparator />
+                <RadzenHtmlEditorIndent />
+                <RadzenHtmlEditorOutdent />
+                <RadzenHtmlEditorUnorderedList />
+                <RadzenHtmlEditorOrderedList />
+                <RadzenHtmlEditorSeparator />
+                <RadzenHtmlEditorColor />
+                <RadzenHtmlEditorBackground />
+                <RadzenHtmlEditorRemoveFormat />
+                <RadzenHtmlEditorSeparator />
+                <RadzenHtmlEditorSubscript />
+                <RadzenHtmlEditorSuperscript />
+                <RadzenHtmlEditorSeparator />
+                <RadzenHtmlEditorLink />
+                <RadzenHtmlEditorUnlink />
+                <RadzenHtmlEditorImage />
+                <RadzenHtmlEditorFontName />
+                <RadzenHtmlEditorFontSize />
+                <RadzenHtmlEditorFormatBlock />
+                <RadzenHtmlEditorSeparator />
+                <RadzenHtmlEditorSource />
+            }
+            </CascadingValue>
+        </div>
+        }
+        <RadzenTextArea @ref=@TextArea spellcheck="false" Visible=@(mode == HtmlEditorMode.Source) class="rz-html-editor-source" Value=@Html Change=@SourceChanged Immediate=@Immediate />
+        <div hidden="@(mode != HtmlEditorMode.Design)" @ref=@ContentEditable class="rz-html-editor-content" contenteditable=@(!Disabled) @onfocus=@OnFocus @onblur=@OnBlur></div>
+    </div>
+}

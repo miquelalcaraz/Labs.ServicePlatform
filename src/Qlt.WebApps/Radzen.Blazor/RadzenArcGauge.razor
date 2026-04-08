@@ -1,0 +1,69 @@
+@using Radzen.Blazor.Rendering
+@inherits GaugeBase
+
+@if (Visible)
+{
+    <div @ref="Element" style=@Style @attributes=@Attributes class=@GetCssClass() id="@GetId()">
+    @if (Width.HasValue && Height.HasValue)
+    {
+        <svg style="width: 100%; height: 100%">
+            <CascadingValue Value=@this>
+                @ChildContent
+            </CascadingValue>
+        </svg>
+        @if (Values.Any())
+        {
+            @foreach (var value in Values)
+            {
+                <div class="rz-arc-gauge-value" style=@ValueStyle(value)>
+                    @if (value.ShowValue)
+                    {
+                        @if (value.Template != null)
+                        {
+                            @value.Template(value)
+                        }
+                        else if (!string.IsNullOrEmpty(value.FormatString))
+                        {
+                            @string.Format(value.FormatString, value.Value)
+                        }
+                        else
+                        {
+                            @value.Value
+                        }
+                    }
+                </div>
+            }
+        }
+    }
+    </div>
+}
+
+@code {
+    IList<RadzenArcGaugeScaleValue> Values { get; set; } = new List<RadzenArcGaugeScaleValue>();
+
+    string ValueStyle(RadzenArcGaugeScaleValue value)
+    {
+        var scale = value?.Scale;
+        if (scale == null)
+        {
+            return "left: 0px; top: 0px";
+        }
+
+        return $"left: {scale.CurrentCenter.X.ToInvariantString()}px; top: {scale.CurrentCenter.Y.ToInvariantString()}px";
+    }
+
+    internal void AddValue(RadzenArcGaugeScaleValue value)
+    {
+        if (!Values.Contains(value))
+        {
+            Values.Add(value);
+
+            StateHasChanged();
+        }
+    }
+
+    protected override string GetComponentCssClass()
+    {
+        return $"rz-arc-gauge";
+    }
+}

@@ -1,0 +1,85 @@
+@using System.Text
+<path class="@Class" d="@D" stroke-linecap="@StrokeLineCap" stroke-dasharray="@StrokeDashArray" style="@CurrentStyle()"></path>
+@code {
+    [Parameter]
+    public string Style { get; set; } = string.Empty;
+
+    private string CurrentStyle()
+    {
+        var style = new StringBuilder();
+
+        if (Stroke != null)
+        {
+            style.Append($"stroke: {Stroke};");
+        }
+
+        if (Fill != null)
+        {
+            style.Append($"fill: {Fill};");
+        }
+
+        if (StrokeWidth >= 0)
+        {
+            style.Append($"stroke-width: {StrokeWidth.ToInvariantString()};");
+        }
+
+        if (!string.IsNullOrEmpty(Style))
+        {
+            if (style.Length > 0)
+            {
+                style.Append(";");
+            }
+            style.Append(Style);
+        }
+
+        return style.ToString();
+    }
+
+    [Parameter]
+    public string D { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Stroke { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Fill { get; set; } = string.Empty;
+
+    [Parameter]
+    public double StrokeWidth { get; set; }
+
+    [Parameter]
+    public LineType LineType { get; set; }
+
+    [Parameter]
+    public string Class { get; set;} = string.Empty;
+
+    private string? StrokeLineCap
+    {
+        get
+        {
+            switch (LineType)
+            {
+                case LineType.Dotted:
+                return "round";
+                default:
+                return null;
+            }
+        }
+    }
+
+    private string? StrokeDashArray
+    {
+        get
+        {
+            switch (LineType)
+            {
+                case LineType.Dotted:
+                return $"0 {StrokeWidth * 2}";
+                case LineType.Dashed:
+                return $"{StrokeWidth * 3} {StrokeWidth * 3}";
+                default:
+                return null;
+            }
+        }
+    }
+}

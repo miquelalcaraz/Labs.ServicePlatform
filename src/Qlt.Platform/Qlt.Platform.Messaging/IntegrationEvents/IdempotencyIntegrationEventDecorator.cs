@@ -1,12 +1,12 @@
-using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
-
 using Microsoft.Extensions.Logging;
 
 using Qlt.Platform.Activities;
 using Qlt.Platform.Messaging.Models;
 using Qlt.Platform.Messaging.Services;
+
+using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace Qlt.Platform.Messaging.IntegrationEvents;
 

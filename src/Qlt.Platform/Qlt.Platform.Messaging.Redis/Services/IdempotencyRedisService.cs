@@ -1,6 +1,3 @@
-using System;
-using System.Threading.Tasks;
-
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -8,6 +5,9 @@ using Qlt.Platform.Messaging.Models;
 using Qlt.Platform.Messaging.Options;
 
 using StackExchange.Redis;
+
+using System;
+using System.Threading.Tasks;
 
 namespace Qlt.Platform.Messaging.Services;
 

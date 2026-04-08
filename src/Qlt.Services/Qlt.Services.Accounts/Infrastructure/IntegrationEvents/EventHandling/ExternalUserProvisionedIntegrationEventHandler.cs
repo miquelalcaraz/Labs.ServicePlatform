@@ -2,7 +2,6 @@ using Microsoft.Extensions.Logging;
 
 using Qlt.Infrastructure.Identity.Contracts.IntegrationEvents;
 using Qlt.Platform.Messaging.IntegrationEvents;
-using Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
 using Qlt.Services.Accounts.Domain.Models.UserMembershipAggregate;
 using Qlt.Services.Accounts.Domain.Repositories;
 
@@ -53,7 +52,7 @@ public class ExternalUserProvisionedIntegrationEventHandler : IIntegrationEventH
         _membershipRepository.Add(membership);
 
         onboarding.MarkAdminUserProvisioned(@event.UserId);
-        onboarding.MarkAdminMembershipCreated();
+        onboarding.MarkAdminMembershipCreated(membership.Id);
         onboarding.Complete();
 
         _onboardingRepository.Update(onboarding);

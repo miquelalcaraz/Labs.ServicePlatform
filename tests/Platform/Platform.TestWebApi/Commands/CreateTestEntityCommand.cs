@@ -9,7 +9,7 @@ public record CreateTestEntityCommand(string Name, int Value, Guid RequestId) : 
 {
     Result<int> IIdempotentCommand<int>.CreateResultForDuplicateRequest()
     {
-        return Result.Success(default(int));
+        return Result.Success(Value);
     }
 }
 
@@ -29,6 +29,6 @@ public class CreateTestEntityCommandHandler : ICommandHandler<CreateTestEntityCo
         _context.TestEntities.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Result.Success(entity.Id.GetHashCode());
+        return Result.Success(entity.Value);
     }
 }

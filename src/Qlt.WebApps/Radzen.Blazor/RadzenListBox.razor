@@ -1,0 +1,93 @@
+@using Radzen
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Rendering
+@typeparam TValue
+@inherits DropDownBase<TValue>
+@if (Visible)
+{
+    <div @ref="@Element" style="@Style" @attributes="Attributes" class="@GetCssClass()" tabindex="@(Disabled ? "-1" : $"{TabIndex}")" @onkeydown="@OnKeyDown" id="@GetId()">
+        <div class="rz-helper-hidden-accessible">
+            <input name="@Name" readonly="@ReadOnly" disabled="@Disabled" type="text" aria-label="@(!Multiple && internalValue != null ? internalValue : EmptyAriaLabel)" @attributes=@InputAttributes />
+        </div>
+        @if (View != null && (AllowFiltering || (Multiple && AllowSelectAll) || HeaderTemplate != null))
+        {
+            @if (HeaderTemplate != null)
+            {
+                @HeaderTemplate
+            }
+            else
+            {
+            <div class=" rz-listbox-header rz-helper-clearfix rz-listbox-header-w-checkbox">
+                @if (Multiple)
+                {
+                    @if (AllowSelectAll)
+                    {
+                    <div class="rz-chkbox" @onclick="@SelectAll" role="checkbox" tabindex="@(Disabled || ReadOnly ? "-1" : "0")"
+                         aria-checked="@(IsAllSelected().ToString().ToLowerInvariant())"
+                         aria-disabled="@(Disabled || ReadOnly ? "true" : "false")"
+                         @onkeydown="OnSelectAllKeyDown">
+                        <div class="rz-helper-hidden-accessible">
+                            <input id="@($"{UniqueID}sa")" readonly="readonly" type="checkbox" aria-label="@SelectAllText" aria-checked="@(IsAllSelected().ToString().ToLowerInvariant())">
+                        </div>
+                        <div class="@(IsAllSelected() ? "notranslate rz-chkbox-box rz-state-active" : "notranslate rz-chkbox-box")">
+                            <span class="@(IsAllSelected() ? "notranslate rz-chkbox-icon rzi rzi-check" : "notranslate rz-chkbox-icon")"></span>
+                        </div>
+                    </div>
+                    }
+                    @if (AllowSelectAll && !AllowFiltering && !string.IsNullOrEmpty(Placeholder))
+                    {
+                        <label for="@($"{UniqueID}sa")" class="rz-dropdown-label rz-inputtext" style="width:100%;">@Placeholder</label>
+                    }
+                }
+                @if (AllowFiltering)
+                {
+                    <div class="rz-listbox-filter-container">
+                        <input id="@SearchID" @ref="@search" disabled="@Disabled" class="rz-inputtext" role="textbox" type="text" placeholder="@(Placeholder ?? string.Empty)"
+                               @onchange="@OnFilter" @onkeydown="@OnFilterKeyDown" value="@(searchText ?? string.Empty)" @onkeydown:stopPropagation="stopKeydownPropagation"
+                               @oninput="@OnFilterInput" aria-label="@SearchAriaLabel" />
+                        <span class="notranslate rz-listbox-filter-icon rzi rzi-search"></span>
+                    </div>
+                }
+            </div>
+            }
+        }
+        @if (View != null)
+        {
+            <div class="rz-listbox-list-wrapper">
+                <ul @ref="list" class="rz-listbox-list" role="listbox" aria-multiselectable="@(Multiple ? "true" : "false")">
+                    @RenderItems()
+                </ul>
+                @if (!View.Cast<object>().Any())
+                {
+                    <div class="rz-listbox-empty-message">
+                        @if (EmptyTemplate != null)
+                        {
+                            @EmptyTemplate
+                        }
+                        else
+                        {
+                            <p>@EmptyText</p>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else if (EmptyTemplate != null || !string.IsNullOrEmpty(EmptyText))
+        {
+            <div class="rz-listbox-list-wrapper">
+                <div class="rz-listbox-empty-message">
+                    @if (EmptyTemplate != null)
+                    {
+                        @EmptyTemplate
+                    }
+                    else
+                    {
+                        <p>@EmptyText</p>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+

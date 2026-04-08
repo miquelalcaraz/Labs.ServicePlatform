@@ -1,0 +1,349 @@
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
+using Microsoft.JSInterop;
+using Radzen.Blazor.Rendering;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Linq;
+
+namespace Radzen.Blazor
+{
+    /// <summary>
+    /// A file input component that reads selected files and binds their content as base64 strings or byte arrays.
+    /// RadzenFileInput provides client-side file reading without server upload, ideal for form fields or immediate file processing.
+    /// Unlike RadzenUpload which sends files to a server, FileInput reads files on the client and binds the content to a property.
+    /// Useful for form integration (including file content in form models without separate upload), client-side processing (processing files in browser for image preview, parsing, etc.),
+    /// embedded storage (storing file content in database as base64 or binary), and avoiding server-side upload endpoints when file content is part of form data.
+    /// Reads the selected file and binds it as TValue = string for base64-encoded data URL (e.g., "data:image/png;base64,iVBORw0K...") or TValue = byte[] for raw binary file content.
+    /// For image files, automatically shows a preview. Use MaxFileSize to limit file size.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the bound value. Use string for base64-encoded content or byte[] for binary data.</typeparam>
+    /// <example>
+    /// File input binding to string (base64):
+    /// <code>
+    /// &lt;RadzenFileInput @bind-Value=@model.PhotoData TValue="string" /&gt;
+    /// @code {
+    ///     class Employee
+    ///     {
+    ///         public string PhotoData { get; set; } // Contains base64 image data
+    ///     }
+    ///     Employee model = new Employee();
+    /// }
+    /// </code>
+    /// File input binding to byte array:
+    /// <code>
+    /// &lt;RadzenFileInput @bind-Value=@fileContent TValue="byte[]" Accept="image/*" MaxFileSize="2000000" /&gt;
+    /// @code {
+    ///     byte[] fileContent;
+    /// }
+    /// </code>
+    /// </example>
+    public partial class RadzenFileInput<TValue> : FormComponent<TValue>
+    {
+        /// <summary>
+        /// Specifies additional custom attributes that will be rendered by the input.
+        /// </summary>
+        /// <value>The attributes.</value>
+        [Parameter]
+        public IReadOnlyDictionary<string, object>? InputAttributes { get; set; }
+
+        /// <summary>
+        /// Gets or sets the choose button text.
+        /// </summary>
+        /// <value>The choose button text.</value>
+        [Parameter]
+        public string ChooseText { get; set; } = "Choose";
+
+        /// <summary>
+        /// Gets or sets the delete button text.
+        /// </summary>
+        /// <value>The delete button text.</value>
+        [Parameter]
+        public string DeleteText { get; set; } = "Delete";
+
+        /// <summary>
+        /// Gets or sets the text.
+        /// </summary>
+        /// <value>The text.</value>
+        [Parameter]
+        public string ImageAlternateText { get; set; } = "image";
+
+        /// <summary>
+        /// Gets or sets the title.
+        /// </summary>
+        /// <value>The title.</value>
+        [Parameter]
+        public string? Title { get; set; }
+
+        string ChooseClass => ClassList.Create("rz-fileupload-choose rz-button rz-secondary")
+                                       .AddDisabled(Disabled)
+                                       .ToString();
+        string ButtonClass => ClassList.Create("rz-button rz-button-icon-only rz-base rz-shade-default")
+                                       .AddDisabled(Disabled)
+                                       .ToString();
+
+        /// <inheritdoc />
+        protected override string GetComponentCssClass() => GetClassList("rz-fileupload").ToString();
+
+        /// <summary>
+        /// Gets file input reference.
+        /// </summary>
+        protected ElementReference fileUpload;
+
+        private bool IsImage
+        {
+            get
+            {
+                if (Value == null)
+                {
+                    return false;
+                }
+                else if (Value is string)
+                {
+                    return $"{Value}".StartsWith("data:image", StringComparison.Ordinal);
+                }
+                else if (Value is byte[])
+                {
+                    return $"{System.Text.Encoding.Default.GetString((byte[])(object)Value)}".StartsWith("data:image", StringComparison.Ordinal);
+                }
+
+                return false;
+            }
+        }
+
+        private string ImageValue
+        {
+            get
+            {
+                if (Value == null)
+                {
+                    return string.Empty;
+                }
+                else if (Value is byte[] bytes)
+                {
+                    return System.Text.Encoding.Default.GetString(bytes);
+                }
+
+                return Value.ToString() ?? string.Empty;
+            }
+        }
+
+        async Task OnChange()
+        {
+            string uploadValue;
+
+            if (JSRuntime == null) return;
+            try
+            {
+                uploadValue = await JSRuntime.InvokeAsync<string>("Radzen.readFileAsBase64", fileUpload, MaxFileSize, MaxWidth, MaxHeight);
+
+                if (typeof(TValue) == typeof(byte[]))
+                {
+                    Value = (TValue)(object)System.Text.Encoding.Default.GetBytes($"{uploadValue}");
+                }
+                else if (typeof(TValue) == typeof(string))
+                {
+                    Value = (TValue)(object)uploadValue;
+                }
+
+                await ValueChanged.InvokeAsync(Value);
+                if (FieldIdentifier.FieldName != null) { EditContext?.NotifyFieldChanged(FieldIdentifier); }
+                await Change.InvokeAsync(Value);
+
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                await Error.InvokeAsync(new UploadErrorEventArgs() { Message = $"Unable to read file as base64 string. {ex.Message}" });
+            }
+        }
+
+        /// <summary>
+        /// Called on file change.
+        /// </summary>
+        /// <param name="files">The file.</param>
+        [JSInvokable("RadzenUpload.OnChange")]
+        public async System.Threading.Tasks.Task OnChange(IEnumerable<PreviewFileInfo> files)
+        {
+            if(files == null || !files.Any())
+            {
+                return;
+            }
+
+            var file = files.FirstOrDefault();
+            if (file == null) return;
+
+            FileSize = file.Size;
+            await FileSizeChanged.InvokeAsync(FileSize);
+
+            FileName = file.Name;
+            await FileNameChanged.InvokeAsync(FileName);
+
+            await OnChange();
+        }
+
+        private bool visibleChanged;
+
+        /// <inheritdoc />
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            await base.OnAfterRenderAsync(firstRender);
+
+            if (firstRender || visibleChanged)
+            {
+                visibleChanged = false;
+
+                if (Visible && JSRuntime != null)
+                {
+                    await JSRuntime.InvokeVoidAsync("Radzen.uploads", Reference, Name ?? GetId());
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override async Task SetParametersAsync(ParameterView parameters)
+        {
+            visibleChanged = parameters.DidParameterChange(nameof(Visible), Visible);
+
+            await base.SetParametersAsync(parameters);
+        }
+
+        /// <summary>
+        /// Gets or sets the error callback.
+        /// </summary>
+        /// <value>The error callback.</value>
+        [Parameter]
+        public EventCallback<UploadErrorEventArgs> Error { get; set; }
+
+        /// <summary>
+        /// Gets or sets the image click callback.
+        /// </summary>
+        /// <value>The image click callback.</value>
+        [Parameter]
+        public EventCallback<MouseEventArgs> ImageClick { get; set; }
+
+        bool clicking;
+        /// <summary>
+        /// Handles the image click event.
+        /// </summary>
+        /// <param name="args">The <see cref="MouseEventArgs"/> instance containing the event data.</param>
+        public async Task OnImageClick(MouseEventArgs args)
+        {
+            if (clicking)
+            {
+                return;
+            }
+
+            try
+            {
+                clicking = true;
+
+                await ImageClick.InvokeAsync(args);
+            }
+            finally
+            {
+                clicking = false;
+            }
+        }
+
+        async Task OnImageKeyDown(KeyboardEventArgs args)
+        {
+            if (!ImageClick.HasDelegate)
+            {
+                return;
+            }
+
+            var key = args.Code != null ? args.Code : args.Key;
+            if (key == "Enter" || key == "Space")
+            {
+                await OnImageClick(new MouseEventArgs());
+            }
+        }
+
+        async System.Threading.Tasks.Task Remove(EventArgs args)
+        {
+            Value = default(TValue)!;
+            FileSize = null;
+            FileName = null;
+
+            await ValueChanged.InvokeAsync(Value);
+            if (FieldIdentifier.FieldName != null) { EditContext?.NotifyFieldChanged(FieldIdentifier); }
+            await Change.InvokeAsync(Value);
+
+            await FileSizeChanged.InvokeAsync(FileSize);
+
+            await FileNameChanged.InvokeAsync(FileName);
+
+            if (JSRuntime != null)
+            {
+                await JSRuntime.InvokeVoidAsync("Radzen.removeFileFromFileInput", fileUpload);
+            }
+
+            StateHasChanged();
+        }
+
+        /// <summary>
+        /// Gets or sets the comma-separated accepted MIME types.
+        /// </summary>
+        /// <value>The comma-separated accepted MIME types.</value>
+        [Parameter]
+        public string Accept { get; set; } = "image/*";
+
+        /// <summary>
+        /// Gets or sets the maximum size of the file.
+        /// </summary>
+        /// <value>The maximum size of the file.</value>
+        [Parameter]
+        public int MaxFileSize { get; set; } = 5 * 1024 * 1024;
+
+        /// <summary>
+        /// Gets or sets the maximum width of the file, keeping aspect ratio.
+        /// </summary>
+        /// <value>The maximum width of the file.</value>
+        [Parameter]
+        public int MaxWidth { get; set; } = 0;
+
+        /// <summary>
+        /// Gets or sets the maximum height of the file, keeping aspect ratio.
+        /// </summary>
+        /// <value>The maximum height of the file.</value>
+        [Parameter]
+        public int MaxHeight { get; set; } = 0;
+
+        /// <summary>
+        /// Gets or sets the image style.
+        /// </summary>
+        /// <value>The image style.</value>
+        [Parameter]
+        public string ImageStyle { get; set; } = "width:100px;";
+
+        /// <summary>
+        /// Gets or sets the image file name.
+        /// </summary>
+        /// <value>The image file name.</value>
+        [Parameter]
+        public string? FileName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the FileName changed.
+        /// </summary>
+        /// <value>The FileName changed.</value>
+        [Parameter]
+        public EventCallback<string> FileNameChanged { get; set; }
+
+        /// <summary>
+        /// Gets or sets the image file size.
+        /// </summary>
+        /// <value>The image file size.</value>
+        [Parameter]
+        public long? FileSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the FileSize changed.
+        /// </summary>
+        /// <value>The FileSize changed.</value>
+        [Parameter]
+        public EventCallback<long?> FileSizeChanged { get; set; }
+    }
+}

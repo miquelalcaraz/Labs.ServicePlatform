@@ -98,6 +98,43 @@ namespace Qlt.Infrastructure.Identity.Configuration
                     AccessTokenLifetime = 60*60*2, // 2 hours
                     IdentityTokenLifetime= 60*60*2 // 2 hours
                 },
+                 new Client
+                {
+                    ClientId = "BackOffice",
+                    ClientName = "BackOffice Client",
+                    ClientSecrets = new List<Secret>
+                    {
+                        new Secret($"secret".Sha256())
+                    },
+                    ClientUri = $"{configuration["BackOfficeClient"]}",// public uri of the client
+                    AllowedGrantTypes = GrantTypes.Code,
+                    AllowAccessTokensViaBrowser = false,
+                    RequireConsent = false,
+                    AllowOfflineAccess = true,
+                    AlwaysIncludeUserClaimsInIdToken = true,
+                    RequirePkce = false,
+                    RedirectUris = new List<string>
+                    {
+                        $"{configuration["BackOfficeClient"]}/signin-oidc",
+                        "https://localhost:5011/signin-oidc"
+                    },
+                    PostLogoutRedirectUris = new List<string>
+                    {
+                        $"{configuration["BackOfficeClient"]}/signout-callback-oidc",
+                        "https://localhost:5011/signout-callback-oidc"
+                    },
+                    AllowedScopes = new List<string>
+                    {
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        IdentityServerConstants.StandardScopes.Profile,
+                        IdentityServerConstants.StandardScopes.OfflineAccess,
+                        QltApiScopes.Accounts,
+                        QltApiScopes.Role,
+                        QltApiScopes.Email
+                    },
+                    AccessTokenLifetime = 60*60*2, // 2 hours
+                    IdentityTokenLifetime= 60*60*2 // 2 hours
+                },
                 new Client
                 {
                     ClientId = "accountswaggerui",

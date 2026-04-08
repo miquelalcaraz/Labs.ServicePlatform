@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
-using Qlt.Platform;
 using Qlt.Platform.Extensions;
 using Qlt.Services.Accounts.Application.Commands;
 using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;

@@ -1,0 +1,35 @@
+<div class="rz-chart-tooltip @Class">
+    <div class="rz-chart-tooltip-content" style="@Style">
+    @if (ChildContent != null)
+    {
+        @ChildContent
+    }
+    else
+    {
+        <div class="rz-chart-tooltip-title">@Title</div>
+        <label>@($"{Label}:")
+            <span class="rz-chart-tooltip-item-value">@Value</span>
+        </label>
+    }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string? Style { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public string? Value { get; set; }
+
+    [Parameter]
+    public string? Label { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; }
+}

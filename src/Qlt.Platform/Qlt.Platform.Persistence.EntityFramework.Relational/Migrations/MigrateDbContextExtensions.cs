@@ -1,11 +1,12 @@
-﻿using System.Diagnostics;
-
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 using Qlt.Platform.Activities;
+
+using System.Diagnostics;
 
 namespace Qlt.Platform.Persistence.Migrations;
 
@@ -18,7 +19,7 @@ public static class MigrateDbContextExtensions
     public static IServiceCollection AddMigration<TContext>(this IServiceCollection services, Func<TContext, IServiceProvider, Task> seeder)
         where TContext : DbContext
     {
-        // Migration tracing is configured in ServiceDefaults
+        services.TryAddSingleton<MigrationReadySignal>();
         return services.AddHostedService(sp => new MigrationHostedService<TContext>(sp, seeder));
     }
 
@@ -118,14 +119,10 @@ public static class MigrateDbContextExtensions
     private class MigrationHostedService<TContext>(IServiceProvider serviceProvider, Func<TContext, IServiceProvider, Task> seeder)
         : BackgroundService where TContext : DbContext
     {
-        public override Task StartAsync(CancellationToken cancellationToken)
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            return serviceProvider.MigrateDbContextAsync(seeder);
-        }
-
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            return Task.CompletedTask;
+            await serviceProvider.MigrateDbContextAsync(seeder);
+            serviceProvider.GetRequiredService<MigrationReadySignal>().Signal();
         }
     }
 }

@@ -1,0 +1,17 @@
+﻿@using Microsoft.AspNetCore.Components
+@using Microsoft.JSInterop
+
+@inherits RadzenComponent
+
+@if (Markers != null)
+{
+    <CascadingValue Value=this>
+        @Markers
+    </CascadingValue>
+}
+@if (Visible)
+{
+    <div @ref="Element" style="height: 100%;@Style" @attributes="Attributes" class="@GetCssClass()" id="@GetId()">
+        <div class="rz-map-container" style="position: relative; overflow: hidden;"></div>
+    </div>
+}

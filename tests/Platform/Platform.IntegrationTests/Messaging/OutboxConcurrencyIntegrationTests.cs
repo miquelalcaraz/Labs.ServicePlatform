@@ -45,7 +45,7 @@ public class OutboxConcurrencyIntegrationTests : IntegrationTestBase
         var events2 = task2.Result.ToList();
 
         var totalClaimed = events1.Count + events2.Count;
-        totalClaimed.Should().BeLessOrEqualTo(10);
+        totalClaimed.Should().BeLessThanOrEqualTo(10);
 
         var allEventIds = events1.Select(e => e.Id)
             .Concat(events2.Select(e => e.Id))

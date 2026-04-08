@@ -41,12 +41,33 @@ public class OnboardingProcess : Entity, IAggregateRoot
 
     public DateTimeOffset? UserActivatedAtUtc { get; private set; }
 
+    public string? CompanyLegalName { get; private set; }
+
+    public string? SubscriptionPlanCode { get; private set; }
+
+    public string? AdminEmail { get; private set; }
+
+    public string? AdminFirstName { get; private set; }
+
+    public string? AdminLastName { get; private set; }
+
+    public string? TenantName { get; private set; }
+
+    public Guid? AdminMembershipId { get; private set; }
+
     protected OnboardingProcess() { }
 
     public static OnboardingProcess Create(
         Guid subscriptionId,
         Guid tenantId,
-        Guid initiatedByInternalUserId)
+        Guid initiatedByInternalUserId,
+        string? companyLegalName = null,
+        string? subscriptionPlanCode = null,
+        string? adminEmail = null,
+        string? adminFirstName = null,
+        string? adminLastName = null,
+        string? tenantName = null,
+        Guid? correlationId = null)
     {
         if (subscriptionId == Guid.Empty)
             throw new AccountDomainException("SubscriptionId is required.");
@@ -64,7 +85,14 @@ public class OnboardingProcess : Entity, IAggregateRoot
             Status = OnboardingStatus.Draft,
             CurrentStep = OnboardingStep.None,
             StartedAtUtc = DateTimeOffset.UtcNow,
-            InitiatedByInternalUserId = initiatedByInternalUserId
+            InitiatedByInternalUserId = initiatedByInternalUserId,
+            CompanyLegalName = companyLegalName,
+            SubscriptionPlanCode = subscriptionPlanCode,
+            AdminEmail = adminEmail,
+            AdminFirstName = adminFirstName,
+            AdminLastName = adminLastName,
+            TenantName = tenantName,
+            CorrelationId = correlationId
         };
     }
 
@@ -119,10 +147,11 @@ public class OnboardingProcess : Entity, IAggregateRoot
         CurrentStep = OnboardingStep.AdminUserProvisioned;
     }
 
-    public void MarkAdminMembershipCreated()
+    public void MarkAdminMembershipCreated(Guid? membershipId = null)
     {
         EnsureStatus(OnboardingStatus.InProgress);
         EnsureStep(OnboardingStep.AdminUserProvisioned);
+        AdminMembershipId = membershipId;
         CurrentStep = OnboardingStep.AdminMembershipCreated;
     }
 

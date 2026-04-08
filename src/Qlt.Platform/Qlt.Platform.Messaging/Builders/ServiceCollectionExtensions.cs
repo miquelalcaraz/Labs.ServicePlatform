@@ -1,12 +1,12 @@
-using System;
-using System.Linq;
-
 using MediatR;
 
 using Microsoft.Extensions.DependencyInjection;
 
 using Qlt.Platform.Messaging.Behaviors;
 using Qlt.Platform.Messaging.IntegrationEvents;
+
+using System;
+using System.Linq;
 
 
 namespace Qlt.Platform.Messaging.Builders;

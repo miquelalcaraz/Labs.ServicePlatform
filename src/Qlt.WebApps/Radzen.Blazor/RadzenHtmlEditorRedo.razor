@@ -1,0 +1,4 @@
+@using Radzen.Blazor.Rendering
+@inherits RadzenHtmlEditorButtonBase
+
+<EditorButton Title=@Title Click=@OnClick Icon="redo" Disabled=@(!(Editor?.State.Redo ?? false)) />

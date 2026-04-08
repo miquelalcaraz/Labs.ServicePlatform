@@ -1,9 +1,9 @@
-using System.Reflection;
-
 using Duende.IdentityServer;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+
+using System.Reflection;
 
 namespace Qlt.Infrastructure.Identity.Pages;
 

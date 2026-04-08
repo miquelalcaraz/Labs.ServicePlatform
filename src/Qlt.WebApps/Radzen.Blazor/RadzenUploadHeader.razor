@@ -1,0 +1,25 @@
+@code {
+    [Parameter]
+    public string? Name { get; set; }
+
+    [Parameter]
+    public string? Value { get; set; }
+
+    [CascadingParameter]
+    public RadzenUpload? Upload { get; set; }
+
+    public override async Task SetParametersAsync(ParameterView parameters)
+    {
+        if (Name != null)
+        {
+            Upload?.RemoveHeader(Name);
+        }
+
+        await base.SetParametersAsync(parameters);
+
+        if (Name != null && Value != null)
+        {
+            Upload?.AddHeader(Name, Value);
+        }
+    }
+}

@@ -1,6 +1,3 @@
-using System;
-using System.Linq;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -8,6 +5,9 @@ using Microsoft.Extensions.Logging;
 using Qlt.Platform.Messaging.IntegrationEvents;
 using Qlt.Platform.Messaging.Services;
 using Qlt.Platform.Persistence;
+
+using System;
+using System.Linq;
 
 namespace Qlt.Platform.Messaging.Builders;
 

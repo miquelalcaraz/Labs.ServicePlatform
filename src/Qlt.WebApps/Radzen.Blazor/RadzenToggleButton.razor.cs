@@ -1,0 +1,333 @@
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Components.Web;
+using Radzen.Blazor.Rendering;
+using System;
+using System.Collections.Generic;
+using System.Linq.Expressions;
+using System.Threading.Tasks;
+
+namespace Radzen.Blazor
+{
+    /// <summary>
+    /// RadzenButton component.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// &lt;RadzenToggleButton Click=@(args => Console.WriteLine("Button clicked")) Text="ToggleButton" /&gt;
+    /// </code>
+    /// </example>
+    public partial class RadzenToggleButton : RadzenButton, IRadzenFormComponent
+    {
+        /// <summary>
+        /// Specifies additional custom attributes that will be rendered by the input.
+        /// </summary>
+        /// <value>The attributes.</value>
+        [Parameter]
+        public IReadOnlyDictionary<string, object>? InputAttributes { get; set; }
+
+        /// <summary>
+        /// Gets or sets the name.
+        /// </summary>
+        /// <value>The name.</value>
+        [Parameter]
+        public string? Name { get; set; }
+
+        /// <summary>
+        /// Gets or sets the placeholder.
+        /// </summary>
+        /// <value>The placeholder.</value>
+        [Parameter]
+        public string? Placeholder { get; set; }
+
+        /// <summary>
+        /// Gets or sets the toggle icon.
+        /// </summary>
+        /// <value>The toggle icon.</value>
+        [Parameter]
+        public string? ToggleIcon { get; set; }
+
+        /// <summary>
+        /// Gets or sets the aria-expanded attribute.
+        /// </summary>
+        /// <value>The aria-expanded attribute.</value>
+        [Parameter]
+        public string? AriaExpanded { get; set; }
+
+        /// <summary>
+        /// Gets or sets the aria-controls attribute.
+        /// </summary>
+        /// <value>The aria-controls attribute.</value>
+        [Parameter]
+        public string? AriaControls { get; set; }
+
+        /// <summary>
+        /// Gets or sets the aria-haspopup attribute.
+        /// </summary>
+        /// <value>The aria-haspopup attribute.</value>
+        [Parameter]
+        public string? AriaHasPopup { get; set; }
+
+        private string? GetIcon()
+        {
+            return Value && !string.IsNullOrEmpty(ToggleIcon) ? ToggleIcon : Icon;
+        }
+
+        /// <summary>
+        /// The form
+        /// </summary>
+        IRadzenForm? _form;
+
+        /// <summary>
+        /// Gets or sets the edit context.
+        /// </summary>
+        /// <value>The edit context.</value>
+        [CascadingParameter]
+        public EditContext? EditContext { get; set; }
+
+        /// <summary>
+        /// Gets or sets the form.
+        /// </summary>
+        /// <value>The form.</value>
+        [CascadingParameter]
+        public IRadzenForm? Form
+        {
+            get
+            {
+                return _form;
+            }
+            set
+            {
+                _form = value;
+                _form?.AddComponent(this);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the value changed.
+        /// </summary>
+        /// <value>The value changed.</value>
+        [Parameter]
+        public EventCallback<bool> ValueChanged { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance has value.
+        /// </summary>
+        /// <value><c>true</c> if this instance has value; otherwise, <c>false</c>.</value>
+        public virtual bool HasValue
+        {
+            get
+            {
+                return !object.Equals(Value, default(bool));
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether this instance is bound.
+        /// </summary>
+        /// <value><c>true</c> if this instance is bound; otherwise, <c>false</c>.</value>
+        public bool IsBound
+        {
+            get
+            {
+                return ValueChanged.HasDelegate;
+            }
+        }
+
+        /// <summary>
+        /// The value
+        /// </summary>
+        protected bool _value;
+
+        /// <summary>
+        /// Gets or sets the value.
+        /// </summary>
+        /// <value>The value.</value>
+        [Parameter]
+        public virtual bool Value
+        {
+            get
+            {
+                return _value;
+            }
+            set
+            {
+                if (!EqualityComparer<bool>.Default.Equals(value, _value))
+                {
+                    _value = value;
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Gets or sets the change.
+        /// </summary>
+        /// <value>The change.</value>
+        [Parameter]
+        public EventCallback<bool> Change { get; set; }
+        /// <summary>
+        /// Gets the field identifier.
+        /// </summary>
+        /// <value>The field identifier.</value>
+        [Parameter]
+        public FieldIdentifier FieldIdentifier { get; set; }
+
+        /// <summary>
+        /// Gets or sets the value expression.
+        /// </summary>
+        /// <value>The value expression.</value>
+        [Parameter]
+        public Expression<Func<bool>>? ValueExpression { get; set; }
+        /// <summary>
+        /// Sets the parameters asynchronous.
+        /// </summary>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns>Task.</returns>
+        public override Task SetParametersAsync(ParameterView parameters)
+        {
+            var disabledChanged = parameters.DidParameterChange(nameof(Disabled), Disabled);
+
+            var result = base.SetParametersAsync(parameters);
+
+            if (EditContext != null && ValueExpression != null && FieldIdentifier.Model != EditContext.Model)
+            {
+                FieldIdentifier = FieldIdentifier.Create(ValueExpression);
+                EditContext.OnValidationStateChanged -= ValidationStateChanged;
+                EditContext.OnValidationStateChanged += ValidationStateChanged;
+            }
+
+            if (disabledChanged)
+            {
+                FormFieldContext?.DisabledChanged(Disabled);
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Validations the state changed.
+        /// </summary>
+        /// <param name="sender">The sender.</param>
+        /// <param name="e">The <see cref="ValidationStateChangedEventArgs"/> instance containing the event data.</param>
+        private void ValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
+        {
+            StateHasChanged();
+        }
+
+        /// <summary>
+        /// Disposes this instance.
+        /// </summary>
+        public override void Dispose()
+        {
+            base.Dispose();
+
+            if (EditContext != null)
+            {
+                EditContext.OnValidationStateChanged -= ValidationStateChanged;
+            }
+
+            Form?.RemoveComponent(this);
+
+            GC.SuppressFinalize(this);
+        }
+
+        /// <summary>
+        /// Gets the value.
+        /// </summary>
+        /// <returns>System.Object.</returns>
+        public object GetValue()
+        {
+            return Value;
+        }
+
+        /// <summary>
+        /// Handles the context menu event.
+        /// </summary>
+        /// <param name="args">The <see cref="MouseEventArgs"/> instance containing the event data.</param>
+        /// <returns>Task.</returns>
+        public override Task OnContextMenu(MouseEventArgs args)
+        {
+            if (!Disabled)
+            {
+                return base.OnContextMenu(args);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        /// <summary> Provides support for RadzenFormField integration. </summary>
+        [CascadingParameter]
+        public IFormFieldContext? FormFieldContext { get; set; }
+
+        /// <summary> Gets the current placeholder. Returns empty string if this component is inside a RadzenFormField.</summary>
+        protected string CurrentPlaceholder => FormFieldContext?.AllowFloatingLabel == true ? " " : Placeholder ?? "";
+
+        /// <inheritdoc/>
+        public virtual async ValueTask FocusAsync()
+        {
+            await Element.FocusAsync();
+        }
+
+        /// <summary>
+        /// Toggles this instance checked state.
+        /// </summary>
+        async Task Toggle()
+        {
+            if (Disabled)
+            {
+                return;
+            }
+
+            Value = !Value;
+
+            await ValueChanged.InvokeAsync(Value);
+            if (FieldIdentifier.FieldName != null) { EditContext?.NotifyFieldChanged(FieldIdentifier); }
+            await Change.InvokeAsync(Value);
+        }
+
+        /// <inheritdoc/>
+        public override async Task OnClick(MouseEventArgs args)
+        {
+            await base.OnClick(args);
+
+            await Toggle();
+        }
+
+        /// <inheritdoc />
+        protected override string GetComponentCssClass() => ClassList.Create("rz-button rz-toggle-button")
+                .Add("rz-button-icon-only", string.IsNullOrEmpty(Text) && !string.IsNullOrEmpty(Icon))
+                .AddButtonSize(Size)
+                .AddVariant(Variant)
+                .AddButtonStyle(CurrentButtonStyle)
+                .AddShade(CurrentShade)
+                .AddDisabled(IsDisabled)
+                .Add(FieldIdentifier, EditContext)
+                .Add("rz-state-active", HasValue)
+                .ToString();
+
+        private Shade CurrentShade => HasValue ? ToggleShade : Shade;
+        private ButtonStyle CurrentButtonStyle => HasValue ? ToggleButtonStyle : ButtonStyle;
+
+        /// <summary>
+        /// Gets or sets the ToggleButton style.
+        /// </summary>
+        /// <value>The ToggleButton style.</value>
+        [Parameter]
+        public ButtonStyle ToggleButtonStyle { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ToggleButton shade.
+        /// </summary>
+        /// <value>The ToggleButton shade.</value>
+        [Parameter]
+        public Shade ToggleShade { get; set; } = Shade.Darker;
+
+        /// <summary>
+        /// Gets or sets the aria-label attribute.
+        /// </summary>
+        /// <value>The aria-label attribute.</value>
+        [Parameter]
+        public string? AriaLabel { get; set; }
+    }
+}

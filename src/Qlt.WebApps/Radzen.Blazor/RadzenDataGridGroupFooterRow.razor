@@ -1,0 +1,80 @@
+@typeparam TItem
+@for (var i = 0; i < Grid.deepestChildColumnLevel + 1; i++)
+{
+    <tr>
+        @if (i == 0) // Only add the th elements for the first row
+        {
+            @if (Grid.Template != null && Grid.ShowExpandColumn)
+            {
+                <td class="rz-col-icon rz-unselectable-text" scope="col" rowspan=@(Grid.deepestChildColumnLevel + 1)>
+                    <span class="rz-column-title"></span>
+                </td>
+            }
+        }
+        @for (var j = 0; j < GetLevel() + (Grid.ShowGroupExpandColumn ? 0 : -1) + Grid.Groups.Count - GetLevel(); j++)
+        {
+            <td class="rz-col-icon">
+                <span class="rz-column-title"></span>
+            </td>
+        }
+        @foreach (var column in Columns)
+        {
+            <RadzenDataGridGroupFooterCell Group="@Group" RowIndex="@i" Grid="@Grid" Column="@column" CssClass="@($"{column.GroupFooterCssClass} {Grid.getFrozenColumnClass(column, Columns)} {Grid.getCompositeCellCSSClass(column)}".Trim())" />
+        }
+    </tr>
+}
+@code {
+    [Parameter]
+    public IList<RadzenDataGridColumn<TItem>> Columns { get; set; } = new List<RadzenDataGridColumn<TItem>>();
+
+    GroupResult _groupResult = new GroupResult();
+    [Parameter]
+    public GroupResult GroupResult
+    {
+        get
+        {
+            return _groupResult;
+        }
+        set
+        {
+            if(_groupResult != value)
+            {
+                _groupResult = value;
+
+                var l = GetLevel();
+                var level = l > 0 ? l - 1 : l;
+
+                Group = new Group()
+                {
+                    Level = level,
+                    GroupDescriptor = Grid.Groups[level],
+                    Data = _groupResult
+                };
+            }
+        }
+    }
+
+    [Parameter]
+    public RadzenDataGrid<TItem> Grid { get; set; } = default!;
+
+    [Parameter]
+    public RadzenDataGridGroupRow<TItem>? Parent { get; set; }
+
+    [Parameter]
+    public Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder Builder { get; set; } = default!;
+
+    public Group Group { get; set; } = new Group();
+
+    int GetLevel()
+    {
+        int i = 0;
+        var p = Parent;
+        while(p != null)
+        {
+            p = p.Parent;
+            i++;
+        }
+
+        return i;
+    }
+}

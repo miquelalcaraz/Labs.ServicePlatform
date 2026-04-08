@@ -1,11 +1,11 @@
 ﻿
-using System;
-using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
-
 using Microsoft.Extensions.DependencyInjection;
 
 using Qlt.Platform.Messaging.IntegrationEvents;
+
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
 
 namespace Qlt.Platform.EventBus.Extensions;
 

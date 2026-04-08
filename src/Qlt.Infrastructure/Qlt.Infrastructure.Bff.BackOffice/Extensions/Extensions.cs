@@ -10,7 +10,7 @@ internal static class Extensions
         builder.Services.AddHttpForwarderWithServiceDiscovery();
 
         builder.Services.AddHealthChecks()
-            .AddUrlGroup(new Uri("http://accounts/health"), name: "accountsapi-check")
-            .AddUrlGroup(new Uri("http://identity/health"), name: "identityapi-check");
+            .AddUrlGroup(new Uri("https://accounts/health"), name: "accountsapi-check")
+            .AddUrlGroup(new Uri("https://identity/health"), name: "identityapi-check");
     }
 }

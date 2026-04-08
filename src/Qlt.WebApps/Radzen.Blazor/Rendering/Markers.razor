@@ -1,0 +1,79 @@
+@typeparam TItem
+
+@foreach(var point in Data)
+{
+    var x = point.X;
+    var y = point.Y;
+
+    @if (Visible && InPlotArea(x, y) && point.Data != null)
+    {
+        <Marker Click="@(() => OnClick(point.Data))" X="@x" Y="@y" Type="@MarkerType" Fill="@Fill" Stroke="@Stroke" StrokeWidth="@StrokeWidth" Size="@Size" />
+    }
+}
+
+@code {
+    [CascadingParameter]
+    public RadzenChart? Chart { get; set;}
+
+    [Parameter]
+    public IChartSeries? Series { get; set; }
+
+    private async Task OnClick(TItem data)
+    {
+        if (Series != null && Chart != null && data != null)
+        {
+            await Series.InvokeClick(Chart.SeriesClick, data);
+        }
+    }
+
+    [Parameter]
+    public IEnumerable<Point<TItem>> Data { get; set; } = Array.Empty<Point<TItem>>();
+
+    [Parameter]
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public MarkerType MarkerType { get; set; }
+
+    [Parameter]
+    public string Stroke { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Fill { get; set; } = string.Empty;
+
+    [Parameter]
+    public double StrokeWidth { get; set; }
+
+    [Parameter]
+    public double Size { get; set; }
+
+    private double x1;
+    private double x2;
+
+    private double y1;
+    private double y2;
+
+    private bool InPlotArea(double x, double y)
+    {
+        return x >= x1 && x <= x2 && y >= y1 && y <= y2;
+    }
+
+    protected override void OnParametersSet()
+    {
+        var chart = Chart;
+        if (chart == null)
+        {
+            return;
+        }
+
+        var categoryTicks = chart.CategoryScale.Ticks(chart.CategoryAxis.TickDistance);
+
+        x1 = chart.CategoryScale.Scale(categoryTicks.Start);
+        x2 = chart.CategoryScale.Scale(categoryTicks.End);
+
+        var valueTicks = chart.ValueScale.Ticks(chart.ValueAxis.TickDistance);
+
+        y1 = chart.ValueScale.Scale(valueTicks.End);
+        y2 = chart.ValueScale.Scale(valueTicks.Start);
+    }
+}

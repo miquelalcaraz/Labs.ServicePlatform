@@ -1,6 +1,3 @@
-using System.Text;
-using System.Text.Json;
-
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +6,9 @@ using Platform.TestWebApi.Controllers;
 using Platform.TestWebApi.Infrastructure;
 
 using Qlt.Platform.Messaging.Models;
+
+using System.Text;
+using System.Text.Json;
 
 namespace Platform.FunctionalTests.Tests;
 

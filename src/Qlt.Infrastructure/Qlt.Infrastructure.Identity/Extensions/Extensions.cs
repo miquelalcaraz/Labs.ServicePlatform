@@ -1,5 +1,3 @@
-using System.Reflection;
-
 using Duende.IdentityServer.Stores;
 
 using Microsoft.AspNetCore.Identity;
@@ -21,6 +19,8 @@ using Qlt.Platform.Messaging.Builders;
 using Qlt.Platform.Persistence.Builders;
 using Qlt.Platform.Persistence.Migrations;
 using Qlt.Services.Accounts.Contracts.IntegrationEvents;
+
+using System.Reflection;
 
 namespace Qlt.Infrastructure.Identity.Extensions
 {

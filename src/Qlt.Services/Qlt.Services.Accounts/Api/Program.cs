@@ -16,6 +16,24 @@ builder.AddApplicationServices();
 // Add services to the container.
 builder.Services.AddProblemDetails();
 
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy(BackOfficeAuthorizationPolicies.OnboardingWrite, policy =>
+        policy.RequireRole(
+            BackOfficeAuthorizationPolicies.Roles.ProjectManager,
+            BackOfficeAuthorizationPolicies.Roles.BusinessAdmin,
+            BackOfficeAuthorizationPolicies.Roles.PlatformAdmin))
+    .AddPolicy(BackOfficeAuthorizationPolicies.OnboardingRead, policy =>
+        policy.RequireRole(
+            BackOfficeAuthorizationPolicies.Roles.ProjectManager,
+            BackOfficeAuthorizationPolicies.Roles.BusinessAdmin,
+            BackOfficeAuthorizationPolicies.Roles.SupportAgent,
+            BackOfficeAuthorizationPolicies.Roles.PlatformAdmin))
+    .AddPolicy(BackOfficeAuthorizationPolicies.OnboardingRetry, policy =>
+        policy.RequireRole(
+            BackOfficeAuthorizationPolicies.Roles.ProjectManager,
+            BackOfficeAuthorizationPolicies.Roles.SupportAgent,
+            BackOfficeAuthorizationPolicies.Roles.PlatformAdmin));
+
 var withApiVersioning = builder.Services.AddApiVersioning();
 
 builder.AddDefaultOpenApi(withApiVersioning);
@@ -32,6 +50,10 @@ accounts.MapAccountsApiV1()
 
 var subscriptions = app.NewVersionedApi("subscriptions");
 subscriptions.MapSubscriptionsApiV1()
+     .RequireAuthorization();
+
+var backofficeOnboarding = app.NewVersionedApi("backoffice-onboarding");
+backofficeOnboarding.MapBackOfficeOnboardingApiV1()
      .RequireAuthorization();
 
 // OpenAPI/Swagger UI only in Development

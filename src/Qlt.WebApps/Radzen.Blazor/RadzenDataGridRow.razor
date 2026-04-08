@@ -1,0 +1,177 @@
+@using Microsoft.AspNetCore.Components.Forms
+@typeparam TItem
+@implements IRadzenForm
+ <CascadingValue Value=@EditContext>
+    <CascadingValue Value=this>
+@{var rowArgs = Grid?.RowAttributes(Item, Index); }
+@{var firstLevel = Grid?.AllowCompositeDataCells == true ? 0 : (Grid?.deepestChildColumnLevel ?? 0); }
+@for(var i = firstLevel; (Grid?.AllowCompositeDataCells == true ? i <= (Grid?.deepestChildColumnLevel ?? 0) + 1 : i < (Grid?.deepestChildColumnLevel ?? 0) + 1); i++)
+{
+<tr class="@(Grid?.RowStyle(Item, Index) ?? "")" @attributes="@(rowArgs?.Item2)">
+    @if (Grid?.ShowGroupExpandColumn == true)
+    {
+        @foreach(var g in Grid.Groups)
+        {
+            @if (i == firstLevel)
+            {
+              <td class="rz-col-icon" rowspan="@((Grid?.AllowCompositeDataCells == true ? ((Grid?.deepestChildColumnLevel ?? 0) + 1) : 1))">
+                  <span class="rz-column-title"></span>
+              </td>
+            }
+           
+        }
+    }
+    @if (Grid?.Template != null && Grid?.ShowExpandColumn == true && i == firstLevel)
+    {
+        <td class="rz-col-icon" rowspan="@((Grid?.AllowCompositeDataCells == true ? ((Grid?.deepestChildColumnLevel ?? 0) + 1) : 1))">
+            <span class="rz-column-title"></span>
+            @if (rowArgs?.Item1.Expandable == true && !(Grid?.LoadChildData.HasDelegate ?? false))
+            {
+                <button type="button" tabindex="-1" id="@((Grid?.GridId() ?? "") + Item.GetHashCode())" aria-label="@(Grid?.ExpandChildItemAriaLabel ?? "")"
+                        aria-expanded="@(Grid != null && Grid.IsRowExpanded(Item) ? "true" : "false")"
+                        class="rz-button rz-button-sm rz-button-icon-only rz-variant-text rz-base rz-shade-default"
+                        @onclick="@(_ => Grid?.ExpandItem(Item)!)" @onclick:stopPropagation>
+                    <span class="@(Grid?.ExpandedItemStyle(Item) ?? "")"></span>
+                </button>
+            }
+        </td>
+    }
+
+        @for (var j = 0; j < Columns.Count; j++)
+        {
+            if (Grid?.rowSpans != null && Grid.rowSpans.ContainsKey(j))
+            {
+                Grid.rowSpans[j] = Grid.rowSpans[j] - 1;
+
+                if (Grid.rowSpans[j] <= 0)
+                {
+                    Grid.rowSpans.Remove(j);
+                }
+                else
+                {
+                    continue;
+                }
+            }
+
+            var column = Columns[j];
+            var cellAttr = Grid?.CellAttributes(Item, column);
+
+            object? colspan = null;
+            cellAttr?.TryGetValue("colspan", out colspan);
+            int colspanValue = colspan != null ? (int)Convert.ChangeType(colspan, TypeCode.Int32) : 1;
+
+            object? rowspan = null;
+            cellAttr?.TryGetValue("rowspan", out rowspan);
+
+            if (rowspan != null && Grid != null)
+            {
+                int rowspanValue = (int)Convert.ChangeType(rowspan, TypeCode.Int32);
+                for (int c = j; c < j + colspanValue; c++)
+                {
+                    Grid.rowSpans[c] = rowspanValue;
+                }
+            }
+
+            if (colspan != null)
+            {
+                j = j + colspanValue - 1;
+            }
+
+            @if (Grid != null && cellAttr != null && rowArgs != null)
+            {
+                @Grid.RenderCell(column, Item, cellAttr, rowArgs, i);
+            }
+        }
+
+</tr>
+}
+
+@if (Grid != null && Grid.expandedItems.Keys.Contains(Item))
+{
+    @if (Grid.IsRowInEditMode(Item) && Grid.EditTemplate != null)
+    {
+        <tr class="rz-expanded-row-content" @onkeydown:stopPropagation="stopKeydownPropagation" @onkeydown="OnGuardKeyDown">
+            <td colspan="@(Columns.Sum(c => c.GetColSpan()) + (Grid.ShowExpandColumn ? 1 : 0) + Grid.Groups.Count)">
+                <div class="rz-expanded-row-template" style="position:sticky">
+                    <CascadingValue Value=@EditContext>
+                        <CascadingValue Value=this>
+                            @Grid.EditTemplate(Item)
+                        </CascadingValue>
+                    </CascadingValue>
+                </div>
+            </td>
+        </tr>
+    }
+    else if (Grid.Template != null)
+    {
+        <tr class="rz-expanded-row-content" @onkeydown:stopPropagation="stopKeydownPropagation" @onkeydown="OnGuardKeyDown">
+            <td colspan="@(Columns.Sum(c => c.GetColSpan()) + (Grid.ShowExpandColumn ? 1 : 0) + Grid.Groups.Count)">
+                <div class="rz-expanded-row-template" style="position:sticky">
+                    @Grid.Template(Item)
+                </div>
+            </td>
+        </tr>
+    }
+}
+    </CascadingValue>
+</CascadingValue>
+@code {
+        [Parameter]
+        public IList<RadzenDataGridColumn<TItem>> Columns { get; set; } = new List<RadzenDataGridColumn<TItem>>();
+
+        [Parameter]
+        public TItem Item { get; set; } = default!;
+
+        [Parameter]
+        public int Index { get; set; }
+
+        [Parameter]
+        public RadzenDataGrid<TItem> Grid { get; set; } = default!;
+
+        [Parameter(CaptureUnmatchedValues = true)]
+        public IReadOnlyDictionary<string, object> Attributes { get; set; } = new Dictionary<string, object>();
+
+        [Parameter]
+        public RenderFragment? ChildContent { get; set; }
+
+        [Parameter]
+        public string CssClass { get; set; } = string.Empty;
+
+        [Parameter]
+        public bool InEditMode { get; set; }
+
+        [Parameter]
+        public EditContext? EditContext { get; set; }
+
+        List<IRadzenFormComponent> components = new();
+
+        public void AddComponent(IRadzenFormComponent component)
+        {
+            if (components != null)
+            {
+                if (components.IndexOf(component) == -1)
+                {
+                    components.Add(component);
+                }
+            }
+        }
+        public void RemoveComponent(IRadzenFormComponent component)
+        {
+            components?.Remove(component);
+        }
+
+        public override Task SetParametersAsync(ParameterView parameters)
+        {
+            if (InEditMode != parameters.GetValueOrDefault<bool>("InEditMode"))
+            {
+                components = new List<IRadzenFormComponent>();
+            }
+
+            return base.SetParametersAsync(parameters);
+        }
+
+        public IRadzenFormComponent FindComponent(string name)
+        {
+            return components.Where(component => component.Name == name).FirstOrDefault()!;
+        }
+}
