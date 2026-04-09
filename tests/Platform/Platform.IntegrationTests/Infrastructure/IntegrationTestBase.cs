@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore.Storage;
 
-using Qlt.Platform.Messaging.IntegrationEvents;
 using Qlt.Platform.Messaging.Models;
 using Qlt.Platform.Messaging.Options;
 using Qlt.Platform.Messaging.Services;

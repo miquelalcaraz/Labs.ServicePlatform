@@ -1,0 +1,77 @@
+@using Radzen.Blazor.Rendering
+@inherits RadzenChartComponentBase
+@implements IChartSeriesOverlay
+@implements IDisposable
+
+@code {
+    IChartSeries? series;
+
+    [CascadingParameter]
+    protected IChartSeries? Series
+    {
+        get
+        {
+            return series;
+        }
+        set
+        {
+            if (value == null)
+            {
+                series = null;
+                return;
+            }
+            if (!value.Overlays.Contains(this))
+            {
+                series = value;
+                series.Overlays.Add(this);
+            }
+        }
+    }
+
+    public RenderFragment Render(ScaleBase categoryScale, ScaleBase valueScale)
+    {
+        return builder =>
+        {
+            builder.OpenRegion(0);
+            if (series != null)
+            {
+                foreach (var label in series.GetDataLabels(OffsetX, OffsetY))
+                {
+                    if (!(double.IsNaN(label.Position.X) || double.IsNaN(label.Position.Y)))
+                    {
+                        builder.AddContent(1,
+                                @<g>
+                                    <Text @key="@($"{label.Position}-{(Chart != null ? Chart.Series.IndexOf(series) : -1)}")"
+                                            Value="@label.Text" Position="@label.Position" Fill="@Fill" TextAnchor="@label.TextAnchor" class="@GetSeriesDataLabelClass()" />
+                                </g>
+                        );
+                    }
+                }
+            }
+            builder.CloseRegion();
+        };
+    }
+
+    protected override bool ShouldRefreshChart(ParameterView parameters)
+    {
+        return parameters.DidParameterChange(nameof(Visible), Visible);
+    }
+
+    public bool Contains(double mouseX, double mouseY, int tolerance)
+    {
+        return false;
+    }
+
+    public RenderFragment RenderTooltip(double mouseX, double mouseY)
+    {
+        return null!;
+    }
+
+    /// <inheritdoc />
+    public Point GetTooltipPosition(double mouseX, double mouseY)
+    {
+        return new Point { X = mouseX, Y = mouseY };
+    }
+
+    public void Dispose() => series?.Overlays.Remove(this);
+}

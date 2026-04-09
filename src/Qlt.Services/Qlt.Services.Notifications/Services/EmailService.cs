@@ -1,6 +1,6 @@
-using System.Collections.Concurrent;
-
 using Qlt.Services.Notifications.Models;
+
+using System.Collections.Concurrent;
 
 namespace Qlt.Services.Notifications.Services
 {

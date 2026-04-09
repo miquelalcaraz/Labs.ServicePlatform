@@ -1,0 +1,6 @@
+﻿@inherits RadzenComponent
+
+@if (Visible)
+{
+    <i @ref="@Element" style="@getStyle()" @attributes="Attributes" class="@GetCssClass()" id="@GetId()">@Icon</i>
+}

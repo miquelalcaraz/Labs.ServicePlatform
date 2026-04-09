@@ -1,0 +1,55 @@
+<div class=@Class @onclick=@Select @attributes=@Attributes role="option" aria-selected=@(IsSelected ? "true" : "false") tabindex="0" @onkeydown="OnKeyDown">
+    @if (ChildContent != null)
+    {
+        @ChildContent(this)
+    }
+    else
+    {
+        @Text
+    }
+</div>
+@code {
+    [Parameter]
+    public RenderFragment<EditorDropDownItem>? ChildContent { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IDictionary<string, object>? Attributes { get; set; }
+
+    [CascadingParameter]
+    public EditorDropDown? DropDown { get; set; }
+
+    [Parameter]
+    public string? Text { get; set; }
+
+    [Parameter]
+    public string? Value { get; set; }
+
+    async Task Select()
+    {
+        if (DropDown != null)
+            await DropDown.Select(this, true);
+    }
+
+    async Task OnKeyDown(KeyboardEventArgs args)
+    {
+        var key = args.Code != null ? args.Code : args.Key;
+        if (key == "Enter" || key == "Space")
+        {
+            await Select();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (DropDown?.Value == Value && DropDown != null)
+        {
+            await DropDown.Select(this, false);
+        }
+    }
+
+    bool IsSelected => DropDown?.Value == Value;
+
+    string Class => ClassList.Create("rz-html-editor-dropdown-item")
+        .Add("rz-selected", IsSelected)
+        .ToString();
+}

@@ -1,0 +1,91 @@
+@inherits RadzenComponent
+@using Microsoft.JSInterop
+<button tabindex="-1" type="button" aria-controls=@PopupId aria-expanded=@(open ? "true" : "false") aria-haspopup="listbox" title=@Title @ref=@Element class=@Class @onclick=@Toggle @onmousedown:preventDefault @attributes=@Attributes disabled=@IsDisabled>
+    <span class="rz-html-editor-dropdown-value">@(SelectedItem?.Text ?? Placeholder)</span>
+    <i class="notranslate rzi" aria-hidden="true" />
+</button>
+<Popup id=@PopupId role="listbox" Open=@OnPopupOpen Close=@OnPopupClose @ref=Popup class="rz-html-editor-dropdown-items" Style=@PopupStyle PreventDefault=true>
+    <CascadingValue Value=@this ChildContent=@ChildContent />
+</Popup>
+@code {
+    [CascadingParameter]
+    public RadzenHtmlEditor? Editor { get; set; }
+
+    private bool IsDisabled => Editor?.Disabled == true || !EnabledModes.HasFlag(Editor?.GetMode() ?? HtmlEditorMode.Design);
+
+    bool open = false;
+
+    void OnPopupOpen()
+    {
+        open = true;
+
+        StateHasChanged();
+    }
+
+    void OnPopupClose()
+    {
+        open = false;
+
+        StateHasChanged();
+    }
+
+    private string PopupId => $"{GetId()}-popup";
+
+    Popup? Popup { get; set; }
+
+    [Parameter]
+    public string? Title { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public string? PopupStyle { get; set; }
+
+    [Parameter]
+    public string? Placeholder { get; set; }
+
+    [Parameter]
+    public HtmlEditorMode EnabledModes { get; set; } = HtmlEditorMode.Design;
+
+    async Task Toggle()
+    {
+        if (Editor?.Disabled == false && EnabledModes.HasFlag(Editor.GetMode()) && Popup != null)
+        {
+            await Popup.ToggleAsync(Element);
+        }
+    }
+
+    [Parameter]
+    public string? Value { get; set; }
+
+    internal EditorDropDownItem? SelectedItem { get; set; }
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<string> Change { get; set; }
+
+    internal async Task Select(EditorDropDownItem item, bool change)
+    {
+        if (SelectedItem != item && Editor?.Disabled == false && EnabledModes.HasFlag(Editor.GetMode()))
+        {
+            SelectedItem = item;
+
+            if (change && Popup != null)
+            {
+                await Popup.CloseAsync();
+                await ValueChanged.InvokeAsync(item?.Value);
+                await Change.InvokeAsync(item?.Value);
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    string Class => ClassList.Create("rz-html-editor-dropdown")
+        .Add("rz-disabled", Editor?.Disabled == true || !EnabledModes.HasFlag(Editor?.GetMode() ?? HtmlEditorMode.Design))
+        .Add("rz-html-editor-dropdown-trigger", true)
+        .ToString();
+}

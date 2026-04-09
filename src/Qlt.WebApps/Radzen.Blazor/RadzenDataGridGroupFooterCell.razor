@@ -1,0 +1,65 @@
+@typeparam TItem
+@if (RowIndex == Column.GetLevel())
+{
+<td rowspan="@(Column.GetRowSpan())" colspan="@(Column.GetColSpan())" @attributes="@Attributes" class="@CssClass" scope="col" style="@GetStyle()">
+    <span class="rz-column-footer">
+        @if (Column.GroupFooterTemplate != null)
+        {
+            @Column.GroupFooterTemplate(Group)
+        }
+    </span>
+</td>
+}
+else
+{
+    @foreach(var column in Grid.childColumns.Where(c => c.GetVisible() && c.Parent == Column))
+    {
+        <RadzenDataGridGroupFooterCell Group="@Group"  RowIndex="@RowIndex" Grid="@Grid" Column="@column" Style="@column.GetStyle(true, true)"
+                                CssClass="@($"{Column.GroupFooterCssClass} {Grid.getFrozenColumnClass(column, Grid.ColumnsCollection.Where(c => c.GetVisible()).ToList())} {Grid.getCompositeCellCSSClass(column)}")" 
+                                Attributes="@(Attributes)" />
+    }
+}
+@code {
+    [Parameter(CaptureUnmatchedValues = true)]
+    public IReadOnlyDictionary<string, object> Attributes { get; set; } = new Dictionary<string, object>();
+
+    [Parameter]
+    public Group Group { get; set; } = new Group();
+
+    [Parameter]
+    public RadzenDataGridColumn<TItem> Column { get; set; } = default!;
+
+    [Parameter]
+    public int RowIndex { get; set; }
+
+    [Parameter]
+    public RadzenDataGrid<TItem> Grid { get; set; } = default!;
+
+    [Parameter]
+    public string CssClass { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Style { get; set; } = string.Empty;
+
+    private string GetStyle()
+    {
+        var styles = new List<string>() { Column.GetStyle(true, true), Style };
+
+        if (Attributes?.TryGetValue("style", out var styleAttribute) == true)
+        {
+            var styleValue = Convert.ToString(styleAttribute);
+            if (styleValue != null)
+            {
+                styles.Add(styleValue);
+            }
+        }
+
+        var finalStyle = string.Join(";",
+                styles
+                .Select(x => x?.Trim().TrimEnd(';'))
+                .Where(x => !string.IsNullOrEmpty(x))
+            );
+
+        return finalStyle;
+    }
+}

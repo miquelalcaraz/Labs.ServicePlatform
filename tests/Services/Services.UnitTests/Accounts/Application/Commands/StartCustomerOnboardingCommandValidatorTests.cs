@@ -1,5 +1,3 @@
-using FluentValidation;
-
 using Qlt.Services.Accounts.Application.Commands;
 using Qlt.Services.Accounts.Application.Validators;
 using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;

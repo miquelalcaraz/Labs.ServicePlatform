@@ -1,0 +1,210 @@
+﻿using Microsoft.AspNetCore.Components;
+using System.Threading.Tasks;
+
+namespace Radzen.Blazor
+{
+    /// <summary>
+    /// RadzenStepsItem component.
+    /// </summary>
+    public class RadzenStepsItem : RadzenComponent
+    {
+        private string? text;
+        /// <summary>
+        /// Gets or sets the text.
+        /// </summary>
+        /// <value>The text.</value>
+        [Parameter]
+        public string? Text
+        {
+            get
+            {
+                return text;
+            }
+            set
+            {
+                if (text != value)
+                {
+                    text = value;
+                    Steps?.Refresh();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the title attribute.
+        /// </summary>
+        public string? Title { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the aria-label attribute.
+        /// </summary>
+        public string? AriaLabel { get; set; }
+        
+        /// <summary>
+        /// Gets or sets text of the next button.
+        /// </summary>
+        [Parameter]
+        public string? NextText { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets the title attribute of the next button.
+        /// </summary>
+        public string? NextTitle { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the aria-label attribute of the next button.
+        /// </summary>
+        public string? NextAriaLabel { get; set; }
+        
+        /// <summary>
+        /// Gets or sets text of the previous button.
+        /// </summary>
+        [Parameter]
+        public string? PreviousText { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets the title attribute of the previous button.
+        /// </summary>
+        public string? PreviousTitle { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the aria-label attribute of the previous button.
+        /// </summary>
+        public string? PreviousAriaLabel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the callback that is invoked when navigating to the next step from this step.
+        /// </summary>
+        [Parameter]
+        public EventCallback OnNextStep { get; set; }
+
+        /// <summary>
+        /// Gets or sets the callback that is invoked when navigating to the previous step from this step.
+        /// </summary>
+        [Parameter]
+        public EventCallback OnPreviousStep { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the template.
+        /// </summary>
+        /// <value>The template.</value>
+        [Parameter]
+        public RenderFragment<RadzenStepsItem>? Template { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="RadzenStepsItem"/> is selected.
+        /// </summary>
+        /// <value><c>true</c> if selected; otherwise, <c>false</c>.</value>
+        [Parameter]
+        public bool Selected { get; set; }
+
+        private bool visible = true;
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="RadzenComponent" /> is visible.
+        /// </summary>
+        /// <value><c>true</c> if visible; otherwise, <c>false</c>.</value>
+        [Parameter]
+        public override bool Visible
+        {
+            get
+            {
+                return visible;
+            }
+            set
+            {
+                if (visible != value)
+                {
+                    visible = value;
+                    Steps?.Refresh();
+                }
+            }
+        }
+
+        private bool disabled;
+        /// <summary>
+        /// Gets or sets a value indicating whether this <see cref="RadzenStepsItem"/> is disabled.
+        /// </summary>
+        /// <value><c>true</c> if disabled; otherwise, <c>false</c>.</value>
+        [Parameter]
+        public bool Disabled
+        {
+            get
+            {
+                return disabled;
+            }
+            set
+            {
+                if (disabled != value)
+                {
+                    disabled = value;
+                    Steps?.Refresh();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the child content.
+        /// </summary>
+        /// <value>The child content.</value>
+        [Parameter]
+        public RenderFragment? ChildContent { get; set; }
+
+        private RadzenSteps? steps;
+
+        /// <summary>
+        /// Gets or sets the steps.
+        /// </summary>
+        /// <value>The steps.</value>
+        [CascadingParameter]
+        public RadzenSteps? Steps
+        {
+            get
+            {
+                return steps;
+            }
+            set
+            {
+                if (steps != value && value != null)
+                {
+                    steps = value;
+                    steps.AddStep(this);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set parameters as an asynchronous operation.
+        /// </summary>
+        /// <param name="parameters">The parameters.</param>
+        /// <returns>A Task representing the asynchronous operation.</returns>
+        public override async Task SetParametersAsync(ParameterView parameters)
+        {
+            if (parameters.DidParameterChange(nameof(Selected), Selected))
+            {
+                var selected = parameters.GetValueOrDefault<bool>(nameof(Selected));
+                if (!selected)
+                {
+                    Steps?.SelectFirst();
+                }
+                else
+                {
+                    Steps?.SelectStep(this);
+                }
+            }
+
+            await base.SetParametersAsync(parameters);
+        }
+
+        internal string GetItemCssClass()
+        {
+            return GetCssClass();
+        }
+
+        /// <inheritdoc />
+        protected override string GetComponentCssClass()
+        {
+            if (Steps == null) return $"rz-steps-item {(Disabled ? "rz-state-disabled" : string.Empty)}";
+            return $"rz-steps-item {(Steps.StepsCollection.IndexOf(this) == Steps.SelectedIndex ? "rz-state-highlight rz-steps-current" : string.Empty)} {(Disabled ? "rz-state-disabled" : string.Empty)}";
+        }
+    }
+}

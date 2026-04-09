@@ -1,0 +1,60 @@
+﻿@using Radzen
+@using Radzen.Blazor.Rendering
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Forms
+@typeparam TValue
+@inherits FormComponent<TValue>
+
+@if (Visible)
+{
+    <div @ref="@Element" style="@Style" @attributes="Attributes" class="@GetCssClass()" id="@GetId()">
+    <div class="rz-fileupload-buttonbar">
+        <span class=@ChooseClass tabindex="@(Disabled ? "-1" : $"{TabIndex}")" role="button"
+              aria-disabled="@(Disabled ? "true" : "false")" aria-label="@ChooseText"
+              aria-controls="@(Name ?? GetId())"
+              onkeydown="if(event.keyCode == 32 || event.keyCode == 13){event.preventDefault();this.firstElementChild.click();}">
+            <input id="@(Name ?? GetId())" @attributes="InputAttributes" tabindex="-1" disabled="@Disabled" @ref="@fileUpload" name="@Name" type="file" accept="@Accept" onkeydown="event.stopPropagation()"
+                onchange="Radzen.uploadInputChange(event, null, false, false, true)" />
+            <span class="rz-button-text">@ChooseText</span>
+        </span>
+    </div>
+    <div class="rz-fileupload-content rz-corner-bottom">
+        @if (!object.Equals(Value, default(TValue)))
+            {
+                <div class="rz-fileupload-files">
+                    <div class="rz-fileupload-row">
+                        <div>
+                            @if (IsImage)
+                            {
+                                <img style="@ImageStyle" src="@ImageValue" @onclick="@OnImageClick" alt="@ImageAlternateText"
+                                     role="@(ImageClick.HasDelegate ? "button" : null)" tabindex="@(ImageClick.HasDelegate ? "0" : null)"
+                                     @onkeydown="OnImageKeyDown" />
+                            }
+                        </div>
+                        <div>
+                            @if (!string.IsNullOrEmpty(Title))
+                            {
+                                <span>@Title</span>
+                            }
+                            else if (!string.IsNullOrEmpty(FileName))
+                            {
+                                <span>@FileName</span>
+                            }
+                        </div>
+                        <div>
+                            @if (FileSize != null)
+                            {
+                                <span>@FileSize</span>
+                            }
+                        </div>
+                        <div>
+                            <button disabled="@Disabled" type="button" class=@ButtonClass @onclick="@Remove" title="@DeleteText" tabindex="@(Disabled ? "-1" : $"{TabIndex}")">
+                                <span class="rz-button-icon-left rz-icon-trash" style="display:block"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}

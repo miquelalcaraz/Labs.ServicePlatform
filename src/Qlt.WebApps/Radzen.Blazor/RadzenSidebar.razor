@@ -1,0 +1,12 @@
+﻿@inherits RadzenComponentWithChildren
+
+@if (Visible)
+{
+    @if (IsResponsive)
+    {
+        <RadzenMediaQuery Query="@Query" Change=@OnChange />
+    }
+    <div @ref="@Element" style="@GetStyle()" @attributes="Attributes" class="@GetCssClass()" id="@GetId()">
+        @ChildContent
+    </div>
+}

@@ -1,0 +1,370 @@
+@using Radzen
+@using Radzen.Blazor
+@using Radzen.Blazor.Rendering
+@using Microsoft.JSInterop
+@inject DialogService DialogService
+@inherits DropableViewBase
+@inject IJSRuntime JSRuntime
+@{
+    var points = new Dictionary<AppointmentData, double>();
+    var calendar = (Scheduler?.Culture ?? System.Globalization.CultureInfo.CurrentCulture).Calendar;
+    // StartDate can be shifted one extra week earlier to render a full header row.
+    // Derive the base year from the scheduler's CurrentDate + StartMonth instead of StartDate.AddDays(7).Year
+    // (which can incorrectly yield the previous year for StartMonth=January when the week starts on Sunday).
+    var startMonthNumber = (int)StartMonth + 1; // Month enum is 0-based
+    var startyear = Scheduler != null
+        ? calendar.GetYear(Scheduler.CurrentDate.Date) + (calendar.GetMonth(Scheduler.CurrentDate.Date) < startMonthNumber ? -1 : 0)
+        : calendar.GetYear(StartDate.AddDays(7));
+    DateTime date = StartDate;
+    DateTime realstart = StartDate;
+    int daysinmonth;
+
+    const double NUMBER_DAYS_COLUMNS = 37.0;
+    const double SLOT_WIDTH = 100.0;
+    const double CALENDAR_WIDTH = 3800.0;
+}
+
+<div @ref=view class="rz-view rz-timeline-view" tabindex="0" @onkeydown="@(args => OnKeyPress(args))" @onkeydown:preventDefault="@preventKeyPress" @onkeydown:stopPropagation="stopKeydownPropagation"
+     @onfocus=@this.AsNonRenderingEventHandler(OnFocus)>
+    <div class="rz-view-header">
+        <div class="rz-slot-header">
+        </div>
+        @for (var dateheader = StartDate; dateheader <= StartDate.AddDays(NUMBER_DAYS_COLUMNS - 1); dateheader = dateheader.AddDays(1))
+        {
+            <div class="rz-slot-header">
+                @dateheader.ToString("dddd", Scheduler?.Culture ?? System.Globalization.CultureInfo.CurrentCulture)
+            </div>
+        }
+    </div>
+    @for (int month = 0; month < 12; month++)
+    {
+        int offSetMonth = ((month + (int)StartMonth) % 12) + 1;
+        int curYear = startyear + (offSetMonth <= month ? 1 : 0);
+        realstart = new DateTime(curYear, offSetMonth, 1, calendar);
+        daysinmonth = calendar.GetDaysInMonth(curYear, offSetMonth);
+        date = realstart.StartOfMonth().StartOfWeek(Scheduler?.Culture ?? System.Globalization.CultureInfo.CurrentCulture);
+        var startMonth = realstart;
+        var excessCounts = new Dictionary<DateTime, int>();
+        var dayAppointments = new Dictionary<DateTime, AppointmentData[]>();
+
+        <div class="rz-month @(month == CurrentMonth ? "rz-state-focused" : "")">
+            <div class="rz-events">
+                @for (var start = date; start < date.AddDays(NUMBER_DAYS_COLUMNS); start = start.AddDays(1))
+                {
+                    var end = start.AddDays(1);
+                    var appointments = AppointmentsInRange(start, end);
+                    var excessCount = appointments.Count() - MaxAppointmentsInSlot;
+                    var existingTops = ExistingTops(points, appointments.Take(MaxAppointmentsInSlot));
+                    if (calendar.GetMonth(start) == offSetMonth)
+                    {
+                        @foreach (var item in appointments.Take(MaxAppointmentsInSlot))
+                        {
+                            var startSlotIndex = realstart.Subtract(date).Days + 1;
+                            var slotIndex = startSlotIndex + item.Start.Date.Subtract(realstart).Days;
+                            var slotWidth = (SLOT_WIDTH / CALENDAR_WIDTH) * 100;
+                            var left = slotIndex * slotWidth;
+
+                            var length = Math.Max(1, Math.Ceiling(item.End.Subtract(realstart).TotalDays) - (slotIndex - startSlotIndex));
+                            var width = item.End <= realstart.AddDays(daysinmonth - 1) ? (length) * slotWidth : (daysinmonth + startSlotIndex - slotIndex) * slotWidth;
+                            if (!points.TryGetValue(item, out var top))
+                            {
+                                top = DetermineTop(existingTops);
+                                points.Add(item, top);
+                                existingTops.Add(top);
+                            }
+                            var height = 1.5;
+                            var data = item;
+
+
+                            @if (item.Start >= realstart && item.Start <= end)
+                            {
+                                <Appointment Data=@item Top=@top Left=@left Width=@width Height=@height Click=@OnAppointmentClick DragStart=@OnAppointmentDragStart />
+                            }
+                            else if (realstart == start)
+                            {
+                                left = startSlotIndex * slotWidth;
+                                length = Math.Max(1, Math.Min(daysinmonth, Math.Ceiling(item.End.Subtract(date).TotalDays - (startSlotIndex - 1))));
+                                width = length * slotWidth;
+
+                                <Appointment Data=@item Top=@top Left=@left Width=@width Height=@height Click=@OnAppointmentClick DragStart=@OnAppointmentDragStart />
+                            }
+                        }
+
+                        @if (excessCount > 0)
+                        {
+                            excessCounts[start] = excessCount;
+                            dayAppointments[start] = appointments;
+                        }
+                    }
+                }
+            </div>
+            <div class="rz-slots">
+                <div @attributes=@Attributes(realstart, "rz-slot", false)>
+                    <div class="rz-slot-header" role="button" tabindex="0"
+                         @onclick=@(args => OnMonthClick(startMonth))
+                         @onkeydown="@(args => OnMonthHeaderKeyDown(args, startMonth))">
+                        @realstart.ToString("MMMM", Scheduler?.Culture ?? System.Globalization.CultureInfo.CurrentCulture)
+                    </div>
+                </div>
+                @for (var day = 0; day < NUMBER_DAYS_COLUMNS; day++)
+                {
+                    string dayType = "";
+                    var dayOfWeek = date.AddDays(day);
+                    bool slotInMonth = calendar.GetMonth(dayOfWeek) == offSetMonth;
+
+                    dayType = dayOfWeek.DayOfWeek == DayOfWeek.Saturday || dayOfWeek.DayOfWeek == DayOfWeek.Sunday ? "rz-weekend" : "";
+                    dayType = !slotInMonth ? "rz-other-month" : dayType;
+
+                    @if (slotInMonth)
+                    {
+                        <div @onclick="@(args => OnSlotClick(dayOfWeek))" @attributes=@Attributes(dayOfWeek, ($"rz-slot {dayType} {(CurrentDate.Date == dayOfWeek.Date ? "rz-state-focused" : "")}"), slotInMonth) ondragover="event.preventDefault();" @ondrop=@(args => @OnDrop(dayOfWeek))>
+                            <div class="rz-slot-title">
+                                @calendar.GetDayOfMonth(dayOfWeek)
+                                @if (excessCounts.TryGetValue(dayOfWeek, out var excess))
+                                {
+                                    var listDate = dayOfWeek;
+                                    var apps = dayAppointments[listDate];
+                                    <button type="button" class="rz-event-list-btn" @onclick=@(args => { if (apps != null && MoreText != null) _ = OnListClick(listDate, apps); }) @onclick:stopPropagation>@(MoreText != null ? String.Format(MoreText, excess) : "")</button>
+                                }
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div @attributes=@Attributes(dayOfWeek, ($"rz-slot {dayType}"), slotInMonth) ondragover="event.preventDefault();" @ondrop=@(args => @OnDrop(dayOfWeek))>
+                            <div class="rz-slot-title">
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    void OnFocus()
+    {
+        CurrentDate = CurrentDate != default(DateTime) ? CurrentDate : StartDate;
+    }
+
+    [Parameter]
+    public DateTime StartDate { get; set; }
+
+    [Parameter]
+    public DateTime EndDate { get; set; }
+
+    [Parameter]
+    public Month StartMonth { get; set; }
+
+    [Parameter]
+    public int MaxAppointmentsInSlot { get; set; }
+
+    [Parameter]
+    public string? MoreText { get; set; }
+
+    [CascadingParameter]
+    public IScheduler? Scheduler { get; set; }
+
+    [Parameter]
+    public IEnumerable<AppointmentData>? Appointments { get; set; }
+
+    IDictionary<string, object> Attributes(DateTime start, string className, bool slotInMonth)
+    {
+        if (Scheduler == null)
+            return new Dictionary<string, object>();
+        var attributes = Scheduler.GetSlotAttributes(start, start.AddDays(1), () => AppointmentsInRange(start, start.AddDays(1)));
+        attributes["class"] = ClassList.Create(className).Add(attributes).ToString();
+        attributes["dropzone"] = "move";
+        if (!slotInMonth)
+        {
+            attributes.Remove("style");
+        }
+        return attributes;
+    }
+
+    async Task OnSlotClick(DateTime date)
+    {
+        if (Scheduler != null)
+            await Scheduler.SelectSlot(date, date.AddDays(1), AppointmentsInRange(date, date.AddDays(1)));
+    }
+
+    double DetermineTop(HashSet<double> existingTops)
+    {
+        var top = 1.5;
+
+        while (existingTops.Contains(top))
+        {
+            top += 1.5;
+        }
+
+        return top;
+    }
+
+    HashSet<double> ExistingTops(IDictionary<AppointmentData, double> tops, IEnumerable<AppointmentData> appointments)
+    {
+        var existingTops = new HashSet<double>();
+
+        foreach (var appointment in appointments)
+        {
+            if (tops.TryGetValue(appointment, out var existingTop))
+            {
+                existingTops.Add(existingTop);
+            }
+        }
+
+        return existingTops;
+    }
+
+    async Task OnAppointmentClick(AppointmentData data)
+    {
+        if (Scheduler != null)
+            await Scheduler.SelectAppointment(data);
+    }
+
+    private AppointmentData[] AppointmentsInRange(DateTime start, DateTime end)
+    {
+        if (Appointments == null || Scheduler == null)
+        {
+            return Array.Empty<AppointmentData>();
+        }
+
+        return Appointments.Where(item => Scheduler.IsAppointmentInRange(item, start, end)).OrderBy(item => item.Start).ThenByDescending(item => item.End).ToArray();
+    }
+
+    async Task OnMonthClick(DateTime monthStart)
+    {
+        if (Scheduler != null)
+            await Scheduler.SelectMonth(monthStart, AppointmentsInRange(monthStart, monthStart.EndOfMonth()));
+    }
+
+    async Task OnMonthHeaderKeyDown(KeyboardEventArgs args, DateTime monthStart)
+    {
+        var key = args.Code != null ? args.Code : args.Key;
+        if (key == "Enter" || key == "Space")
+        {
+            await OnMonthClick(monthStart);
+        }
+    }
+
+    async Task OnListClick(DateTime date, IEnumerable<AppointmentData> appointments)
+    {
+        if (Scheduler == null) return;
+        bool preventDefault = await Scheduler.SelectMore(date, date.AddDays(1), appointments);
+
+        if (!preventDefault)
+        {
+        await DialogService.OpenAsync(date.ToShortDateString(), ds =>
+    @<div class="rz-event-list">
+        <CascadingValue Value=@Scheduler>
+            @foreach (var item in appointments)
+            {
+                <Appointment Data=@item Click="OnListEventClick" />
+            }
+        </CascadingValue>
+    </div>);
+        }
+    }
+
+    async Task OnListEventClick(AppointmentData data)
+    {
+        DialogService.Close();
+
+        await OnAppointmentClick(data);
+    }
+
+    ElementReference view;
+    DateTime CurrentDate;
+    int CurrentMonth = -1;
+    bool preventKeyPress = true;
+    bool stopKeydownPropagation;
+
+    async Task OnKeyPress(KeyboardEventArgs args)
+    {
+        if(CurrentDate == default(DateTime))
+        {
+            CurrentDate = StartDate.AddDays(1);
+        }
+
+        var key = args.Code != null ? args.Code : args.Key;
+
+        if (key == "ArrowLeft" || key == "ArrowRight")
+        {
+            var newDate = CurrentDate.AddDays(key == "ArrowLeft" ? -1 : 1);
+
+            var cal = (Scheduler?.Culture ?? System.Globalization.CultureInfo.CurrentCulture).Calendar;
+            var calYear = cal.GetYear(CurrentDate);
+            var calMonth = cal.GetMonth(CurrentDate);
+            var firstDate = new DateTime(calYear, calMonth, 1, cal);
+            var lastDate = new DateTime(calYear, calMonth, cal.GetDaysInMonth(calYear, calMonth), cal);
+
+            if(newDate < firstDate)
+            {
+                CurrentDate = firstDate;
+            }
+            else if(newDate > lastDate)
+            {
+                CurrentDate = lastDate;
+            }
+            else
+            {
+                CurrentDate = newDate;
+            }
+
+            await ScrollIntoView("rz-slot rz-state-focused");
+
+            preventKeyPress = true;
+            stopKeydownPropagation = true;
+        }
+        else if (key == "ArrowUp" || key == "ArrowDown")
+        {
+            CurrentMonth = Math.Clamp(CurrentMonth + (key == "ArrowUp" ? -1 : 1), 0, 11);
+
+            var navCal = (Scheduler?.Culture ?? System.Globalization.CultureInfo.CurrentCulture).Calendar;
+            CurrentDate = new DateTime(navCal.GetYear(CurrentDate), CurrentMonth + 1, 1, navCal);
+
+            await ScrollIntoView("rz-month rz-state-focused");
+
+            preventKeyPress = true;
+            stopKeydownPropagation = true;
+        }
+        else if (key == "Enter")
+        {
+            await OnListClick(CurrentDate, AppointmentsInRange(CurrentDate, CurrentDate.AddDays(1)));
+            await view.FocusAsync();
+
+            preventKeyPress = true;
+            stopKeydownPropagation = true;
+        }
+        else if (key == "Space")
+        {
+            var appointment = AppointmentsInRange(CurrentDate, CurrentDate.AddDays(1)).FirstOrDefault();
+            if (appointment != null)
+            {
+                if (Scheduler != null)
+                {
+                    await Scheduler.SelectAppointment(appointment);
+                    await view.FocusAsync();
+                }
+            }
+
+            preventKeyPress = true;
+            stopKeydownPropagation = true;
+        }
+        else
+        {
+            preventKeyPress = false;
+            stopKeydownPropagation = false;
+        }
+    }
+
+    async Task ScrollIntoView(string cssClasses)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("Radzen.scrollIntoViewIfNeeded", view, cssClasses);
+        }
+        catch
+        { }
+    }
+}

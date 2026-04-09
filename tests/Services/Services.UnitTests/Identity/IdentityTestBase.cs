@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 
-using Qlt.Infrastructure.Identity.Models;
 using Qlt.Infrastructure.Identity.Repositories;
 using Qlt.Platform.Messaging.Services;
 using Qlt.Services.Accounts.Contracts.IntegrationEvents;

@@ -1,0 +1,205 @@
+using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
+
+using Qlt.BackOfficeApp.Models;
+using Qlt.BackOfficeApp.Services;
+
+using Radzen;
+
+namespace Qlt.BackOfficeApp.Components.Pages.Onboarding
+{
+    public partial class Detail
+    {
+        [Inject]
+        protected IJSRuntime JSRuntime { get; set; }
+
+        [Inject]
+        protected NavigationManager NavigationManager { get; set; }
+
+        [Inject]
+        protected DialogService DialogService { get; set; }
+
+        [Inject]
+        protected TooltipService TooltipService { get; set; }
+
+        [Inject]
+        protected ContextMenuService ContextMenuService { get; set; }
+
+        [Inject]
+        protected NotificationService NotificationService { get; set; }
+
+        [Inject]
+        protected SecurityService Security { get; set; }
+
+        [Parameter]
+        public Guid OnboardingProcessId { get; set; }
+
+        private OnboardingProcessDetailResponse? detail;
+        private bool isLoading = true;
+        private bool isRetrying;
+        private bool isPolling;
+        private string? errorMessage;
+        private int pollingIntervalSeconds = 5;
+
+        private CancellationTokenSource? pollingCts;
+
+        protected override async Task OnInitializedAsync()
+        {
+            await LoadDetailAsync();
+            StartPollingIfNeeded();
+        }
+
+        private async Task LoadDetailAsync()
+        {
+            var result = await Api.GetOnboardingDetailAsync(OnboardingProcessId);
+            if (result.IsSuccess)
+            {
+                detail = result.Value;
+                errorMessage = null;
+            }
+            else
+            {
+                errorMessage = result.StatusCode == 404
+                    ? "Onboarding process not found."
+                    : "Failed to load onboarding detail.";
+            }
+
+            isLoading = false;
+        }
+
+        private async Task RefreshAsync()
+        {
+            await LoadDetailAsync();
+            StartPollingIfNeeded();
+            StateHasChanged();
+        }
+
+        private async Task RetryAsync()
+        {
+            isRetrying = true;
+            StateHasChanged();
+
+            var result = await Api.RetryOnboardingAsync(OnboardingProcessId);
+            if (result.IsSuccess)
+            {
+                Notification.Notify(NotificationSeverity.Success, "Retry Initiated",
+                    $"Retry #{result.Value!.RetryCount} has been started.");
+                await LoadDetailAsync();
+                StartPollingIfNeeded();
+            }
+            else
+            {
+                Notification.Notify(NotificationSeverity.Error, "Retry Failed",
+                    result.ErrorMessage ?? "Unable to retry onboarding.");
+            }
+
+            isRetrying = false;
+            StateHasChanged();
+        }
+
+        private void StartPollingIfNeeded()
+        {
+            StopPolling();
+
+            if (detail is null) return;
+
+            if (!ShouldPoll(detail.Status)) return;
+
+            pollingIntervalSeconds = GetPollingInterval(detail.Status);
+            isPolling = true;
+            pollingCts = new CancellationTokenSource();
+
+            _ = PollLoopAsync(pollingCts.Token);
+        }
+
+        private async Task PollLoopAsync(CancellationToken cancellationToken)
+        {
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(pollingIntervalSeconds), cancellationToken);
+
+                    if (cancellationToken.IsCancellationRequested) break;
+
+                    var result = await Api.GetOnboardingDetailAsync(OnboardingProcessId, cancellationToken);
+                    if (result.IsSuccess && !cancellationToken.IsCancellationRequested)
+                    {
+                        detail = result.Value;
+
+                        var newInterval = GetPollingInterval(detail!.Status);
+                        if (newInterval != pollingIntervalSeconds)
+                        {
+                            pollingIntervalSeconds = newInterval;
+                        }
+
+                        await InvokeAsync(StateHasChanged);
+
+                        if (!ShouldPoll(detail.Status))
+                        {
+                            isPolling = false;
+                            await InvokeAsync(StateHasChanged);
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected on disposal
+            }
+            catch (Exception)
+            {
+                isPolling = false;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        private void StopPolling()
+        {
+            isPolling = false;
+            pollingCts?.Cancel();
+            pollingCts?.Dispose();
+            pollingCts = null;
+        }
+
+        private static bool ShouldPoll(string status)
+            => status is "InProgress" or "WaitingForExternalProvisioning";
+
+        private static int GetPollingInterval(string status) => status switch
+        {
+            "WaitingForExternalProvisioning" => 10,
+            _ => 5
+        };
+
+        private static BadgeStyle GetStatusBadgeStyle(string status) => status switch
+        {
+            "Completed" => BadgeStyle.Success,
+            "Failed" => BadgeStyle.Danger,
+            "InProgress" => BadgeStyle.Info,
+            "WaitingForExternalProvisioning" => BadgeStyle.Warning,
+            _ => BadgeStyle.Secondary
+        };
+
+        private static ProgressBarStyle GetProgressBarStyle(string status) => status switch
+        {
+            "Completed" => ProgressBarStyle.Success,
+            "Failed" => ProgressBarStyle.Danger,
+            _ => ProgressBarStyle.Primary
+        };
+
+        private static BadgeStyle GetStepBadgeStyle(string stepStatus) => stepStatus switch
+        {
+            "Completed" => BadgeStyle.Success,
+            "Current" => BadgeStyle.Info,
+            "Failed" => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+
+        public async ValueTask DisposeAsync()
+        {
+            StopPolling();
+            await ValueTask.CompletedTask;
+        }
+    }
+}

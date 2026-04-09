@@ -20,9 +20,10 @@ namespace Qlt.Services.Accounts.Api
             return api;
         }
 
-        public static async Task<Results<Ok<bool>, ValidationProblem, BadRequest<string>>> CreateCompanyAsync(
+        public static async Task<Results<Ok<bool>, BadRequest<ApiErrorResponse>>> CreateCompanyAsync(
             [FromHeader(Name = "x-requestid")] Guid requestId,
             CreateCompanyRequest request,
+            HttpContext context,
             [AsParameters] AccountsServices services)
         {
             services.Logger.LogInformation(
@@ -34,7 +35,7 @@ namespace Qlt.Services.Accounts.Api
             if (requestId == Guid.Empty)
             {
                 services.Logger.LogWarning("Invalid request - RequestId is missing - {@Request}", request);
-                return TypedResults.BadRequest("Empty GUID is not valid for request ID");
+                return TypedResults.BadRequest(new ApiErrorResponse { Code = "ValidationError", Message = "Empty GUID is not valid for request ID", TraceId = context.TraceIdentifier });
             }
 
             using (services.Logger.BeginScope(new List<KeyValuePair<string, object>> { new("IdentifiedCommandId", requestId) }))
@@ -61,18 +62,19 @@ namespace Qlt.Services.Accounts.Api
                 else
                     services.Logger.LogInformation("CreateCompanyCommand succeeded - RequestId: {RequestId}", requestId);
 
-                return result.ToHttpResult();
+                return result.ToHttpResult(context.TraceIdentifier);
             }
         }
 
-        public static async Task<Results<Ok<CompanyDetail>, NotFound>> GetCompanyByIdAsync(
+        public static async Task<Results<Ok<CompanyDetail>, NotFound<ApiErrorResponse>>> GetCompanyByIdAsync(
             Guid id,
+            HttpContext context,
             [AsParameters] AccountsServices services)
         {
             var result = await services.Mediator.Send(new GetCompanyByIdQuery(id));
 
             if (result.IsFailure)
-                return TypedResults.NotFound();
+                return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = "Company not found.", TraceId = context.TraceIdentifier });
 
             return TypedResults.Ok(result.Value);
         }

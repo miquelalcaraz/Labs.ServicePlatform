@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
 using Qlt.Domain.Behaviors;
-using Qlt.Platform.Builders;
 using Qlt.Platform.EventBus;
 using Qlt.Platform.EventBus.Builders;
 using Qlt.Platform.EventBus.Extensions;
@@ -22,7 +21,7 @@ namespace Qlt.Services.Notifications.Extensions
             var services = builder.Services;
 
             builder.AddInfrastructureServices();
-           
+
             services.AddHttpContextAccessor();
 
             services.AddQltMediator(cfg =>

@@ -1,0 +1,48 @@
+﻿@inherits RadzenButton
+
+@if (Visible)
+{
+    <button @ref="@Element" style="@Style" disabled="@IsDisabled"
+            type="@((Enum.GetName(typeof(ButtonType), ButtonType) ?? ButtonType.ToString()).ToLower())"
+            @attributes="Attributes" class="@GetCssClass()" id="@GetId()"
+            @onclick="@OnClick" tabindex="@(Disabled ? "-1" : $"{TabIndex}")"
+            aria-label="@AriaLabel" aria-pressed="@(Value.ToString().ToLowerInvariant())"
+            aria-expanded="@AriaExpanded" aria-controls="@AriaControls" aria-haspopup="@AriaHasPopup">
+        @if (!string.IsNullOrEmpty(Name))
+        {
+            <input type="hidden" name="@Name" id="@Name" value="@(Value.ToString().ToLowerInvariant())" @attributes=@InputAttributes />
+        }
+        <span class="rz-button-box">
+            @if (ChildContent != null)
+            {
+                @ChildContent
+            }
+            else
+            {
+                @if (IsBusy)
+                {
+                    <RadzenIcon Icon="refresh" Style="animation: rotation 700ms linear infinite" />
+                    @if (!string.IsNullOrEmpty(BusyText))
+                    {
+                        <span class="rz-button-text">@BusyText</span>
+                    }
+                }
+                else
+                {
+                    @if (!string.IsNullOrEmpty(GetIcon()))
+                    {
+                        <i class="notranslate rz-button-icon-left rzi" style="@(!string.IsNullOrEmpty(IconColor) ? $"color:{IconColor}" : null)">@GetIcon()</i>
+                    }
+                    @if (!string.IsNullOrEmpty(Image))
+                    {
+                        <img class="notranslate rz-button-icon-left rzi" src="@Image" alt="@ImageAlternateText" />
+                    }
+                    @if (!string.IsNullOrEmpty(Text))
+                    {
+                        <span class="rz-button-text">@Text</span>
+                    }
+                }
+            }
+        </span>
+    </button>
+}

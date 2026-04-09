@@ -17,9 +17,10 @@ namespace Qlt.Services.Accounts.Api
             return api;
         }
 
-        public static async Task<Results<Ok<bool>, ValidationProblem, BadRequest<string>>> StartCustomerOnboardingAsync(
+        public static async Task<Results<Ok<bool>, BadRequest<ApiErrorResponse>>> StartCustomerOnboardingAsync(
             [FromHeader(Name = "x-requestid")] Guid requestId,
             StartCustomerOnboardingRequest request,
+            HttpContext context,
             [AsParameters] AccountsServices services)
         {
             services.Logger.LogInformation(
@@ -30,7 +31,7 @@ namespace Qlt.Services.Accounts.Api
             if (requestId == Guid.Empty)
             {
                 services.Logger.LogWarning("Invalid request - RequestId is missing - {@Request}", request);
-                return TypedResults.BadRequest("Empty GUID is not valid for request ID");
+                return TypedResults.BadRequest(new ApiErrorResponse { Code = "ValidationError", Message = "Empty GUID is not valid for request ID", TraceId = context.TraceIdentifier });
             }
 
             using (services.Logger.BeginScope(new List<KeyValuePair<string, object>> { new("IdentifiedCommandId", requestId) }))
@@ -61,7 +62,7 @@ namespace Qlt.Services.Accounts.Api
                 else
                     services.Logger.LogInformation("StartCustomerOnboardingCommand succeeded - RequestId: {RequestId}", requestId);
 
-                return result.ToHttpResult();
+                return result.ToHttpResult(context.TraceIdentifier);
             }
         }
     }

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server;
 using Microsoft.IdentityModel.JsonWebTokens;
 
+using Qlt.Platform.Builders;
 using Qlt.Platform.Extensions;
 using Qlt.WebApps.BackOffice.Services;
 
@@ -15,6 +16,10 @@ namespace Qlt.WebApps.BackOffice.Extensions
         {
             builder.AddAuthenticationServices();
             builder.Services.AddHttpForwarderWithServiceDiscovery();
+
+            builder.Services.AddHttpClient<OnboardingApiService>(o =>
+                o.BaseAddress = new("https+http://accounts"))
+                .AddAuthToken();
 
             // Application services
             builder.Services.AddScoped<LogOutService>();

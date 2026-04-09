@@ -1,0 +1,75 @@
+
+@inherits RadzenChartComponentBase
+@if (YAxis?.Visible == true)
+{
+    <g class="rz-axis rz-value-axis">
+    <Line class="rz-line" X1="@x1" Y1="@y1" X2="@x1" Y2="@y2" Stroke="@YAxis.Stroke" StrokeWidth="@YAxis.StrokeWidth" LineType="@YAxis.LineType" />
+    @for (var idx = start; idx <= end; idx += step)
+    {
+        var value = Chart?.ValueScale?.Value(idx);
+        var y = Chart?.ValueScale?.Scale(idx) ?? 0;
+        var text = value != null && YAxis != null && Chart?.ValueScale != null ? YAxis.Format(Chart.ValueScale, value) : "";
+
+        if (YAxis?.Ticks?.Template != null)
+        {
+            var context = new TickTemplateContext { Text = text, Value = value, X = x1, Y = y } ;
+
+            <ValueAxisTick X="@x1" Y="@y" Text="@text" Stroke="@(YAxis.Ticks.Stroke ?? YAxis.Stroke)" StrokeWidth="@YAxis.Ticks.StrokeWidth" LineType="@YAxis.Ticks.LineType">
+                @YAxis.Ticks.Template(context)
+            </ValueAxisTick>
+        } 
+        else if (!String.IsNullOrEmpty(text))
+        {
+            <ValueAxisTick X="@x1" Y="@y" Text="@text" Stroke="@(YAxis?.Ticks?.Stroke ?? YAxis?.Stroke)" StrokeWidth="@(YAxis?.Ticks?.StrokeWidth ?? 0)" LineType="@(YAxis?.Ticks?.LineType ?? LineType.Solid)"/>
+        }
+
+        if (YAxis?.GridLines?.Visible == true && idx > start)
+        {
+            <Line class="rz-grid-line" X1="@x1" Y1="@y" X2="@x2" Y2="@y" Stroke="@(YAxis.GridLines.Stroke)" StrokeWidth="@(YAxis.GridLines.StrokeWidth)" LineType="@(YAxis.GridLines.LineType)" />
+        }
+    }
+    @if (!String.IsNullOrEmpty(YAxis?.Title?.Text))
+    {
+        <ValueAxisTitle X="@(x1 - (Chart?.ValueAxis?.Size ?? 0) + (YAxis?.Title?.Size ?? 0))" Y="@((y1 - y2)/2)" Text="@(YAxis?.Title?.Text ?? "")" />
+    }
+    </g>
+}
+@code {
+    double start;
+    double end;
+    double step;
+    double x1;
+    double x2;
+    double y1;
+    double y2;
+    private AxisBase? XAxis { get; set; }
+    private AxisBase? YAxis { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (Chart == null)
+        {
+            return;
+        }
+
+        YAxis = Chart.ValueAxis;
+        XAxis = Chart.CategoryAxis;
+
+        if (Chart.ShouldInvertAxes())
+        {
+            YAxis = Chart.CategoryAxis;
+            XAxis = Chart.ValueAxis;
+        }
+
+        var ticks = Chart.ValueScale.Ticks(YAxis?.TickDistance ?? 0);
+        start = ticks.Start;
+        end = ticks.End;
+        step = ticks.Step;
+
+        var categoryTicks = Chart.CategoryScale.Ticks(XAxis.TickDistance);
+        x1 = Chart.CategoryScale.Scale(categoryTicks.Start);
+        x2 = Chart.CategoryScale.Scale(categoryTicks.End);
+        y1 = Chart.ValueScale.Scale(start);
+        y2 = Chart.ValueScale.Scale(end);
+    }
+}

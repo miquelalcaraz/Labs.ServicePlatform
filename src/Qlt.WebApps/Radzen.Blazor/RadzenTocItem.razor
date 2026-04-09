@@ -1,0 +1,23 @@
+@inherits RadzenComponentWithChildren
+<li role="presentation" @ref=@Element style=@Style @attributes=@Attributes class=@GetCssClass() id=@GetId()>
+    <div class=@WrapperClass>
+        <a href="@href" @onclick="OnClick" class=@LinkClass aria-selected="@(selected ? "true" : "false")">
+            @if (Template is null)
+            {
+                @Text
+            }
+            else
+            {
+                @Template
+            }
+        </a>
+    </div>
+@if (ChildContent != null)
+{
+    <ul class="rz-toc-list">
+        <CascadingValue Name=@nameof(Level) Value=@(Level + 1)>
+            @ChildContent
+        </CascadingValue>
+    </ul>
+}
+</li>

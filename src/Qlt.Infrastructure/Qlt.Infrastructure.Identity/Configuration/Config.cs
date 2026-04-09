@@ -16,13 +16,13 @@ namespace Qlt.Infrastructure.Identity.Configuration
                     Description = "Accounts Service",
                     Scopes = new List<string>
                     {
-
-                        IdentityServerConstants.StandardScopes.OpenId,
-                        IdentityServerConstants.StandardScopes.Profile,
-                        IdentityServerConstants.StandardScopes.Email,
                         QltApiScopes.Accounts,
-                        QltApiScopes.Role
                     },
+                    UserClaims = new List<string>
+                    {
+                        QltClaimTypes.Role,
+                        QltClaimTypes.TenantId,
+                    }
                 },
              };
         }
@@ -93,7 +93,44 @@ namespace Qlt.Infrastructure.Identity.Configuration
                         IdentityServerConstants.StandardScopes.Profile,
                         IdentityServerConstants.StandardScopes.OfflineAccess,
                         QltApiScopes.Accounts,
-                        QltApiScopes.Role
+                        QltIdentityResources.Role
+                    },
+                    AccessTokenLifetime = 60*60*2, // 2 hours
+                    IdentityTokenLifetime= 60*60*2 // 2 hours
+                },
+                 new Client
+                {
+                    ClientId = "BackOffice",
+                    ClientName = "BackOffice Client",
+                    ClientSecrets = new List<Secret>
+                    {
+                        new Secret($"secret".Sha256())
+                    },
+                    ClientUri = $"{configuration["BackOfficeClient"]}",// public uri of the client
+                    AllowedGrantTypes = GrantTypes.Code,
+                    AllowAccessTokensViaBrowser = false,
+                    RequireConsent = false,
+                    AllowOfflineAccess = true,
+                    AlwaysIncludeUserClaimsInIdToken = true,
+                    RequirePkce = false,
+                    RedirectUris = new List<string>
+                    {
+                        $"{configuration["BackOfficeClient"]}/signin-oidc",
+                        "https://localhost:5011/signin-oidc"
+                    },
+                    PostLogoutRedirectUris = new List<string>
+                    {
+                        $"{configuration["BackOfficeClient"]}/signout-callback-oidc",
+                        "https://localhost:5011/signout-callback-oidc"
+                    },
+                    AllowedScopes = new List<string>
+                    {
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        IdentityServerConstants.StandardScopes.Profile,
+                        IdentityServerConstants.StandardScopes.OfflineAccess,
+                        QltApiScopes.Accounts,
+                        QltIdentityResources.Role,
+                        QltApiScopes.Email
                     },
                     AccessTokenLifetime = 60*60*2, // 2 hours
                     IdentityTokenLifetime= 60*60*2 // 2 hours

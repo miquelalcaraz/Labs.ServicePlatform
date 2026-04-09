@@ -1,0 +1,14 @@
+@page "/not-found"
+@layout NotFoundLayout
+@attribute [AllowAnonymous]
+
+<PageTitle>Not found</PageTitle>
+<RadzenRow AlignItems="Radzen.AlignItems.Center">
+    <RadzenColumn Size="12">
+        <RadzenText TextStyle="Radzen.Blazor.TextStyle.DisplayH4" class="rz-mt-6 rz-mt-md-12 rz-pt-md-12 rz-mx-auto" Text="The page isn't available. Sorry about that." TextAlign="Radzen.TextAlign.Center" />
+        <RadzenText Text="We can't find a page with the url you entered." TextStyle="Radzen.Blazor.TextStyle.Subtitle1" class="rz-mb-4 rz-mb-sm-12" TextAlign="Radzen.TextAlign.Center" />
+        <RadzenText TextStyle="Radzen.Blazor.TextStyle.Body1" class="rz-mb-4 rz-mb-sm-12" TextAlign="Radzen.TextAlign.Center">
+            <RadzenLink Path="/" Text="Go to homepage" />
+        </RadzenText>
+    </RadzenColumn>
+</RadzenRow>

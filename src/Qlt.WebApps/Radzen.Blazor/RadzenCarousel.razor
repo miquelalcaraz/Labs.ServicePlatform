@@ -1,0 +1,45 @@
+﻿@inherits RadzenComponent
+@using System.Linq
+@using Microsoft.JSInterop
+<CascadingValue Value=this>
+@if (Visible)
+{
+    <section @ref=@Element style=@Style @attributes=@Attributes class=@GetCssClass() id=@GetId() tabindex="0">
+        @if(AllowPaging && (PagerPosition == PagerPosition.Top || PagerPosition == PagerPosition.TopAndBottom))
+        {
+        <RadzenStack class="rz-carousel-pager rz-carousel-pager-top" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Wrap="FlexWrap.Wrap" role="list">
+            @for (var p = 0; p < PageCount; p++)
+            {
+                var pageIndex = p;
+                var itemIndex = pageIndex * ItemsPerPage;
+                <button type="button" role="listitem" @onclick="@(args => Navigate(itemIndex))" class="rz-carousel-pager-button @(pageIndex == ActivePage ? "rz-state-active" : "")" aria-label="@string.Format(PagerButtonAriaLabelFormat, pageIndex + 1)"></button>
+            }
+        </RadzenStack>
+        }
+        @if(AllowNavigation)
+        {
+        <RadzenButton class="rz-carousel-prev" Icon="@PrevIcon" Text="@PrevText" ButtonStyle="@ButtonStyle" Size="@ButtonSize" Variant="@ButtonVariant" Shade="@ButtonShade"
+            Click=@Prev />
+        <RadzenButton class="rz-carousel-next" Icon="@NextIcon" Text="@NextText" ButtonStyle="@ButtonStyle" Size="@ButtonSize" Variant="@ButtonVariant" Shade="@ButtonShade"
+            Click=@Next/>
+        }
+        <ul @ref="itemsElement" class="rz-carousel-items @(AllowScroll ? "" : "rz-carousel-no-scroll")"
+                 @ontouchstart="OnTouchStart"
+                 @ontouchend="OnTouchEnd"
+                 @ontouchcancel="OnTouchCancel">
+            @Items
+        </ul>
+        @if(AllowPaging && (PagerPosition == PagerPosition.Bottom || PagerPosition == PagerPosition.TopAndBottom))
+        {
+        <RadzenStack class="rz-carousel-pager rz-carousel-pager-bottom" Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Wrap="FlexWrap.Wrap" role="list">
+            @for (var p = 0; p < PageCount; p++)
+            {
+                var pageIndex = p;
+                var itemIndex = pageIndex * ItemsPerPage;
+                <button type="button" role="listitem" @onclick="@(args => Navigate(itemIndex))" class="rz-carousel-pager-button @(pageIndex == ActivePage ? "rz-state-active" : "")" aria-label="@string.Format(PagerButtonAriaLabelFormat, pageIndex + 1)"></button>
+            }
+        </RadzenStack>
+        }
+    </section>
+}
+</CascadingValue>

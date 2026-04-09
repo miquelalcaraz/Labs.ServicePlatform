@@ -64,13 +64,31 @@ internal sealed class OnboardingProcessConfiguration : IEntityTypeConfiguration<
             .HasConversion<string>()
             .HasMaxLength(50);
 
-        entity.Property(e => e.ActivationDeliveredAtUtc);
+        entity.Property(e => e.CompanyLegalName)
+            .HasMaxLength(250);
 
-        entity.Property(e => e.UserActivatedAtUtc);
+        entity.Property(e => e.SubscriptionPlanCode)
+            .HasMaxLength(100);
+
+        entity.Property(e => e.AdminEmail)
+            .HasMaxLength(320);
+
+        entity.Property(e => e.AdminFirstName)
+            .HasMaxLength(100);
+
+        entity.Property(e => e.AdminLastName)
+            .HasMaxLength(150);
+
+        entity.Property(e => e.TenantName)
+            .HasMaxLength(250);
+
+        entity.Property(e => e.AdminMembershipId);
 
         entity.HasIndex(e => e.SubscriptionId)
             .IsUnique();
 
         entity.HasIndex(e => e.TenantId);
+
+        entity.HasIndex(e => e.CorrelationId);
     }
 }

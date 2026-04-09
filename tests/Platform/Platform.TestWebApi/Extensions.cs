@@ -1,5 +1,3 @@
-using System.Reflection;
-
 using Microsoft.EntityFrameworkCore;
 
 using Platform.TestWebApi.Infrastructure;
@@ -10,6 +8,8 @@ using Qlt.Platform.EventBus.Builders;
 using Qlt.Platform.Messaging.Builders;
 using Qlt.Platform.Persistence.Builders;
 using Qlt.Platform.Persistence.Migrations;
+
+using System.Reflection;
 
 namespace Platform.TestWebApi;
 

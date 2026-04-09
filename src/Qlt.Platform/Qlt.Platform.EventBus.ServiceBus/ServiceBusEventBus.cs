@@ -1,13 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-
-using Azure.Messaging.ServiceBus;
+﻿using Azure.Messaging.ServiceBus;
 using Azure.Messaging.ServiceBus.Administration;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +9,14 @@ using Microsoft.Extensions.Options;
 using Qlt.Platform.EventBus.Options;
 using Qlt.Platform.Messaging.IntegrationEvents;
 using Qlt.Platform.Meters;
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Qlt.Platform.EventBus;
 

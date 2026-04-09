@@ -55,44 +55,44 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Seed
                 }
                 context.SaveChanges();
             }
-            if (!context.IdentityResources.Any())
-            {
-                foreach (var resource in Config.GetResources())
-                {
-                    context.IdentityResources.Add(resource.ToEntity());
-                }
-                context.SaveChanges();
-            }
-            if (!context.Clients.Any())
-            {
-                var clients = Config.GetClients(_configuration);
-                foreach (var client in clients)
-                {
-                    context.Clients.Add(client.ToEntity());
-                }
-                context.SaveChanges();
-            }
-            if (!context.ApiScopes.Any())
-            {
-                foreach (var scope in Config.GetApiScopes())
-                {
-                    context.ApiScopes.Add(scope.ToEntity());
-                }
-                context.SaveChanges();
-            }
-            if (!context.ApiResources.Any())
-            {
-                foreach (var resource in Config.GetApis())
-                {
-                    context.ApiResources.Add(resource.ToEntity());
-                }
-                context.SaveChanges();
-            }
+
+            context.IdentityResources.RemoveRange(context.IdentityResources.ToList());
+            context.SaveChanges();
+            foreach (var resource in Config.GetResources())
+                context.IdentityResources.Add(resource.ToEntity());
+            context.SaveChanges();
+
+            context.Clients.RemoveRange(context.Clients.ToList());
+            context.SaveChanges();
+            foreach (var client in Config.GetClients(_configuration))
+                context.Clients.Add(client.ToEntity());
+            context.SaveChanges();
+
+            context.ApiScopes.RemoveRange(context.ApiScopes.ToList());
+            context.SaveChanges();
+            foreach (var scope in Config.GetApiScopes())
+                context.ApiScopes.Add(scope.ToEntity());
+            context.SaveChanges();
+
+            context.ApiResources.RemoveRange(context.ApiResources.ToList());
+            context.SaveChanges();
+            foreach (var resource in Config.GetApis())
+                context.ApiResources.Add(resource.ToEntity());
+            context.SaveChanges();
         }
 
         private async Task SeedRolesAsync()
         {
-            var roles = new[] { "Admin", "User", "Manager", "ApiUser" };
+            var roles = new[] {
+                Roles.PlatformRoles.SalesRepresentative,
+                Roles.PlatformRoles.ProjectManager,
+                Roles.PlatformRoles.BusinessAdmin,
+                Roles.PlatformRoles.SupportAgent,
+                Roles.PlatformRoles.PlatformAdmin ,
+                Roles.SystemRoles.User,
+                Roles.SystemRoles.ApiUser,
+                Roles.SystemRoles.SystemAdmin
+            };
             foreach (var role in roles)
             {
                 if (!await _roleManager.RoleExistsAsync(role))
@@ -111,17 +111,17 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Seed
                 foreach (var user in UsersSeeding.GetUsers())
                 {
                     await _userManager.CreateAsync(user, "***REMOVED***");
-                    await _userManager.AddToRolesAsync(user, new[] { "User" });
+                    await _userManager.AddToRolesAsync(user, new[] { Roles.PlatformRoles.PlatformAdmin, Roles.SystemRoles.SystemAdmin });
                 }
                 foreach (var user in UsersSeeding.GetApiUsers())
                 {
                     await _userManager.CreateAsync(user, "***REMOVED***");
-                    await _userManager.AddToRolesAsync(user, new[] { "ApiUser" });
+                    await _userManager.AddToRolesAsync(user, new[] { Roles.SystemRoles.ApiUser, });
                 }
                 foreach (var user in UsersSeeding.GetAdmins())
                 {
                     await _userManager.CreateAsync(user, "***REMOVED***");
-                    await _userManager.AddToRolesAsync(user, new[] { "Admin" });
+                    await _userManager.AddToRolesAsync(user, new[] { Roles.PlatformRoles.PlatformAdmin, Roles.SystemRoles.SystemAdmin });
                 }
             }
         }

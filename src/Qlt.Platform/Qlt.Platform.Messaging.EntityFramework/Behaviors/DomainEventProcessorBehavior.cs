@@ -1,9 +1,3 @@
-using System;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-
 using MediatR;
 
 using Microsoft.Extensions.Logging;
@@ -13,6 +7,12 @@ using Qlt.Platform.Extensions;
 using Qlt.Platform.Messaging.Extensions;
 using Qlt.Platform.Messaging.Services;
 using Qlt.Platform.Persistence;
+
+using System;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Qlt.Platform.Messaging.Behaviors;
 

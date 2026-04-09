@@ -13,13 +13,17 @@ class AutoAuthorizeMiddleware
 
     public async Task Invoke(HttpContext httpContext)
     {
+        var role = (string?)httpContext.Request.Headers["X-Test-Role"] ?? "PlatformAdmin";
+
         var identity = new ClaimsIdentity("cookies");
 
         identity.AddClaim(new Claim("sub", IDENTITY_ID));
         identity.AddClaim(new Claim("unique_name", IDENTITY_ID));
         identity.AddClaim(new Claim(ClaimTypes.Name, IDENTITY_ID));
+        identity.AddClaim(new Claim(ClaimTypes.Role, role));
+        identity.AddClaim(new Claim("role", role));
 
-        httpContext.User.AddIdentity(identity);
+        httpContext.User = new ClaimsPrincipal(identity);
 
         await _next.Invoke(httpContext);
     }

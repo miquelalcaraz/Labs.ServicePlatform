@@ -1,0 +1,67 @@
+@using Microsoft.AspNetCore.Components.Routing
+@inherits RadzenComponent
+@if (Visible)
+{
+    <RadzenMenuItemWrapper Item="@this" @attributes="@Attributes" class="@GetCssClass()" style="@Style" id="@GetId()">
+    <div class="rz-navigation-item-wrapper" @attributes="getOpenEvents()" @ref="@Element">
+        @if (Path != null)
+            {
+                <NavLink tabindex="-1" target="@Target" class="rz-navigation-item-link" href="@Path" Match="@Match">
+                    @if (!string.IsNullOrEmpty(Icon))
+                    {
+                        <i class="notranslate rzi rz-navigation-item-icon" style="@(!string.IsNullOrEmpty(IconColor) ? $"color:{IconColor}" : null)">@Icon</i>
+                    }
+                    @if (!string.IsNullOrEmpty(Image))
+                    {
+                        <img class="notranslate rz-navigation-item-icon" src="@Image" style="@ImageStyle" alt=@ImageAlternateText />
+                    }
+                    @if (Template != null)
+                    {
+                        @Template
+                    }
+                    else
+                    {
+                        <span class="rz-navigation-item-text">@Text</span>
+                    }
+                    @if (ChildContent != null)
+                    {
+                        <i class="notranslate rzi rz-navigation-item-icon-children">@ArrowIcon</i>
+                    }
+                </NavLink>
+            }
+            else
+            {
+                <div class="rz-navigation-item-link">
+                    @if (!string.IsNullOrEmpty(Icon))
+                    {
+                        <i class="notranslate rzi rz-navigation-item-icon" style="@(!string.IsNullOrEmpty(IconColor) ? $"color:{IconColor}" : null)">@Icon</i>
+                    }
+                    @if (!string.IsNullOrEmpty(Image))
+                    {
+                        <img class="notranslate rz-navigation-item-icon" src="@Image" style="@ImageStyle" alt=@ImageAlternateText />
+                    }
+                    @if (Template != null)
+                    {
+                        @Template
+                    }
+                    else
+                    {
+                        <span class="rz-navigation-item-text">@Text</span>
+                    }
+                    @if (ChildContent != null)
+                    {
+                        <i class="notranslate rzi rz-navigation-item-icon-children">@ArrowIcon</i>
+                    }
+                </div>
+            }
+        </div>
+        @if (ChildContent != null)
+        {
+            <ul id="@($"{GetId()}-submenu")" class="rz-navigation-menu" role="menu" style="display: none" data-flyout="@(Parent?.Flyout == true ? "true" : null)">
+                <CascadingValue Value=this>
+                    @ChildContent
+                </CascadingValue>
+            </ul>
+        }
+    </RadzenMenuItemWrapper>
+}

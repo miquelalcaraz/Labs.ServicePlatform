@@ -7,4 +7,5 @@ namespace Qlt.Platform.Messaging.Queries;
 /// Inject the read-only DbContext (e.g. AccountReadContext) rather than the write context.
 /// </summary>
 public interface IQueryHandler<TQuery, TResponse> : IRequestHandler<TQuery, Result<TResponse>>
-    where TQuery : IQuery<TResponse> { }
+    where TQuery : IQuery<TResponse>
+{ }

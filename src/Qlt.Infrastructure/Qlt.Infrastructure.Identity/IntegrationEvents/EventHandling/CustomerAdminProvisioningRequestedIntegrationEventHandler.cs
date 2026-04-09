@@ -1,4 +1,5 @@
 using global::Qlt.Infrastructure.Identity.Contracts.IntegrationEvents;
+
 using Qlt.Infrastructure.Identity.Models;
 using Qlt.Infrastructure.Identity.Repositories;
 using Qlt.Platform.Messaging.IntegrationEvents;

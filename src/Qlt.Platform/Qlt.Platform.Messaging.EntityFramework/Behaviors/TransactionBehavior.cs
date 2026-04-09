@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
-
 using MediatR;
 
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +7,12 @@ using Qlt.Platform.Activities;
 using Qlt.Platform.Extensions;
 using Qlt.Platform.Messaging.Commands;
 using Qlt.Platform.Persistence;
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Qlt.Platform.Messaging.Behaviors;
 

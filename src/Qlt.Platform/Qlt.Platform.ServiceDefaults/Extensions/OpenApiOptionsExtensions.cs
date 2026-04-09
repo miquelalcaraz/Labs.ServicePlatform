@@ -1,6 +1,3 @@
-using System.Text;
-using System.Text.Json.Nodes;
-
 using Asp.Versioning.ApiExplorer;
 
 using Microsoft.AspNetCore.Authorization;
@@ -10,6 +7,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using Microsoft.OpenApi;
+
+using System.Text;
+using System.Text.Json.Nodes;
 
 namespace Qlt.Platform.Extensions;
 

@@ -1,0 +1,251 @@
+@typeparam TItem
+@using System.Globalization
+@{
+    var rowArgs = Grid?.GroupRowAttributes(this);
+
+    if (Grid != null && rowArgs != null)
+    {
+        if (rowArgs.Item1.Expanded == true && Grid.collapsedGroupItems.ContainsKey(this))
+        {
+            Grid.collapsedGroupItems.Remove(this);
+        }
+    }
+}
+<tr class="rz-group-row" @attributes="@(rowArgs?.Item2)">
+    @if (Grid != null && Grid.ShowGroupExpandColumn)
+    {
+        @if (Group.GroupDescriptor != null)
+        {
+            @for (var i = 0; i < GetLevel(); i++)
+            {
+                <td class="rz-col-icon">
+                    <span class="rz-column-title"></span>
+                </td>
+            }
+
+        }
+        <td class="rz-col-icon">
+            <span class="rz-column-title"></span>
+            @if (rowArgs?.Item1.Expandable == true)
+            {
+            <button type="button" tabindex="-1" id="@(Grid.GridId() + Group.GetHashCode())" aria-label=@Grid.ExpandGroupAriaLabel
+                    aria-expanded="@(Grid.IsGroupItemExpanded(this).ToString().ToLowerInvariant())"
+                    class="rz-button rz-button-sm rz-button-icon-only rz-variant-text rz-base rz-shade-default"
+                    @onclick="@(_ => Grid.ExpandGroupItem(this, rowArgs?.Item1.Expanded))">
+                <span class="@(Grid.ExpandedGroupItemStyle(this, Grid.allGroupsExpanded != null ? Grid.allGroupsExpanded : rowArgs?.Item1.Expanded))"></span>
+            </button>
+            }
+        </td>
+    }
+    <td colspan="@(TotalColumnCount + (Grid?.Groups.Count ?? 0) - 1 - Group.Level + ((Grid?.Template != null && Grid?.ShowExpandColumn == true) ? 1 : 0))">
+        <span class="rz-cell-data">
+            @if (Grid?.GroupHeaderTemplate != null)
+            {
+                @Grid.GroupHeaderTemplate(Group)
+            }
+            else if (Grid?.GroupHeaderToggleTemplate != null)
+            {
+                @Grid.GroupHeaderToggleTemplate((Group, this))
+            }
+            else if(Group.GroupDescriptor != null)
+            {
+                @(Group.GroupDescriptor.GetTitle() + ": " + GetKeyAsString())
+            }
+        </span>
+    </td>
+</tr>
+@if(Grid != null && rowArgs != null)
+{
+    if (Grid.IsGroupItemExpanded(this) && rowArgs.Item1.Expanded != false && Grid.allGroupsExpanded != false)
+    {
+        @DrawDataRows()
+    }
+    else if(Grid.GroupFootersAlwaysVisible)
+    {
+        if (!Grid.collapsedGroupItems.Keys.Contains(this))
+        {
+            Grid.collapsedGroupItems.Add(this, true);
+        }
+
+        @DrawDataRows(true)
+    }
+    else
+    {
+        if (!Grid.collapsedGroupItems.Keys.Contains(this))
+        {
+            Grid.collapsedGroupItems.Add(this, true);
+        }
+    }
+}
+@code {
+    string GetKeyAsString()
+    {
+        var formatString = Group?.GroupDescriptor?.FormatString;
+        var value = !string.IsNullOrEmpty(formatString) ?
+            string.Format(Grid?.Culture ?? CultureInfo.CurrentCulture, formatString, Group!.Data.Key) :
+                Convert.ToString(Group?.Data?.Key, Grid?.Culture ?? CultureInfo.CurrentCulture);
+        return $"{value}";
+    }
+
+    [Parameter]
+    public IList<RadzenDataGridColumn<TItem>> Columns { get; set; } = new List<RadzenDataGridColumn<TItem>>();
+
+    GroupResult _groupResult = new GroupResult();
+    [Parameter]
+    public GroupResult GroupResult
+    {
+        get
+        {
+            return _groupResult;
+        }
+        set
+        {
+            if(_groupResult != value)
+            {
+                _groupResult = value;
+
+                var level = GetLevel();
+                Group = new Group()
+                {
+                    Level = level,
+                    GroupDescriptor = Grid.Groups?.ElementAtOrDefault(level),
+                    Data = _groupResult
+                };
+            }
+        }
+    }
+
+
+    private int TotalColumnCount
+    {
+        get
+        {
+            var columnsOfGrid = Columns
+                  .Where(c => c.GetVisible())
+                  .ToList();
+            return columnsOfGrid.Sum(c => CountVisibleLeafColumns<TItem>(c));
+        }
+    }
+
+    [Parameter]
+    public RadzenDataGrid<TItem> Grid { get; set; } = default!;
+
+    [Parameter]
+    public RadzenDataGridGroupRow<TItem>? Parent { get; set; }
+
+    [Parameter]
+    public Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder Builder { get; set; } = default!;
+
+    RenderFragment DrawDataRows(bool groupFootersOnly = false)
+    {
+        return new RenderFragment(builder =>
+        {
+            if (GroupResult.Subgroups != null)
+            {
+                foreach (var g in GroupResult.Subgroups)
+                {
+                    builder.OpenComponent(0, typeof(RadzenDataGridGroupRow<TItem>));
+                    builder.AddAttribute(1, "Columns", Columns);
+                    builder.AddAttribute(3, "Grid", Grid);
+                    builder.AddAttribute(3, "Parent", this);
+                    builder.AddAttribute(5, "GroupResult", g);
+                    builder.AddAttribute(6, "Builder", builder);
+                    builder.CloseComponent();
+                }
+
+                if (Group?.GroupDescriptor?.ShowFooter.GetValueOrDefault() == true && Columns.Where(c => c.GroupFooterTemplate != null).Any() && Grid != null)
+                {
+                    builder.OpenComponent(7, typeof(RadzenDataGridGroupFooterRow<TItem>));
+                    builder.AddAttribute(8, "Columns", Columns);
+                    builder.AddAttribute(9, "Grid", Grid);
+                    builder.AddAttribute(10, "GroupResult", GroupResult);
+                    builder.AddAttribute(11, "Builder", builder);
+                    builder.AddAttribute(12, "Parent", this);
+                    builder.CloseComponent();
+                }
+            }
+            else
+            {
+                if (!groupFootersOnly)
+                {
+                    int i = 0;
+                    if (GroupResult?.Items != null)
+                    {
+                        foreach (var item in GroupResult.Items)
+                        {
+                            builder.OpenComponent(0, typeof(RadzenDataGridRow<TItem>));
+                            builder.AddAttribute(1, "Columns", Columns);
+                            builder.AddAttribute(2, "Index", i);
+                            builder.AddAttribute(3, "Grid", Grid);
+                            builder.AddAttribute(4, "TItem", typeof(TItem));
+                            builder.AddAttribute(5, "Item", item);
+                            builder.AddAttribute(6, "InEditMode", Grid != null ? Grid.IsRowInEditMode((TItem)item) : false);
+
+                            if (Grid != null && Grid.editContexts.ContainsKey((TItem)item))
+                            {
+                                builder.AddAttribute(7, nameof(RadzenDataGridRow<TItem>.EditContext), Grid.editContexts[(TItem)item]);
+                            }
+
+                            builder.CloseComponent();
+                            i++;
+                        }
+                    }
+
+                    if (Group?.GroupDescriptor?.ShowFooter.GetValueOrDefault(true) == true && Columns.Where(c => c.GroupFooterTemplate != null).Any() && Grid != null)
+                    {
+                        builder.OpenComponent(7, typeof(RadzenDataGridGroupFooterRow<TItem>));
+                        builder.AddAttribute(8, "Columns", Columns);
+                        builder.AddAttribute(9, "Grid", Grid);
+                        builder.AddAttribute(10, "GroupResult", GroupResult);
+                        builder.AddAttribute(11, "Builder", builder);
+                        builder.AddAttribute(12, "Parent", this);
+                        builder.CloseComponent();
+                    }
+                }
+                else if (Group?.GroupDescriptor?.ShowFooter.GetValueOrDefault(true) == true && Columns.Where(c => c.GroupFooterTemplate != null).Any() && Grid != null)
+                {
+                    builder.OpenComponent(7, typeof(RadzenDataGridGroupFooterRow<TItem>));
+                    builder.AddAttribute(8, "Columns", Columns);
+                    builder.AddAttribute(9, "Grid", Grid);
+                    builder.AddAttribute(10, "GroupResult", GroupResult);
+                    builder.AddAttribute(11, "Builder", builder);
+                    builder.AddAttribute(12, "Parent", this);
+                    builder.CloseComponent();
+                }
+            }
+        });
+    }
+
+    public Group Group { get; set; } = new Group();
+
+    int GetLevel()
+    {
+        int i = 0;
+        var p = Parent;
+        while(p != null)
+        {
+            p = p.Parent;
+            i++;
+        }
+
+        return i;
+    }
+
+    private int CountVisibleLeafColumns<T>(RadzenDataGridColumn<TItem> column)
+    {
+        if (column.ColumnsCollection?.Count == 0)
+        {
+            return column.GetVisible()  ? 1 : 0;
+        }
+
+        int count = 0;
+        if (column?.ColumnsCollection != null)
+        {
+            foreach (var childColumn in column.ColumnsCollection)
+            {
+                count += CountVisibleLeafColumns<T>(childColumn);
+            }
+        }
+        return count;
+    }
+}

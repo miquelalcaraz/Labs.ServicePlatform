@@ -1,6 +1,6 @@
-using System;
-
 using Qlt.Platform.Messaging.IntegrationEvents;
+
+using System;
 
 namespace Qlt.Platform.Messaging.Models;
 

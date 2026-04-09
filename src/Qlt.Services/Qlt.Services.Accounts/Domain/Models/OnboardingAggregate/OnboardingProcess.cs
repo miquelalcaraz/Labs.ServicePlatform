@@ -37,16 +37,33 @@ public class OnboardingProcess : Entity, IAggregateRoot
 
     public OnboardingStep? FailedStep { get; private set; }
 
-    public DateTimeOffset? ActivationDeliveredAtUtc { get; private set; }
+    public string? CompanyLegalName { get; private set; }
 
-    public DateTimeOffset? UserActivatedAtUtc { get; private set; }
+    public string? SubscriptionPlanCode { get; private set; }
+
+    public string? AdminEmail { get; private set; }
+
+    public string? AdminFirstName { get; private set; }
+
+    public string? AdminLastName { get; private set; }
+
+    public string? TenantName { get; private set; }
+
+    public Guid? AdminMembershipId { get; private set; }
 
     protected OnboardingProcess() { }
 
     public static OnboardingProcess Create(
         Guid subscriptionId,
         Guid tenantId,
-        Guid initiatedByInternalUserId)
+        Guid initiatedByInternalUserId,
+        string? companyLegalName = null,
+        string? subscriptionPlanCode = null,
+        string? adminEmail = null,
+        string? adminFirstName = null,
+        string? adminLastName = null,
+        string? tenantName = null,
+        Guid? correlationId = null)
     {
         if (subscriptionId == Guid.Empty)
             throw new AccountDomainException("SubscriptionId is required.");
@@ -64,7 +81,14 @@ public class OnboardingProcess : Entity, IAggregateRoot
             Status = OnboardingStatus.Draft,
             CurrentStep = OnboardingStep.None,
             StartedAtUtc = DateTimeOffset.UtcNow,
-            InitiatedByInternalUserId = initiatedByInternalUserId
+            InitiatedByInternalUserId = initiatedByInternalUserId,
+            CompanyLegalName = companyLegalName,
+            SubscriptionPlanCode = subscriptionPlanCode,
+            AdminEmail = adminEmail,
+            AdminFirstName = adminFirstName,
+            AdminLastName = adminLastName,
+            TenantName = tenantName,
+            CorrelationId = correlationId
         };
     }
 
@@ -119,52 +143,21 @@ public class OnboardingProcess : Entity, IAggregateRoot
         CurrentStep = OnboardingStep.AdminUserProvisioned;
     }
 
-    public void MarkAdminMembershipCreated()
+    public void MarkAdminMembershipCreated(Guid? membershipId = null)
     {
         EnsureStatus(OnboardingStatus.InProgress);
         EnsureStep(OnboardingStep.AdminUserProvisioned);
+        AdminMembershipId = membershipId;
         CurrentStep = OnboardingStep.AdminMembershipCreated;
     }
 
-    public void MarkActivationRequested()
-    {
-        EnsureStatus(OnboardingStatus.InProgress);
-        EnsureStep(OnboardingStep.AdminMembershipCreated);
-        Status = OnboardingStatus.WaitingForActivationDelivery;
-        CurrentStep = OnboardingStep.ActivationRequested;
-    }
-
-    public void MarkActivationDelivered()
-    {
-        EnsureStatus(OnboardingStatus.WaitingForActivationDelivery);
-        EnsureStep(OnboardingStep.ActivationRequested);
-        Status = OnboardingStatus.WaitingForUserActivation;
-        CurrentStep = OnboardingStep.ActivationDelivered;
-        ActivationDeliveredAtUtc = DateTimeOffset.UtcNow;
-    }
-
-    public void MarkUserActivated()
-    {
-        EnsureStatus(OnboardingStatus.WaitingForUserActivation);
-        EnsureStep(OnboardingStep.ActivationDelivered);
-        Status = OnboardingStatus.Completed;
-        CurrentStep = OnboardingStep.Completed;
-        UserActivatedAtUtc = DateTimeOffset.UtcNow;
-        CompletedAtUtc = DateTimeOffset.UtcNow;
-    }
-
     /// <summary>
-    /// V1 convenience: completes the onboarding from AdminMembershipCreated
-    /// when activation steps are not yet implemented.
+    /// Completes the onboarding process after admin membership has been established.
     /// </summary>
     public void Complete()
     {
-        if (OwnerCompanyId is null)
-            throw new AccountDomainException("Cannot complete onboarding without an Owner Company.");
-
-        if (AdminUserId is null)
-            throw new AccountDomainException("Cannot complete onboarding without an Admin User.");
-
+        EnsureStatus(OnboardingStatus.InProgress);
+        EnsureStep(OnboardingStep.AdminMembershipCreated);
         Status = OnboardingStatus.Completed;
         CurrentStep = OnboardingStep.Completed;
         CompletedAtUtc = DateTimeOffset.UtcNow;
@@ -193,6 +186,17 @@ public class OnboardingProcess : Entity, IAggregateRoot
         FailedAtUtc = null;
         RetryCount++;
         LastRetryAtUtc = DateTimeOffset.UtcNow;
+    }
+
+    /// <summary>
+    /// Restores the waiting state for external provisioning after a retry,
+    /// allowing <see cref="MarkAdminUserProvisioned"/> to be called when Identity responds.
+    /// </summary>
+    public void RestartAdminProvisioning()
+    {
+        EnsureStatus(OnboardingStatus.InProgress);
+        EnsureStep(OnboardingStep.AdminProvisioningRequested);
+        Status = OnboardingStatus.WaitingForExternalProvisioning;
     }
 
     private void EnsureStatus(OnboardingStatus expected)

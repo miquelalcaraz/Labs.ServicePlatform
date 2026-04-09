@@ -20,8 +20,8 @@ public class StartCustomerOnboardingCommandValidator : AbstractValidator<Command
             .MaximumLength(200).WithMessage("Company legal name cannot exceed 200 characters");
 
         RuleFor(x => x.CompanyTradeName)
-            .NotEmpty().WithMessage("Company trade name is required")
-            .MaximumLength(200).WithMessage("Company trade name cannot exceed 200 characters");
+            .MaximumLength(200).WithMessage("Company trade name cannot exceed 200 characters")
+            .When(x => !string.IsNullOrEmpty(x.CompanyTradeName));
 
         RuleFor(x => x.TenantName)
             .MaximumLength(200).WithMessage("Tenant name cannot exceed 200 characters")
