@@ -5,6 +5,7 @@ using Duende.IdentityServer.Services;
 using Microsoft.AspNetCore.Identity;
 
 using Qlt.Infrastructure.Identity.Models;
+using Qlt.Infrastructure.Identity.Configuration;
 
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -30,8 +31,12 @@ namespace Qlt.Infrastructure.Identity.Services
             if (user is null)
                 throw new ArgumentException("Invalid subject identifier");
 
-            var claims = GetClaimsFromUser(user);
-            context.IssuedClaims = claims.ToList();
+            var claims = GetClaimsFromUser(user).ToList();
+
+            var roles = await _userManager.GetRolesAsync(user);
+            claims.AddRange(roles.Select(role => new Claim(JwtClaimTypes.Role, role)));
+
+            context.IssuedClaims = claims;
         }
 
         public async Task IsActiveAsync(IsActiveContext context)
@@ -68,51 +73,32 @@ namespace Qlt.Infrastructure.Identity.Services
             var claims = new List<Claim>
             {
                 new Claim(JwtClaimTypes.Subject, user.Id),
-                new Claim(JwtClaimTypes.PreferredUserName, user.UserName),
-                new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName)
+                new Claim(JwtClaimTypes.PreferredUserName, user.UserName!),
+                new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName!)
             };
 
-            //if (user.OrganizationId is not null)
-            //    claims.Add(new Claim(QltClaimTypes.OrganizationId, user.OrganizationId.ToString()));
+            claims.Add(new Claim(QltClaimTypes.TenantId, user.TenantId.ToString()));
+            claims.Add(new Claim("user_type", user.UserType.ToString()));
+            claims.Add(new Claim("user_status", user.Status.ToString()));
 
-            //if (!string.IsNullOrWhiteSpace(user.Name))
-            //    claims.Add(new Claim("name", user.Name));
+            if (!string.IsNullOrWhiteSpace(user.FirstName!))
+                claims.Add(new Claim("name", user.FirstName!));
 
-            //if (!string.IsNullOrWhiteSpace(user.LastName))
-            //    claims.Add(new Claim("last_name", user.LastName));
+            if (!string.IsNullOrWhiteSpace(user.LastName!))
+                claims.Add(new Claim("last_name", user.LastName!));
 
-            //if (!string.IsNullOrWhiteSpace(user.CardNumber))
-            //    claims.Add(new Claim("card_number", user.CardNumber));
+            if (!string.IsNullOrWhiteSpace(user.DisplayName))
+                claims.Add(new Claim("display_name", user.DisplayName));
 
-            //if (!string.IsNullOrWhiteSpace(user.CardHolderName))
-            //    claims.Add(new Claim("card_holder", user.CardHolderName));
-
-            //if (!string.IsNullOrWhiteSpace(user.SecurityNumber))
-            //    claims.Add(new Claim("card_security_number", user.SecurityNumber));
-
-            //if (!string.IsNullOrWhiteSpace(user.Expiration))
-            //    claims.Add(new Claim("card_expiration", user.Expiration));
-
-            //if (!string.IsNullOrWhiteSpace(user.City))
-            //    claims.Add(new Claim("address_city", user.City));
-
-            //if (!string.IsNullOrWhiteSpace(user.Country))
-            //    claims.Add(new Claim("address_country", user.Country));
-
-            //if (!string.IsNullOrWhiteSpace(user.State))
-            //    claims.Add(new Claim("address_state", user.State));
-
-            //if (!string.IsNullOrWhiteSpace(user.Street))
-            //    claims.Add(new Claim("address_street", user.Street));
-
-            //if (!string.IsNullOrWhiteSpace(user.ZipCode))
-            //    claims.Add(new Claim("address_zip_code", user.ZipCode));
+            if (!string.IsNullOrWhiteSpace(user.PreferredLanguage))
+                claims.Add(new Claim("preferred_language", user.PreferredLanguage));
+             
 
             if (_userManager.SupportsUserEmail)
             {
                 claims.AddRange(new[]
                 {
-                    new Claim(JwtClaimTypes.Email, user.Email),
+                    new Claim(JwtClaimTypes.Email, user.Email!),
                     new Claim(JwtClaimTypes.EmailVerified, user.EmailConfirmed ? "true" : "false", ClaimValueTypes.Boolean)
                 });
             }

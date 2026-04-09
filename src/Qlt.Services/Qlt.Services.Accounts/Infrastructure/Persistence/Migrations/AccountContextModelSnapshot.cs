@@ -209,9 +209,6 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTimeOffset?>("ActivationDeliveredAtUtc")
-                        .HasColumnType("datetimeoffset");
-
                     b.Property<string>("AdminEmail")
                         .HasMaxLength(320)
                         .HasColumnType("nvarchar(320)");
@@ -303,9 +300,6 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(250)");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset?>("UserActivatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");

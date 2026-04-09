@@ -161,7 +161,6 @@ namespace Qlt.Infrastructure.Identity.Extensions
         }
         private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)
         {
-            eventBus.AddSubscription<CompanyCreatedIntegrationEvent, CompanyCreatedIntegrationEventHandler>();
             eventBus.AddSubscription<TenantCreatedIntegrationEvent, TenantCreatedIntegrationEventHandler>();
             eventBus.AddSubscription<CustomerAdminProvisioningRequestedIntegrationEvent, CustomerAdminProvisioningRequestedIntegrationEventHandler>();
         }

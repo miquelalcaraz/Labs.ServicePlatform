@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -83,8 +84,6 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                     RetryCount = table.Column<int>(type: "int", nullable: false),
                     LastRetryAtUtc = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
                     FailedStep = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    ActivationDeliveredAtUtc = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
-                    UserActivatedAtUtc = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
                     CompanyLegalName = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: true),
                     SubscriptionPlanCode = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     AdminEmail = table.Column<string>(type: "nvarchar(320)", maxLength: 320, nullable: true),

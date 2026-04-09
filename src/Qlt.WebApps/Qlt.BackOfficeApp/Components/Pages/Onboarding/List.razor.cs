@@ -46,8 +46,6 @@ namespace Qlt.BackOfficeApp.Components.Pages.Onboarding
         [
             "InProgress",
         "WaitingForExternalProvisioning",
-        "WaitingForActivationDelivery",
-        "WaitingForUserActivation",
         "Completed",
         "Failed"
         ];

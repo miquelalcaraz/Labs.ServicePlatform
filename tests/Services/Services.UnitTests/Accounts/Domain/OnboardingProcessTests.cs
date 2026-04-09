@@ -224,45 +224,6 @@ public class OnboardingProcessTests
     }
 
     [Fact]
-    public void MarkActivationRequested_SetsStatusToWaitingForActivationDelivery()
-    {
-        var onboarding = AdvanceToAdminMembershipCreated();
-
-        onboarding.MarkActivationRequested();
-
-        onboarding.Status.Should().Be(OnboardingStatus.WaitingForActivationDelivery);
-        onboarding.CurrentStep.Should().Be(OnboardingStep.ActivationRequested);
-    }
-
-    [Fact]
-    public void MarkActivationDelivered_SetsStatusToWaitingForUserActivation()
-    {
-        var onboarding = AdvanceToAdminMembershipCreated();
-        onboarding.MarkActivationRequested();
-
-        onboarding.MarkActivationDelivered();
-
-        onboarding.Status.Should().Be(OnboardingStatus.WaitingForUserActivation);
-        onboarding.CurrentStep.Should().Be(OnboardingStep.ActivationDelivered);
-        onboarding.ActivationDeliveredAtUtc.Should().NotBeNull();
-    }
-
-    [Fact]
-    public void MarkUserActivated_CompletesOnboarding()
-    {
-        var onboarding = AdvanceToAdminMembershipCreated();
-        onboarding.MarkActivationRequested();
-        onboarding.MarkActivationDelivered();
-
-        onboarding.MarkUserActivated();
-
-        onboarding.Status.Should().Be(OnboardingStatus.Completed);
-        onboarding.CurrentStep.Should().Be(OnboardingStep.Completed);
-        onboarding.UserActivatedAtUtc.Should().NotBeNull();
-        onboarding.CompletedAtUtc.Should().NotBeNull();
-    }
-
-    [Fact]
     public void CanAdvanceThroughFullHappyPath()
     {
         var onboarding = CreateOnboarding();
@@ -276,9 +237,7 @@ public class OnboardingProcessTests
         onboarding.MarkAdminProvisioningRequested();
         onboarding.MarkAdminUserProvisioned(userId);
         onboarding.MarkAdminMembershipCreated();
-        onboarding.MarkActivationRequested();
-        onboarding.MarkActivationDelivered();
-        onboarding.MarkUserActivated();
+        onboarding.Complete();
 
         onboarding.Status.Should().Be(OnboardingStatus.Completed);
         onboarding.CurrentStep.Should().Be(OnboardingStep.Completed);
@@ -300,22 +259,9 @@ public class OnboardingProcessTests
     }
 
     [Fact]
-    public void Complete_WithoutOwnerCompany_ThrowsAccountDomainException()
+    public void Complete_WhenNotAtAdminMembershipCreatedStep_ThrowsAccountDomainException()
     {
-        var onboarding = CreateStartedOnboarding();
-
-        var act = () => onboarding.Complete();
-
-        act.Should().Throw<AccountDomainException>();
-    }
-
-    [Fact]
-    public void Complete_WithoutAdminUser_ThrowsAccountDomainException()
-    {
-        var onboarding = CreateStartedOnboarding();
-        onboarding.MarkSubscriptionCreated();
-        onboarding.MarkTenantCreated();
-        onboarding.MarkOwnerCompanyCreated(Guid.NewGuid());
+        var onboarding = AdvanceToAdminProvisioningRequested();
 
         var act = () => onboarding.Complete();
 
@@ -497,38 +443,6 @@ public class OnboardingProcessTests
     }
 
     [Fact]
-    public void MarkActivationRequested_WhenStepNotAdminMembershipCreated_ThrowsAccountDomainException()
-    {
-        var onboarding = AdvanceToAdminProvisioningRequested();
-        onboarding.MarkAdminUserProvisioned(Guid.NewGuid());
-
-        var act = () => onboarding.MarkActivationRequested();
-
-        act.Should().Throw<AccountDomainException>();
-    }
-
-    [Fact]
-    public void MarkActivationDelivered_WhenNotWaitingForActivationDelivery_ThrowsAccountDomainException()
-    {
-        var onboarding = AdvanceToAdminMembershipCreated();
-
-        var act = () => onboarding.MarkActivationDelivered();
-
-        act.Should().Throw<AccountDomainException>();
-    }
-
-    [Fact]
-    public void MarkUserActivated_WhenNotWaitingForUserActivation_ThrowsAccountDomainException()
-    {
-        var onboarding = AdvanceToAdminMembershipCreated();
-        onboarding.MarkActivationRequested();
-
-        var act = () => onboarding.MarkUserActivated();
-
-        act.Should().Throw<AccountDomainException>();
-    }
-
-    [Fact]
     public void Fail_WhenDraft_RecordsNoneAsFailedStep()
     {
         var onboarding = CreateOnboarding();
@@ -563,5 +477,59 @@ public class OnboardingProcessTests
         onboarding.Status.Should().Be(OnboardingStatus.InProgress);
         onboarding.CurrentStep.Should().Be(OnboardingStep.TenantCreated);
         onboarding.RetryCount.Should().Be(1);
+    }
+
+    [Fact]
+    public void RestartAdminProvisioning_FromInProgressWithAdminProvisioningStep_RestoresWaitingStatus()
+    {
+        var onboarding = AdvanceToAdminProvisioningRequested();
+        onboarding.Fail("ERR001", "Identity timeout");
+        onboarding.Retry();
+
+        onboarding.RestartAdminProvisioning();
+
+        onboarding.Status.Should().Be(OnboardingStatus.WaitingForExternalProvisioning);
+        onboarding.CurrentStep.Should().Be(OnboardingStep.AdminProvisioningRequested);
+    }
+
+    [Fact]
+    public void RestartAdminProvisioning_WhenStatusNotInProgress_ThrowsAccountDomainException()
+    {
+        var onboarding = AdvanceToAdminProvisioningRequested();
+
+        var act = () => onboarding.RestartAdminProvisioning();
+
+        act.Should().Throw<AccountDomainException>();
+    }
+
+    [Fact]
+    public void RestartAdminProvisioning_WhenStepNotAdminProvisioningRequested_ThrowsAccountDomainException()
+    {
+        var onboarding = CreateStartedOnboarding();
+        onboarding.MarkSubscriptionCreated();
+        onboarding.MarkTenantCreated();
+        onboarding.MarkOwnerCompanyCreated(Guid.NewGuid());
+        onboarding.Fail("ERR001", "Failed before provisioning");
+        onboarding.Retry();
+
+        var act = () => onboarding.RestartAdminProvisioning();
+
+        act.Should().Throw<AccountDomainException>();
+    }
+
+    [Fact]
+    public void RestartAdminProvisioning_AfterRetry_AllowsMarkAdminUserProvisioned()
+    {
+        var onboarding = AdvanceToAdminProvisioningRequested();
+        onboarding.Fail("ERR001", "Identity timeout");
+        onboarding.Retry();
+        onboarding.RestartAdminProvisioning();
+        var userId = Guid.NewGuid();
+
+        onboarding.MarkAdminUserProvisioned(userId);
+
+        onboarding.AdminUserId.Should().Be(userId);
+        onboarding.Status.Should().Be(OnboardingStatus.InProgress);
+        onboarding.CurrentStep.Should().Be(OnboardingStep.AdminUserProvisioned);
     }
 }

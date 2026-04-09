@@ -17,7 +17,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\Qlt.WebApps\Qlt.WebApps.BackOffice\Qlt.WebApps.BackOffice.csproj" />
 		<ProjectReference Include="..\..\Qlt.WebApps\Qlt.BackOfficeApp\Qlt.BackOfficeApp.csproj" />
 		<ProjectReference Include="..\Qlt.Infrastructure.Bff.BackOffice\Qlt.Infrastructure.Bff.BackOffice.csproj" />
 		<ProjectReference Include="..\Qlt.Infrastructure.Identity\Qlt.Infrastructure.Identity.csproj" />

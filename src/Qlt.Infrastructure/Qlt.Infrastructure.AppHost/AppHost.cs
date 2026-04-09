@@ -58,15 +58,6 @@ var accountApiService = builder.AddProject<Projects.Services_Accounts_API>("acco
     .WithReference(eventbus).WaitFor(eventbus)
     .WaitFor(identity);
 
-var webApp = builder.AddProject<Projects.Qlt_WebApps_BackOffice>("webfrontend")
-    .WithExternalHttpEndpoints()
-    .WithHttpHealthCheck("/health")
-    .WithReference(cache)
-    .WaitFor(cache)
-    .WithReference(accountApiService)
-    .WaitFor(accountApiService)
-    .WaitFor(identity);
-
 
 
 var backofficeBff = builder.AddProject<Projects.Qlt_Infrastructure_Bff_BackOffice>("backoffice-bff")
@@ -91,18 +82,17 @@ var identityEndpoint = identity.GetEndpoint(launchProfileName);
 
 // Wire up Identity URLs through the BFF
 accountApiService.WithEnvironment("Identity__Url", bffEndpoint);
-webApp.WithEnvironment("IdentityUrl", bffEndpoint);
+
 backOfficeApp.WithEnvironment("Identity__Url", bffEndpoint);
 backOfficeApp.WithEnvironment("Identity__Authority", identityEndpoint);
 identity.WithEnvironment("IssuerUri", bffEndpoint);
 
 // Wire up the callback urls (self referencing)
-webApp.WithEnvironment("CallBackUrl", webApp.GetEndpoint(launchProfileName));
+
 backOfficeApp.WithEnvironment("CallBackUrl", backOfficeApp.GetEndpoint(launchProfileName));
 
 // Identity has a reference to all of the apps for callback urls, this is a cyclic reference
-identity.WithEnvironment("WebAppClient", webApp.GetEndpoint(launchProfileName))
-    .WithEnvironment("AccountApiClient", accountApiService.GetEndpoint(launchProfileName))
+identity.WithEnvironment("AccountApiClient", accountApiService.GetEndpoint(launchProfileName))
     .WithEnvironment("BackOfficeClient", backOfficeApp.GetEndpoint(launchProfileName));
 
 builder.Build().Run();

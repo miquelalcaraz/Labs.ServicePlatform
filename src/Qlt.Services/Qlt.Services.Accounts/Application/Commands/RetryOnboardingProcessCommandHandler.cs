@@ -30,21 +30,40 @@ public class RetryOnboardingProcessCommandHandler : ICommandHandler<RetryOnboard
         var onboarding = await _onboardingRepository.GetAsync(message.OnboardingProcessId);
 
         if (onboarding is null)
+        {
+            _logger.LogWarning(
+                "Retry requested for onboarding {OnboardingProcessId} but it was not found.",
+                message.OnboardingProcessId);
             return Result.Failure<bool>(Error.NotFound.WithMessage(
                 $"Onboarding process with id '{message.OnboardingProcessId}' was not found."));
+        }
 
         if (onboarding.Status != OnboardingStatus.Failed)
+        {
+            _logger.LogWarning(
+                "Retry not allowed for onboarding {OnboardingProcessId}. Current status: {Status}",
+                onboarding.Id,
+                onboarding.Status);
             return Result.Failure<bool>(Error.Conflict.WithMessage(
                 "Retry is not allowed for the current onboarding status."));
+        }
 
         var failedStep = onboarding.FailedStep ?? onboarding.CurrentStep;
 
+        using (_logger.BeginScope(new Dictionary<string, object?> { ["CorrelationId"] = onboarding.CorrelationId }))
+        {
         _logger.LogInformation(
             "Retrying onboarding process {OnboardingProcessId} from step {FailedStep}. Reason: {Reason}",
             onboarding.Id, failedStep, message.Reason);
 
         onboarding.Retry();
         _onboardingRepository.Update(onboarding);
+
+        if (failedStep is OnboardingStep.AdminProvisioningRequested
+            or OnboardingStep.OwnerCompanyCreated)
+        {
+            onboarding.RestartAdminProvisioning();
+        }
 
         var saved = await _onboardingRepository.UnitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -58,6 +77,7 @@ public class RetryOnboardingProcessCommandHandler : ICommandHandler<RetryOnboard
             onboarding.Id, onboarding.RetryCount);
 
         return Result.Success(true);
+        }
     }
 
     private async Task RepublishIntegrationEventForStep(OnboardingProcess onboarding, OnboardingStep failedStep)

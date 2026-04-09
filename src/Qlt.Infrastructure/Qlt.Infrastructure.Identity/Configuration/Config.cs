@@ -16,13 +16,13 @@ namespace Qlt.Infrastructure.Identity.Configuration
                     Description = "Accounts Service",
                     Scopes = new List<string>
                     {
-
-                        IdentityServerConstants.StandardScopes.OpenId,
-                        IdentityServerConstants.StandardScopes.Profile,
-                        IdentityServerConstants.StandardScopes.Email,
                         QltApiScopes.Accounts,
-                        QltApiScopes.Role
                     },
+                    UserClaims = new List<string>
+                    {
+                        QltClaimTypes.Role,
+                        QltClaimTypes.TenantId,
+                    }
                 },
              };
         }
@@ -93,7 +93,7 @@ namespace Qlt.Infrastructure.Identity.Configuration
                         IdentityServerConstants.StandardScopes.Profile,
                         IdentityServerConstants.StandardScopes.OfflineAccess,
                         QltApiScopes.Accounts,
-                        QltApiScopes.Role
+                        QltIdentityResources.Role
                     },
                     AccessTokenLifetime = 60*60*2, // 2 hours
                     IdentityTokenLifetime= 60*60*2 // 2 hours
@@ -129,7 +129,7 @@ namespace Qlt.Infrastructure.Identity.Configuration
                         IdentityServerConstants.StandardScopes.Profile,
                         IdentityServerConstants.StandardScopes.OfflineAccess,
                         QltApiScopes.Accounts,
-                        QltApiScopes.Role,
+                        QltIdentityResources.Role,
                         QltApiScopes.Email
                     },
                     AccessTokenLifetime = 60*60*2, // 2 hours

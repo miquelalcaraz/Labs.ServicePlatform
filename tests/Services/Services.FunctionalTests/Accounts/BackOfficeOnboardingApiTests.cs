@@ -183,14 +183,14 @@ public sealed class BackOfficeOnboardingApiTests : IClassFixture<AccountsFixture
     }
 
     [Fact]
-    public async Task RetryOnboarding_OnNonFailedProcess_ReturnsBadRequest()
+    public async Task RetryOnboarding_OnNonFailedProcess_ReturnsConflict()
     {
         var onboardingId = await StartOnboardingAndGetId();
 
         var content = BuildRetryContent(Guid.NewGuid());
         var response = await _httpClient.PostAsync($"{BasePath}/{onboardingId}/retry", content, TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     [Fact]

@@ -1,4 +1,7 @@
 @inject NavigationManager NavigationManager
+@using Microsoft.AspNetCore.Authentication
+@using Qlt.Platform.Services
+@inject TokenProvider TokenProvider
 <!DOCTYPE html>
 <html lang="en">
 
@@ -33,10 +36,8 @@
     [Inject]
     private ThemeService ThemeService { get; set; }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        base.OnInitialized();
-
         if (HttpContext != null)
         {
             var theme = HttpContext.Request.Cookies["QltBackOfficeTheme"];
@@ -45,6 +46,8 @@
             {
                 ThemeService.SetTheme(theme, false);
             }
+
+            TokenProvider.AccessToken = await HttpContext.GetTokenAsync("access_token");
         }
     }
 }

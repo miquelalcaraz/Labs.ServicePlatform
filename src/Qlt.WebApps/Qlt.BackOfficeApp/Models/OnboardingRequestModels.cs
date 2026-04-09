@@ -18,9 +18,11 @@ public class CompanyInput
     [MaxLength(250, ErrorMessage = "Trade name cannot exceed 250 characters.")]
     public string? TradeName { get; set; }
 
+    [Required(ErrorMessage = "Tax ID is required.")]
     [MaxLength(50, ErrorMessage = "Tax ID cannot exceed 50 characters.")]
     public string? TaxId { get; set; }
 
+    [Required(ErrorMessage = "Country code is required.")]
     [MaxLength(10, ErrorMessage = "Country code cannot exceed 10 characters.")]
     public string? CountryCode { get; set; }
 }

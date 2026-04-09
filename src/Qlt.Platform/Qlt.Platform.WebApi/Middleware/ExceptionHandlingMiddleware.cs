@@ -58,20 +58,16 @@ public class ExceptionHandlingMiddleware
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
 
-        var response = new
+        var response = new ApiErrorResponse
         {
-            type = "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-            title = "One or more validation errors occurred.",
-            status = 400,
-            errors = exception.Errors,
-            traceId = context.TraceIdentifier
+            Code = "ValidationError",
+            Message = "One or more validation errors occurred.",
+            TraceId = context.TraceIdentifier,
+            Errors = exception.Errors as Dictionary<string, string[]>
+                     ?? new Dictionary<string, string[]>(exception.Errors)
         };
 
-        var options = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
-
+        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         await context.Response.WriteAsync(JsonSerializer.Serialize(response, options));
     }
 
@@ -80,15 +76,14 @@ public class ExceptionHandlingMiddleware
         context.Response.ContentType = "application/json";
         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
 
-        var response = new
+        var response = new ApiErrorResponse
         {
-            type = "https://tools.ietf.org/html/rfc9110#section-15.6.1",
-            title = "An error occurred while processing your request.",
-            status = 500,
-            traceId = context.TraceIdentifier,
-            // Include details only in Development
-            detail = _environment.IsDevelopment() ? exception.Message : null,
-            stackTrace = _environment.IsDevelopment() ? exception.StackTrace : null
+            Code = "UnexpectedError",
+            Message = "An error occurred while processing your request.",
+            TraceId = context.TraceIdentifier,
+            Details = _environment.IsDevelopment()
+                ? new { detail = exception.Message, stackTrace = exception.StackTrace }
+                : null
         };
 
         var options = new JsonSerializerOptions

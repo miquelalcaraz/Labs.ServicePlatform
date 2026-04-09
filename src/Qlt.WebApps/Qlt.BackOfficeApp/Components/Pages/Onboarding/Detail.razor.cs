@@ -164,12 +164,11 @@ namespace Qlt.BackOfficeApp.Components.Pages.Onboarding
         }
 
         private static bool ShouldPoll(string status)
-            => status is "InProgress" or "WaitingForExternalProvisioning"
-                or "WaitingForActivationDelivery" or "WaitingForUserActivation";
+            => status is "InProgress" or "WaitingForExternalProvisioning";
 
         private static int GetPollingInterval(string status) => status switch
         {
-            "WaitingForUserActivation" => 25,
+            "WaitingForExternalProvisioning" => 10,
             _ => 5
         };
 
@@ -178,8 +177,7 @@ namespace Qlt.BackOfficeApp.Components.Pages.Onboarding
             "Completed" => BadgeStyle.Success,
             "Failed" => BadgeStyle.Danger,
             "InProgress" => BadgeStyle.Info,
-            "WaitingForExternalProvisioning" or "WaitingForActivationDelivery" => BadgeStyle.Warning,
-            "WaitingForUserActivation" => BadgeStyle.Light,
+            "WaitingForExternalProvisioning" => BadgeStyle.Warning,
             _ => BadgeStyle.Secondary
         };
 

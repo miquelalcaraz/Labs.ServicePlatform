@@ -12,7 +12,7 @@ using Qlt.Services.Accounts.Infrastructure.Persistence;
 namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(AccountContext))]
-    [Migration("20260405084856_Initial")]
+    [Migration("20260409052736_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -212,9 +212,6 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<DateTimeOffset?>("ActivationDeliveredAtUtc")
-                        .HasColumnType("datetimeoffset");
-
                     b.Property<string>("AdminEmail")
                         .HasMaxLength(320)
                         .HasColumnType("nvarchar(320)");
@@ -306,9 +303,6 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(250)");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<DateTimeOffset?>("UserActivatedAtUtc")
                         .HasColumnType("datetimeoffset");
 
                     b.HasKey("Id");

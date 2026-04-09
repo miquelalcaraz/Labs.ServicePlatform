@@ -124,7 +124,39 @@ public class RetryOnboardingProcessCommandHandlerTests
             CancellationToken.None);
 
         onboarding.RetryCount.Should().Be(initialRetryCount + 1);
+        onboarding.Status.Should().Be(OnboardingStatus.WaitingForExternalProvisioning);
+    }
+
+    [Fact]
+    public async Task Handle_WhenFailedAtAdminProvisioning_RestoresWaitingForExternalProvisioningStatus()
+    {
+        var onboarding = CreateFailedOnboarding(OnboardingStep.AdminProvisioningRequested);
+        var (repo, outbox) = CreateMocks(saveChangesReturn: 1);
+        repo.Setup(r => r.GetAsync(onboarding.Id)).ReturnsAsync(onboarding);
+        var handler = CreateHandler(repo, outbox);
+
+        await handler.Handle(
+            new RetryOnboardingProcessCommand(onboarding.Id, requestId: Guid.NewGuid()),
+            CancellationToken.None);
+
+        onboarding.Status.Should().Be(OnboardingStatus.WaitingForExternalProvisioning);
+        onboarding.CurrentStep.Should().Be(OnboardingStep.AdminProvisioningRequested);
+    }
+
+    [Fact]
+    public async Task Handle_WhenFailedAtEarlyStep_StatusRemainsInProgress()
+    {
+        var onboarding = CreateFailedOnboarding(OnboardingStep.TenantCreated);
+        var (repo, outbox) = CreateMocks(saveChangesReturn: 1);
+        repo.Setup(r => r.GetAsync(onboarding.Id)).ReturnsAsync(onboarding);
+        var handler = CreateHandler(repo, outbox);
+
+        await handler.Handle(
+            new RetryOnboardingProcessCommand(onboarding.Id, requestId: Guid.NewGuid()),
+            CancellationToken.None);
+
         onboarding.Status.Should().Be(OnboardingStatus.InProgress);
+        onboarding.CurrentStep.Should().Be(OnboardingStep.TenantCreated);
     }
 
     private static OnboardingProcess CreateOnboardingAtStep(OnboardingStatus status, OnboardingStep step)

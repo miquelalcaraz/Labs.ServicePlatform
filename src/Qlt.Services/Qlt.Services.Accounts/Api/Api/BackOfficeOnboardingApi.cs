@@ -16,27 +16,30 @@ public static class BackOfficeOnboardingApi
     {
         var api = app.MapGroup("api/backoffice/onboarding-processes").HasApiVersion(1.0);
 
-        api.MapPost("/", StartOnboardingAsync);
-        //.RequireAuthorization(BackOfficeAuthorizationPolicies.OnboardingWrite);
+        api.MapPost("/", StartOnboardingAsync)
+        .RequireAuthorization(BackOfficeAuthorizationPolicies.OnboardingWrite);
 
-        api.MapGet("/{id:guid}", GetOnboardingDetailAsync);
-        //.RequireAuthorization(BackOfficeAuthorizationPolicies.OnboardingRead);
+        api.MapGet("/{id:guid}", GetOnboardingDetailAsync)
+        .RequireAuthorization(BackOfficeAuthorizationPolicies.OnboardingRead);
 
-        api.MapGet("/", GetOnboardingListAsync);
-        //.RequireAuthorization(BackOfficeAuthorizationPolicies.OnboardingRead);
+        api.MapGet("/", GetOnboardingListAsync)
+        .RequireAuthorization(BackOfficeAuthorizationPolicies.OnboardingRead);
 
-        api.MapPost("/{id:guid}/retry", RetryOnboardingAsync);
-        //.RequireAuthorization(BackOfficeAuthorizationPolicies.OnboardingRetry);
+        api.MapPost("/{id:guid}/retry", RetryOnboardingAsync)
+        .RequireAuthorization(BackOfficeAuthorizationPolicies.OnboardingRetry);
 
-        api.MapGet("/{id:guid}/result", GetOnboardingResultAsync);
-        //.RequireAuthorization(BackOfficeAuthorizationPolicies.OnboardingRead);
+        api.MapGet("/{id:guid}/result", GetOnboardingResultAsync)
+        .RequireAuthorization(BackOfficeAuthorizationPolicies.OnboardingRead)
+        .WithSummary("Get the result of a completed onboarding process.")
+        .WithDescription("Returns the resolved entities created during the onboarding: Subscription, Tenant, Owner Company, Admin User and Admin Membership. Only available when the process status is Completed.");
 
         return api;
     }
 
-    public static async Task<Results<Accepted<OnboardingProcessStartedResponse>, ValidationProblem, BadRequest<string>>> StartOnboardingAsync(
+    public static async Task<Results<Accepted<OnboardingProcessStartedResponse>, BadRequest<ApiErrorResponse>>> StartOnboardingAsync(
         [FromHeader(Name = "x-requestid")] Guid requestId,
         StartOnboardingProcessRequest request,
+        HttpContext context,
         [AsParameters] AccountsServices services)
     {
         services.Logger.LogInformation(
@@ -47,22 +50,22 @@ public static class BackOfficeOnboardingApi
         if (requestId == Guid.Empty)
         {
             services.Logger.LogWarning("Invalid request - RequestId is missing - {@Request}", request);
-            return TypedResults.BadRequest("Empty GUID is not valid for request ID");
+            return TypedResults.BadRequest(new ApiErrorResponse { Code = "ValidationError", Message = "Empty GUID is not valid for request ID", TraceId = context.TraceIdentifier });
         }
 
         using (services.Logger.BeginScope(new List<KeyValuePair<string, object>> { new("IdentifiedCommandId", requestId) }))
         {
             if (!Guid.TryParse(services.IdentityService.GetUserIdentity(), out var internalUserId))
             {
-                return TypedResults.BadRequest("Unable to resolve the current user identity.");
+                return TypedResults.BadRequest(new ApiErrorResponse { Code = "Unauthorized", Message = "Unable to resolve the current user identity.", TraceId = context.TraceIdentifier });
             }
 
             var command = new StartCustomerOnboardingCommand(
                 planCode: request.Subscription.SubscriptionPlanCode,
                 companyLegalName: request.Company.LegalName,
-                companyTradeName: request.Company.TradeName ?? request.Company.LegalName,
+                companyTradeName: string.IsNullOrWhiteSpace(request.Company.TradeName) ? request.Company.LegalName : request.Company.TradeName,
                 taxId: request.Company.TaxId,
-                taxNumberType: request.Company.TaxNumberType == TaxNumberType.Unknown ? TaxNumberType.Vat : request.Company.TaxNumberType,
+                taxNumberType: request.Company.TaxNumberType ?? TaxNumberType.Vat,
                 country: request.Company.Country ?? request.Company.CountryCode,
                 countryCode: request.Company.CountryCode,
                 adminEmail: request.AdminUser.Email,
@@ -76,8 +79,10 @@ public static class BackOfficeOnboardingApi
 
             if (result.IsFailure)
             {
-                services.Logger.LogWarning("StartOnboarding failed - RequestId: {RequestId}", requestId);
-                return TypedResults.BadRequest(result.Error.Message);
+                services.Logger.LogWarning(
+                    "StartOnboarding failed - RequestId: {RequestId}, ErrorCode: {ErrorCode}, Error: {ErrorMessage}",
+                    requestId, result.Error.Code, result.Error.Message);
+                return TypedResults.BadRequest(ApiErrorResponse.From(result.Error, context.TraceIdentifier));
             }
 
             var detailResult = await services.Mediator.Send(new GetOnboardingByRequestIdQuery(requestId));
@@ -107,23 +112,25 @@ public static class BackOfficeOnboardingApi
         }
     }
 
-    public static async Task<Results<Ok<OnboardingProcessDetailResponse>, NotFound>> GetOnboardingDetailAsync(
+    public static async Task<Results<Ok<OnboardingProcessDetailResponse>, NotFound<ApiErrorResponse>>> GetOnboardingDetailAsync(
         Guid id,
+        HttpContext context,
         [AsParameters] AccountsServices services)
     {
         var result = await services.Mediator.Send(new GetOnboardingProcessByIdQuery(id));
 
         if (result.IsFailure)
-            return TypedResults.NotFound();
+            return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = "Onboarding process not found.", TraceId = context.TraceIdentifier });
 
         return TypedResults.Ok(result.Value);
     }
 
-    public static async Task<Results<Ok<OnboardingProcessListResponse>, ValidationProblem>> GetOnboardingListAsync(
+    public static async Task<Results<Ok<OnboardingProcessListResponse>, BadRequest<ApiErrorResponse>>> GetOnboardingListAsync(
         [FromQuery] string? status,
         [FromQuery] string? companyLegalName,
         [FromQuery] string? adminEmail,
         [FromQuery] string? subscriptionPlanCode,
+        HttpContext context,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         [FromQuery] string sortBy = "startedAtUtc",
@@ -131,13 +138,13 @@ public static class BackOfficeOnboardingApi
         [AsParameters] AccountsServices services = default!)
     {
         if (pageSize > 100)
-        {
-            var errors = new Dictionary<string, string[]>
+            return TypedResults.BadRequest(new ApiErrorResponse
             {
-                { "pageSize", ["Page size cannot exceed 100."] }
-            };
-            return TypedResults.ValidationProblem(errors);
-        }
+                Code = "ValidationError",
+                Message = "The request query is invalid.",
+                TraceId = context.TraceIdentifier,
+                Errors = new Dictionary<string, string[]> { { "pageSize", ["Page size cannot exceed 100."] } }
+            });
 
         var result = await services.Mediator.Send(new GetOnboardingProcessListQuery(
             status, companyLegalName, adminEmail, subscriptionPlanCode,
@@ -146,10 +153,11 @@ public static class BackOfficeOnboardingApi
         return TypedResults.Ok(result.Value);
     }
 
-    public static async Task<Results<Accepted<OnboardingProcessRetryResponse>, NotFound, BadRequest<string>>> RetryOnboardingAsync(
+    public static async Task<Results<Accepted<OnboardingProcessRetryResponse>, NotFound<ApiErrorResponse>, Conflict<ApiErrorResponse>, BadRequest<ApiErrorResponse>>> RetryOnboardingAsync(
         Guid id,
         [FromHeader(Name = "x-requestid")] Guid requestId,
         RetryOnboardingProcessRequest? request,
+        HttpContext context,
         [AsParameters] AccountsServices services)
     {
         services.Logger.LogInformation(
@@ -159,7 +167,7 @@ public static class BackOfficeOnboardingApi
         if (requestId == Guid.Empty)
         {
             services.Logger.LogWarning("Invalid request - RequestId is missing for retry of {OnboardingProcessId}", id);
-            return TypedResults.BadRequest("Empty GUID is not valid for request ID");
+            return TypedResults.BadRequest(new ApiErrorResponse { Code = "ValidationError", Message = "Empty GUID is not valid for request ID", TraceId = context.TraceIdentifier });
         }
 
         using (services.Logger.BeginScope(new List<KeyValuePair<string, object>> { new("IdentifiedCommandId", requestId) }))
@@ -174,9 +182,25 @@ public static class BackOfficeOnboardingApi
             if (result.IsFailure)
             {
                 if (result.Error.Code == Error.NotFound.Code)
-                    return TypedResults.NotFound();
+                {
+                    services.Logger.LogWarning(
+                        "RetryOnboarding - NotFound: {OnboardingProcessId}",
+                        id);
+                    return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = result.Error.Message, TraceId = context.TraceIdentifier });
+                }
 
-                return TypedResults.BadRequest(result.Error.Message);
+                if (result.Error.Code == Error.Conflict.Code)
+                {
+                    services.Logger.LogWarning(
+                        "RetryOnboarding - RetryNotAllowed: {OnboardingProcessId}, Reason: {ErrorMessage}",
+                        id, result.Error.Message);
+                    return TypedResults.Conflict(new ApiErrorResponse { Code = "RetryNotAllowed", Message = result.Error.Message, TraceId = context.TraceIdentifier });
+                }
+
+                services.Logger.LogWarning(
+                    "RetryOnboarding failed - {OnboardingProcessId}, ErrorCode: {ErrorCode}, Error: {ErrorMessage}",
+                    id, result.Error.Code, result.Error.Message);
+                return TypedResults.BadRequest(ApiErrorResponse.From(result.Error, context.TraceIdentifier));
             }
 
             var detailResult = await services.Mediator.Send(new GetOnboardingProcessByIdQuery(id));
@@ -204,8 +228,9 @@ public static class BackOfficeOnboardingApi
         }
     }
 
-    public static async Task<Results<Ok<OnboardingProcessResultResponse>, NotFound, BadRequest<string>>> GetOnboardingResultAsync(
+    public static async Task<Results<Ok<OnboardingProcessResultResponse>, NotFound<ApiErrorResponse>, BadRequest<ApiErrorResponse>>> GetOnboardingResultAsync(
         Guid id,
+        HttpContext context,
         [AsParameters] AccountsServices services)
     {
         var result = await services.Mediator.Send(new GetOnboardingProcessResultQuery(id));
@@ -213,9 +238,9 @@ public static class BackOfficeOnboardingApi
         if (result.IsFailure)
         {
             if (result.Error.Code == Error.NotFound.Code)
-                return TypedResults.NotFound();
+                return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = "Onboarding process not found.", TraceId = context.TraceIdentifier });
 
-            return TypedResults.BadRequest(result.Error.Message);
+            return TypedResults.BadRequest(ApiErrorResponse.From(result.Error, context.TraceIdentifier));
         }
 
         return TypedResults.Ok(result.Value);
@@ -230,10 +255,10 @@ public record StartOnboardingProcessRequest(
 public record CompanyInputDto(
     string LegalName,
     string TaxId,
-    TaxNumberType TaxNumberType,
-    string Country,
     string CountryCode,
-    string? TradeName = null);
+    string? Country = null,
+    string? TradeName = null,
+    TaxNumberType? TaxNumberType = null);
 
 public record SubscriptionInputDto(
     string SubscriptionPlanCode);

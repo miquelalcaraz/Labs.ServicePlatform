@@ -2,6 +2,8 @@ using Microsoft.Extensions.Logging;
 
 using Qlt.Infrastructure.Identity.Contracts.IntegrationEvents;
 using Qlt.Platform.Messaging.IntegrationEvents;
+using Qlt.Services.Accounts.Domain.Exceptions;
+using Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
 using Qlt.Services.Accounts.Domain.Models.UserMembershipAggregate;
 using Qlt.Services.Accounts.Domain.Repositories;
 
@@ -44,24 +46,50 @@ public class ExternalUserProvisionedIntegrationEventHandler : IIntegrationEventH
             return;
         }
 
-        var membership = UserMembership.CreateExternalAdminMembership(
-            @event.UserId,
-            @event.TenantId,
-            @event.CompanyId);
+        if (onboarding.Status == OnboardingStatus.Completed)
+        {
+            _logger.LogInformation(
+                "Account - OnboardingProcess {OnboardingProcessId} already completed. Ignoring duplicate event.",
+                @event.OnboardingProcessId);
+            return;
+        }
 
-        _membershipRepository.Add(membership);
+        using (_logger.BeginScope(new Dictionary<string, object?> { ["CorrelationId"] = onboarding.CorrelationId }))
+        {
+            try
+            {
+                var membership = UserMembership.CreateExternalAdminMembership(
+                    @event.UserId,
+                    @event.TenantId,
+                    @event.CompanyId);
 
-        onboarding.MarkAdminUserProvisioned(@event.UserId);
-        onboarding.MarkAdminMembershipCreated(membership.Id);
-        onboarding.Complete();
+                _membershipRepository.Add(membership);
 
-        _onboardingRepository.Update(onboarding);
+                onboarding.MarkAdminUserProvisioned(@event.UserId);
+                onboarding.MarkAdminMembershipCreated(membership.Id);
+                onboarding.Complete();
 
-        await _membershipRepository.UnitOfWork.SaveChangesAsync();
+                _onboardingRepository.Update(onboarding);
 
-        _logger.LogInformation(
-            "Account - UserMembership created and onboarding completed for UserId={UserId}, OnboardingId={OnboardingProcessId}",
-            @event.UserId,
-            @event.OnboardingProcessId);
+                await _membershipRepository.UnitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation(
+                    "Account - UserMembership created and onboarding completed for UserId={UserId}, OnboardingId={OnboardingProcessId}",
+                    @event.UserId,
+                    @event.OnboardingProcessId);
+            }
+            catch (AccountDomainException ex)
+            {
+                _logger.LogError(ex,
+                    "Account - Domain error completing onboarding {OnboardingProcessId} for UserId={UserId}. Marking as failed. Step={CurrentStep}",
+                    @event.OnboardingProcessId,
+                    @event.UserId,
+                    onboarding.CurrentStep);
+
+                onboarding.Fail("IntegrationEventProcessingError", ex.Message);
+                _onboardingRepository.Update(onboarding);
+                await _onboardingRepository.UnitOfWork.SaveChangesAsync();
+            }
+        }
     }
 }

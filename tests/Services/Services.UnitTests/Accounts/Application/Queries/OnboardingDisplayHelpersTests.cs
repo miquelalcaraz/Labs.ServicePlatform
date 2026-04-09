@@ -9,8 +9,6 @@ public class OnboardingDisplayHelpersTests
     [InlineData(OnboardingStatus.Draft, "Draft")]
     [InlineData(OnboardingStatus.InProgress, "In Progress")]
     [InlineData(OnboardingStatus.WaitingForExternalProvisioning, "Waiting for Identity Provisioning")]
-    [InlineData(OnboardingStatus.WaitingForActivationDelivery, "Waiting for Activation Delivery")]
-    [InlineData(OnboardingStatus.WaitingForUserActivation, "Waiting for User Activation")]
     [InlineData(OnboardingStatus.Completed, "Completed")]
     [InlineData(OnboardingStatus.Failed, "Failed")]
     public void GetStatusDisplayName_ReturnsExpectedName(OnboardingStatus status, string expected)
@@ -26,8 +24,6 @@ public class OnboardingDisplayHelpersTests
     [InlineData(OnboardingStep.AdminProvisioningRequested, "Admin Provisioning Requested")]
     [InlineData(OnboardingStep.AdminUserProvisioned, "Admin User Provisioned")]
     [InlineData(OnboardingStep.AdminMembershipCreated, "Admin Membership Created")]
-    [InlineData(OnboardingStep.ActivationRequested, "Activation Requested")]
-    [InlineData(OnboardingStep.ActivationDelivered, "Activation Delivered")]
     [InlineData(OnboardingStep.Completed, "Completed")]
     public void GetStepDisplayName_ReturnsExpectedName(OnboardingStep step, string expected)
     {
@@ -49,12 +45,12 @@ public class OnboardingDisplayHelpersTests
     }
 
     [Fact]
-    public void CalculateProgressPercent_WhenAdminProvisioningRequested_Returns45()
+    public void CalculateProgressPercent_WhenAdminProvisioningRequested_Returns55()
     {
         var result = OnboardingDisplayHelpers.CalculateProgressPercent(
             OnboardingStep.AdminProvisioningRequested,
             OnboardingStatus.WaitingForExternalProvisioning);
-        result.Should().Be(45);
+        result.Should().Be(55);
     }
 
     [Fact]
@@ -67,14 +63,14 @@ public class OnboardingDisplayHelpersTests
     }
 
     [Fact]
-    public void BuildStepsList_Returns9Steps()
+    public void BuildStepsList_Returns7Steps()
     {
         var steps = OnboardingDisplayHelpers.BuildStepsList(
             OnboardingStep.OwnerCompanyCreated,
             OnboardingStatus.InProgress,
             null);
 
-        steps.Should().HaveCount(9);
+        steps.Should().HaveCount(7);
     }
 
     [Fact]
@@ -164,13 +160,11 @@ public class OnboardingDisplayHelpersTests
     }
 
     [Theory]
-    [InlineData(OnboardingStep.SubscriptionCreated, 10)]
-    [InlineData(OnboardingStep.TenantCreated, 20)]
-    [InlineData(OnboardingStep.OwnerCompanyCreated, 35)]
-    [InlineData(OnboardingStep.AdminUserProvisioned, 60)]
-    [InlineData(OnboardingStep.AdminMembershipCreated, 70)]
-    [InlineData(OnboardingStep.ActivationRequested, 80)]
-    [InlineData(OnboardingStep.ActivationDelivered, 90)]
+    [InlineData(OnboardingStep.SubscriptionCreated, 15)]
+    [InlineData(OnboardingStep.TenantCreated, 30)]
+    [InlineData(OnboardingStep.OwnerCompanyCreated, 45)]
+    [InlineData(OnboardingStep.AdminUserProvisioned, 70)]
+    [InlineData(OnboardingStep.AdminMembershipCreated, 85)]
     public void CalculateProgressPercent_AllSteps_ReturnExpectedValues(OnboardingStep step, int expectedPercent)
     {
         var result = OnboardingDisplayHelpers.CalculateProgressPercent(step, OnboardingStatus.InProgress);

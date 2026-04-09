@@ -3,16 +3,13 @@
     public class QltClaimTypes
     {
         public const string Role = "role";
-        public const string OrganizationId = "organizationid";
+        public const string TenantId = "tenantid";
         public const string OfflineAccess = "offline_access";
     }
     public class QltApiScopes
     {
-        public const string Role = "role";
         public const string Accounts = "accounts";
         public const string Email = "email";
-
-
     }
     public class QltIdentityResources
     {

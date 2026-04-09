@@ -12,8 +12,6 @@ public static class OnboardingDisplayHelpers
         OnboardingStep.AdminProvisioningRequested,
         OnboardingStep.AdminUserProvisioned,
         OnboardingStep.AdminMembershipCreated,
-        OnboardingStep.ActivationRequested,
-        OnboardingStep.ActivationDelivered,
         OnboardingStep.Completed
     ];
 
@@ -22,8 +20,6 @@ public static class OnboardingDisplayHelpers
         OnboardingStatus.Draft => "Draft",
         OnboardingStatus.InProgress => "In Progress",
         OnboardingStatus.WaitingForExternalProvisioning => "Waiting for Identity Provisioning",
-        OnboardingStatus.WaitingForActivationDelivery => "Waiting for Activation Delivery",
-        OnboardingStatus.WaitingForUserActivation => "Waiting for User Activation",
         OnboardingStatus.Completed => "Completed",
         OnboardingStatus.Failed => "Failed",
         _ => status.ToString()
@@ -38,8 +34,6 @@ public static class OnboardingDisplayHelpers
         OnboardingStep.AdminProvisioningRequested => "Admin Provisioning Requested",
         OnboardingStep.AdminUserProvisioned => "Admin User Provisioned",
         OnboardingStep.AdminMembershipCreated => "Admin Membership Created",
-        OnboardingStep.ActivationRequested => "Activation Requested",
-        OnboardingStep.ActivationDelivered => "Activation Delivered",
         OnboardingStep.Completed => "Completed",
         _ => step.ToString()
     };
@@ -52,14 +46,12 @@ public static class OnboardingDisplayHelpers
         return currentStep switch
         {
             OnboardingStep.None => 0,
-            OnboardingStep.SubscriptionCreated => 10,
-            OnboardingStep.TenantCreated => 20,
-            OnboardingStep.OwnerCompanyCreated => 35,
-            OnboardingStep.AdminProvisioningRequested => 45,
-            OnboardingStep.AdminUserProvisioned => 60,
-            OnboardingStep.AdminMembershipCreated => 70,
-            OnboardingStep.ActivationRequested => 80,
-            OnboardingStep.ActivationDelivered => 90,
+            OnboardingStep.SubscriptionCreated => 15,
+            OnboardingStep.TenantCreated => 30,
+            OnboardingStep.OwnerCompanyCreated => 45,
+            OnboardingStep.AdminProvisioningRequested => 55,
+            OnboardingStep.AdminUserProvisioned => 70,
+            OnboardingStep.AdminMembershipCreated => 85,
             OnboardingStep.Completed => 100,
             _ => 0
         };

@@ -5,14 +5,14 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Qlt.Infrastructure.Identity.Infrastructure;
+using Qlt.Services.Notifications.Infrastructure;
 
 #nullable disable
 
-namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
+namespace Qlt.Services.Notifications.Infrastructure.Migrations
 {
-    [DbContext(typeof(IdentityLogsContext))]
-    [Migration("20260405084838_Initial")]
+    [DbContext(typeof(NotificationsContext))]
+    [Migration("20260409052809_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -20,6 +20,7 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("notifications")
                 .HasAnnotation("ProductVersion", "10.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
@@ -95,6 +96,40 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
                     b.HasIndex("Status", "CreatedAt");
 
                     b.ToTable("OutboxMessage", "infra");
+                });
+
+            modelBuilder.Entity("Qlt.Services.Notifications.Models.EmailNotification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("To")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EmailNotification", "notifications");
                 });
 #pragma warning restore 612, 618
         }

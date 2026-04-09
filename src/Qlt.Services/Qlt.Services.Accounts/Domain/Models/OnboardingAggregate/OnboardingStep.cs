@@ -12,7 +12,5 @@ public enum OnboardingStep
     AdminProvisioningRequested = 4,
     AdminUserProvisioned = 5,
     AdminMembershipCreated = 6,
-    ActivationRequested = 7,
-    ActivationDelivered = 8,
     Completed = 9
 }

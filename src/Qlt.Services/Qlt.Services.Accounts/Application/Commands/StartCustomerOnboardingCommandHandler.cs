@@ -39,6 +39,8 @@ public class StartCustomerOnboardingCommandHandler : ICommandHandler<StartCustom
 
     public async Task<Result<bool>> Handle(StartCustomerOnboardingCommand message, CancellationToken cancellationToken)
     {
+        using (_logger.BeginScope(new Dictionary<string, object> { ["CorrelationId"] = message.RequestId }))
+        {
         var tenantName = message.TenantName ?? message.CompanyLegalName;
 
         var tenant = Tenant.Create(tenantName, message.CreatedByInternalUserId);
@@ -102,5 +104,6 @@ public class StartCustomerOnboardingCommandHandler : ICommandHandler<StartCustom
             message.AdminEmail);
 
         return Result.Success(true);
+        }
     }
 }
