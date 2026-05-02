@@ -1,10 +1,10 @@
-using Qlt.Platform.Messaging.IntegrationEvents;
-using Qlt.Platform.Messaging.Models;
-
 using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Qlt.Platform.Messaging.IntegrationEvents;
+using Qlt.Platform.Messaging.Models;
 
 namespace Qlt.Platform.Messaging.Services;
 

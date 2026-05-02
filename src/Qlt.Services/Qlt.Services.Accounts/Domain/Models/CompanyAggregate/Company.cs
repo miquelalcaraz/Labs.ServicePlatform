@@ -41,7 +41,22 @@ public class Company : Entity, IAggregateRoot
         TaxNumberType taxNumberType,
         Guid createdByInternalUserId)
     {
-        return Create(tenantId, legalName, tradeName, CompanyType.Owner, address, taxId, taxNumberType, createdByInternalUserId);
+        if (taxNumberType == TaxNumberType.Unknown)
+            throw new AccountDomainException("TaxNumberType cannot be Unknown");
+
+        var company = new Company
+        {
+            TenantId = tenantId,
+            LegalName = legalName.Trim(),
+            TradeName = tradeName.Trim(),
+            CompanyType = CompanyType.Owner,
+            Status = CompanyStatus.Pending,
+            Address = address,
+            TaxId = taxId.Trim(),
+            TaxNumberType = taxNumberType,
+            CreatedByInternalUserId = createdByInternalUserId
+        };
+        return company;
     }
 
     public static Company Create(

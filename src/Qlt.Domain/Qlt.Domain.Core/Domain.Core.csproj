@@ -7,6 +7,6 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="MediatR" Version="14.1.0" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.5" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
 	</ItemGroup>
 </Project>

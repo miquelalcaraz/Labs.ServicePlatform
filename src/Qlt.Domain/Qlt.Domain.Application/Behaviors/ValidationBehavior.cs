@@ -1,11 +1,11 @@
+using System.Diagnostics;
+
 using FluentValidation;
 
 using MediatR;
 
 using Qlt.Platform;
 using Qlt.Platform.Activities;
-
-using System.Diagnostics;
 
 namespace Qlt.Domain.Behaviors;
 

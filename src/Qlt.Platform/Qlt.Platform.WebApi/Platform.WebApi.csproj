@@ -10,12 +10,12 @@
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 	</ItemGroup>
 	<ItemGroup>
-		<PackageReference Include="Asp.Versioning.Http" Version="8.1.1" /> 
-		<PackageReference Include="Scalar.AspNetCore" Version="2.13.20" />
-		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
-		<PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.1" />
+		<PackageReference Include="Asp.Versioning.Http" Version="10.0.0" /> 
+		<PackageReference Include="Scalar.AspNetCore" Version="2.14.6" />
+		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.7" />
+		<PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="10.0.0" />
 		<PackageReference Include="MediatR" Version="14.1.0" /> 
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.5" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.7" />
 	</ItemGroup>
 	<ItemGroup>
 	  <ProjectReference Include="..\Qlt.Platform.Infrastructure\Platform.Infrastructure.csproj" />

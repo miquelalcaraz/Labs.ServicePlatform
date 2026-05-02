@@ -1,13 +1,14 @@
-using Microsoft.EntityFrameworkCore;
+using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
+
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 
 using Qlt.Platform.Activities;
 using Qlt.Platform.Messaging.Models;
 using Qlt.Platform.Messaging.Services;
-
-using System;
-using System.Diagnostics;
-using System.Threading.Tasks;
+using Qlt.Platform.Persistence;
 
 namespace Qlt.Platform.Messaging.IntegrationEvents;
 
@@ -20,7 +21,7 @@ public class IdempotencyIntegrationEventEfDecorator<TIntegrationEvent> : IIntegr
     private readonly IIntegrationEventHandler<TIntegrationEvent> _inner;
     private readonly IIdempotencyService _idempotencyService;
     private readonly ILogger _logger;
-    private readonly DbContext? _dbContext;
+    private readonly ITransactionalUnitOfWork? _unitOfWork;
 
     public IIntegrationEventHandler<TIntegrationEvent> InnerHandler => _inner;
 
@@ -28,12 +29,12 @@ public class IdempotencyIntegrationEventEfDecorator<TIntegrationEvent> : IIntegr
         IIntegrationEventHandler<TIntegrationEvent> inner,
         IIdempotencyService idempotencyService,
         ILogger logger,
-        DbContext? dbContext = null)
+        ITransactionalUnitOfWork? unitOfWork = null)
     {
         _inner = inner ?? throw new ArgumentNullException(nameof(inner));
         _idempotencyService = idempotencyService ?? throw new ArgumentNullException(nameof(idempotencyService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _dbContext = dbContext;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task Handle(TIntegrationEvent @event)
@@ -73,7 +74,7 @@ public class IdempotencyIntegrationEventEfDecorator<TIntegrationEvent> : IIntegr
             @event.Id,
             handlerName);
 
-        if (_dbContext != null)
+        if (_unitOfWork != null)
         {
             await ProcessWithTransactionAsync(@event, key, eventType);
         }
@@ -85,25 +86,25 @@ public class IdempotencyIntegrationEventEfDecorator<TIntegrationEvent> : IIntegr
 
     private async Task ProcessWithTransactionAsync(TIntegrationEvent @event, IdempotencyKey key, string eventType)
     {
-        var existingTransaction = _dbContext!.Database.CurrentTransaction;
-        var shouldManageTransaction = existingTransaction == null;
+        var shouldManageTransaction = !_unitOfWork!.HasActiveTransaction;
+        IDbContextTransaction? transaction = null;
 
         try
         {
             if (shouldManageTransaction)
             {
-                await _dbContext.Database.BeginTransactionAsync();
+                transaction = await _unitOfWork.BeginTransactionAsync();
             }
 
             await _inner.Handle(@event);
 
             await _idempotencyService.MarkAsProcessingAsync(key, eventType);
 
-            await _dbContext.SaveChangesAsync();
+            await _unitOfWork.SaveChangesAsync();
 
-            if (shouldManageTransaction)
+            if (shouldManageTransaction && transaction is not null)
             {
-                await _dbContext.Database.CommitTransactionAsync();
+                await _unitOfWork.CommitTransactionAsync(transaction);
             }
 
             await _idempotencyService.MarkAsCompletedAsync(key);
@@ -116,9 +117,9 @@ public class IdempotencyIntegrationEventEfDecorator<TIntegrationEvent> : IIntegr
         }
         catch (Exception ex)
         {
-            if (shouldManageTransaction && _dbContext.Database.CurrentTransaction != null)
+            if (shouldManageTransaction && _unitOfWork.HasActiveTransaction)
             {
-                await _dbContext.Database.RollbackTransactionAsync();
+                _unitOfWork.RollbackTransaction();
             }
 
             _logger.LogError(ex,

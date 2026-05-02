@@ -1,3 +1,6 @@
+using System.Text;
+using System.Text.Json.Nodes;
+
 using Asp.Versioning.ApiExplorer;
 
 using Microsoft.AspNetCore.Authorization;
@@ -7,9 +10,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using Microsoft.OpenApi;
-
-using System.Text;
-using System.Text.Json.Nodes;
 
 namespace Qlt.Platform.Extensions;
 
@@ -142,7 +142,7 @@ internal static class OpenApiOptionsExtensions
         options.AddOperationTransformer((operation, context, cancellationToken) =>
         {
             var apiDescription = context.Description;
-            operation.Deprecated |= apiDescription.IsDeprecated();
+            operation.Deprecated |= apiDescription.IsDeprecated;
             return Task.CompletedTask;
         });
         return options;

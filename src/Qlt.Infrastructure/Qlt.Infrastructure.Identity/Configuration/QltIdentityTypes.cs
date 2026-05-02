@@ -9,6 +9,7 @@
     public class QltApiScopes
     {
         public const string Accounts = "accounts";
+        public const string Notifications = "notifications";
         public const string Email = "email";
     }
     public class QltIdentityResources
@@ -18,6 +19,7 @@
     public class QltApiResources
     {
         public const string AccountService = "accounts.service";
+        public const string NotificationsService = "notifications.service";
     }
     public static class Roles
     {

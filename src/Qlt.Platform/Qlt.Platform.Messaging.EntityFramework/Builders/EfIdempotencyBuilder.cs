@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -5,9 +8,6 @@ using Microsoft.Extensions.Logging;
 using Qlt.Platform.Messaging.IntegrationEvents;
 using Qlt.Platform.Messaging.Services;
 using Qlt.Platform.Persistence;
-
-using System;
-using System.Linq;
 
 namespace Qlt.Platform.Messaging.Builders;
 
@@ -37,6 +37,8 @@ public class EfIdempotencyBuilder<TContext>
 
     /// <summary>
     /// Enables idempotency for integration event handlers using transactional guarantees.
+    /// When Redis idempotency is also registered, the Redis decorator is unwrapped and replaced
+    /// by the EF decorator, since the hybrid IIdempotencyService already provides Redis fast-path checks.
     /// </summary>
     public EfIdempotencyBuilder<TContext> ForIntegrationEventHandlers()
     {
@@ -46,9 +48,11 @@ public class EfIdempotencyBuilder<TContext>
         {
             var idempotencyService = serviceProvider.GetRequiredService<IIdempotencyService>();
             var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
-            var dbContext = serviceProvider.GetService<TContext>();
+            var unitOfWork = serviceProvider.GetService<TContext>() as ITransactionalUnitOfWork;
 
-            var eventType = inner.GetType().GetInterfaces()
+            var actualInner = UnwrapRedisIdempotencyDecorator(inner);
+
+            var eventType = actualInner.GetType().GetInterfaces()
                 .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IIntegrationEventHandler<>))
                 ?.GetGenericArguments()[0];
 
@@ -58,10 +62,31 @@ public class EfIdempotencyBuilder<TContext>
             var decoratorType = typeof(IdempotencyIntegrationEventEfDecorator<>).MakeGenericType(eventType);
             var logger = loggerFactory.CreateLogger(decoratorType);
 
-            return Activator.CreateInstance(decoratorType, inner, idempotencyService, logger, dbContext)!;
+            return Activator.CreateInstance(decoratorType, actualInner, idempotencyService, logger, unitOfWork)!;
         });
 
         return this;
+    }
+
+    private static object UnwrapRedisIdempotencyDecorator(object handler)
+    {
+        var handlerType = handler.GetType();
+
+        if (!handlerType.IsGenericType)
+            return handler;
+
+        if (handlerType.GetGenericTypeDefinition() != typeof(IdempotencyIntegrationEventDecorator<>))
+            return handler;
+
+        var decoratedInterface = handlerType.GetInterfaces()
+            .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDecoratedHandler<>));
+
+        if (decoratedInterface == null)
+            return handler;
+
+        var innerProperty = handlerType.GetProperty(nameof(IDecoratedHandler<IntegrationEvent>.InnerHandler));
+
+        return innerProperty?.GetValue(handler) ?? handler;
     }
 
     private void EnsureIdempotencyServiceRegistered()

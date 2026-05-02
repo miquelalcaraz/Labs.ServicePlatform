@@ -49,7 +49,7 @@ public class GetOnboardingProcessResultQueryHandler(AccountReadContext context)
                 .FirstOrDefaultAsync(m => m.Id == onboarding.AdminMembershipId.Value, cancellationToken);
         }
 
-        var basePath = "/api/backoffice/onboarding-processes";
+        var basePath = "/api/accounts/customer-onboarding";
 
         return Result.Success(new OnboardingProcessResultResponse
         {

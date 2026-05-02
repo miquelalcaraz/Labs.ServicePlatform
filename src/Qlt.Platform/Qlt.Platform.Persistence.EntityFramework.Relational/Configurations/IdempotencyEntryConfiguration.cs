@@ -14,7 +14,7 @@ internal static class IdempotencyEntryConfiguration
 
     public static void Configure(this EntityTypeBuilder<IdempotencyEntry> entity)
     {
-        entity.ToTable("IdempotencyEntry", "infra");
+        entity.ToTable("IdempotencyEntry");
 
         entity.HasKey(e => new { e.Id, e.Scope, e.Qualifier });
 

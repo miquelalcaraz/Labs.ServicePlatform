@@ -1,24 +1,29 @@
+using System.Security.Claims;
+
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
 
 using Qlt.BackOfficeApp.Models;
 
-using System.Security.Claims;
-
 namespace Qlt.BackOfficeApp.Services
 {
     public class ApplicationAuthenticationStateProvider : AuthenticationStateProvider
     {
-        private const string AuthenticationStateKey = "QltBackOffice.AuthenticationState";
+        private const string AuthenticationStateKey = "Qlt.BackOfficeApp.AuthenticationState";
         private readonly SecurityService securityService;
         private readonly PersistentComponentState persistentComponentState;
+        private readonly IHttpContextAccessor httpContextAccessor;
         private ApplicationAuthenticationState authenticationState;
 
-        public ApplicationAuthenticationStateProvider(SecurityService securityService, PersistentComponentState persistentComponentState)
+        public ApplicationAuthenticationStateProvider(
+            SecurityService securityService,
+            PersistentComponentState persistentComponentState,
+            IHttpContextAccessor httpContextAccessor)
         {
             this.securityService = securityService;
             this.persistentComponentState = persistentComponentState;
+            this.httpContextAccessor = httpContextAccessor;
         }
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
@@ -31,10 +36,10 @@ namespace Qlt.BackOfficeApp.Services
 
                 if (state.IsAuthenticated)
                 {
-                    identity = new ClaimsIdentity(state.Claims.Select(c => new Claim(c.Type, c.Value)), "QltBackOffice");
+                    identity = new ClaimsIdentity(state.Claims.Select(c => new Claim(c.Type, c.Value)), "Qlt.BackOfficeApp");
                 }
             }
-            catch (HttpRequestException ex)
+            catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException)
             {
             }
 
@@ -47,17 +52,46 @@ namespace Qlt.BackOfficeApp.Services
 
         private async Task<ApplicationAuthenticationState> GetApplicationAuthenticationStateAsync()
         {
-            if (persistentComponentState.TryTakeFromJson<ApplicationAuthenticationState>(AuthenticationStateKey, out var persistedState))
+            try
             {
-                authenticationState = persistedState;
+                if (persistentComponentState.TryTakeFromJson<ApplicationAuthenticationState>(AuthenticationStateKey, out var persistedState))
+                {
+                    authenticationState = persistedState;
+                    return authenticationState;
+                }
             }
-            else if (authenticationState == null)
+            catch (InvalidOperationException)
             {
-                authenticationState = await securityService.GetAuthenticationStateAsync();
-
-                persistentComponentState.RegisterOnPersisting(PersistAuthenticationState, RenderMode.InteractiveAuto);
             }
 
+            if (authenticationState != null)
+            {
+                return authenticationState;
+            }
+
+            var httpContext = httpContextAccessor.HttpContext;
+            if (httpContext != null)
+            {
+                var user = httpContext.User;
+                authenticationState = new ApplicationAuthenticationState
+                {
+                    IsAuthenticated = user.Identity?.IsAuthenticated == true,
+                    Name = user.Identity?.Name,
+                    Claims = user.Claims.Select(c => new ApplicationClaim { Type = c.Type, Value = c.Value })
+                };
+
+                try
+                {
+                    persistentComponentState.RegisterOnPersisting(PersistAuthenticationState, RenderMode.InteractiveServer);
+                }
+                catch (InvalidOperationException)
+                {
+                }
+
+                return authenticationState;
+            }
+
+            authenticationState = await securityService.GetAuthenticationStateAsync();
             return authenticationState;
         }
 

@@ -1,59 +1,51 @@
+using MediatR;
+
 using Microsoft.Extensions.Logging;
 
+using Qlt.Contracts.Accounts.IntegrationEvents;
+using Qlt.Infrastructure.Identity.Commands;
 using Qlt.Infrastructure.Identity.IntegrationEvents.EventHandling;
-using Qlt.Infrastructure.Identity.Models;
-using Qlt.Infrastructure.Identity.Repositories;
-using Qlt.Services.Accounts.Contracts.IntegrationEvents;
+using Qlt.Platform;
 
 namespace Services.UnitTests.Identity.IntegrationEvents;
 
 public class TenantCreatedIntegrationEventHandlerTests : IdentityTestBase
 {
     [Fact]
-    public async Task Handle_WhenTenantDoesNotExistLocally_CreatesTenant()
+    public async Task Handle_SendsCreateLocalTenantCommand()
     {
-        var (tenantRepo, _, _) = CreateIdentityMocks();
-        tenantRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Tenant?)null);
-        tenantRepo.Setup(r => r.CreateAsync(It.IsAny<Tenant>())).ReturnsAsync<Tenant, ITenantRepository, Tenant>(t => t);
+        var mediator = new Mock<IMediator>();
+        mediator.Setup(m => m.Send(It.IsAny<CreateLocalTenantCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(true));
 
-        var handler = CreateHandler(tenantRepo);
-        var @event = CreateValidTenantCreatedEvent();
+        var handler = new TenantCreatedIntegrationEventHandler(
+            mediator.Object,
+            new Mock<ILogger<TenantCreatedIntegrationEventHandler>>().Object);
+
+        var @event = CreateValidTenantCreatedEvent(tenantId: TenantId, ownerCompanyId: CompanyId);
 
         await handler.Handle(@event);
 
-        tenantRepo.Verify(r => r.CreateAsync(It.Is<Tenant>(t =>
-            t.Id == @event.TenantId &&
-            t.Name == @event.Name)),
+        mediator.Verify(m => m.Send(
+            It.Is<CreateLocalTenantCommand>(c =>
+                c.TenantId == @event.TenantId &&
+                c.Name == @event.Name &&
+                c.OwnerCompanyId == CompanyId),
+            It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
     [Fact]
-    public async Task Handle_WhenTenantAlreadyExistsLocally_SkipsCreation()
+    public async Task Handle_WhenOwnerCompanyIdIsNull_SendsCommandWithEmptyGuid()
     {
-        var existingTenant = Tenant.Create(
-            id: TenantId,
-            companyId: CompanyId,
-            name: "Acme Tenant");
+        var mediator = new Mock<IMediator>();
+        mediator.Setup(m => m.Send(It.IsAny<CreateLocalTenantCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(true));
 
-        var (tenantRepo, _, _) = CreateIdentityMocks();
-        tenantRepo.Setup(r => r.GetByIdAsync(TenantId)).ReturnsAsync(existingTenant);
+        var handler = new TenantCreatedIntegrationEventHandler(
+            mediator.Object,
+            new Mock<ILogger<TenantCreatedIntegrationEventHandler>>().Object);
 
-        var handler = CreateHandler(tenantRepo);
-        var @event = CreateValidTenantCreatedEvent(tenantId: TenantId);
-
-        await handler.Handle(@event);
-
-        tenantRepo.Verify(r => r.CreateAsync(It.IsAny<Tenant>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task Handle_WhenOwnerCompanyIdIsNull_CreatesTenantWithEmptyCompanyId()
-    {
-        var (tenantRepo, _, _) = CreateIdentityMocks();
-        tenantRepo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>())).ReturnsAsync((Tenant?)null);
-        tenantRepo.Setup(r => r.CreateAsync(It.IsAny<Tenant>())).ReturnsAsync<Tenant, ITenantRepository, Tenant>(t => t);
-
-        var handler = CreateHandler(tenantRepo);
         var @event = new TenantCreatedIntegrationEvent(
             TenantId: Guid.NewGuid(),
             Name: "Acme Tenant",
@@ -62,11 +54,36 @@ public class TenantCreatedIntegrationEventHandlerTests : IdentityTestBase
 
         await handler.Handle(@event);
 
-        tenantRepo.Verify(r => r.CreateAsync(It.Is<Tenant>(t => t.CompanyId == Guid.Empty)), Times.Once);
+        mediator.Verify(m => m.Send(
+            It.Is<CreateLocalTenantCommand>(c => c.OwnerCompanyId == Guid.Empty),
+            It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
-    private static TenantCreatedIntegrationEventHandler CreateHandler(Mock<ITenantRepository> tenantRepo) =>
-        new(
-            new Mock<ILogger<TenantCreatedIntegrationEventHandler>>().Object,
-            tenantRepo.Object);
+    [Fact]
+    public async Task Handle_WhenCommandFails_LogsWarning()
+    {
+        var mediator = new Mock<IMediator>();
+        mediator.Setup(m => m.Send(It.IsAny<CreateLocalTenantCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<bool>(Error.NotFound.WithMessage("Not found")));
+
+        var logger = new Mock<ILogger<TenantCreatedIntegrationEventHandler>>();
+
+        var handler = new TenantCreatedIntegrationEventHandler(
+            mediator.Object,
+            logger.Object);
+
+        var @event = CreateValidTenantCreatedEvent();
+
+        await handler.Handle(@event);
+
+        logger.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
 }

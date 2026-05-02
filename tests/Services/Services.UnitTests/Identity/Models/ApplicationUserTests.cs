@@ -136,25 +136,28 @@ public class ApplicationUserTests
     [Fact]
     public void ProvisionInternalUser_CreatesUserWithInternalTypeAndNoTenantId()
     {
+        var tenantId = Guid.NewGuid();
         var user = ApplicationUser.ProvisionInternalUser(
+            tenantId: tenantId,
             email: "admin@qlt.com",
             firstName: "Jane",
             lastName: "Smith");
 
         user.Email.Should().Be("admin@qlt.com");
         user.UserName.Should().Be("admin@qlt.com");
-        user.TenantId.Should().Be(Guid.Empty);
         user.UserType.Should().Be(UserType.Internal);
         user.Status.Should().Be(UserStatus.PendingActivation);
         user.DisplayName.Should().Be("Jane Smith");
+        user.TenantId.Should().Be(tenantId);
     }
 
     [Fact]
     public void ProvisionInternalUser_WithExplicitId_UsesProvidedId()
     {
         var id = Guid.NewGuid();
-
+        var tenantId = Guid.NewGuid();
         var user = ApplicationUser.ProvisionInternalUser(
+            tenantId: tenantId,
             email: "admin@qlt.com",
             id: id);
 

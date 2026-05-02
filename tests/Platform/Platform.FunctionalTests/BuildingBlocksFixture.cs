@@ -1,5 +1,6 @@
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.Azure;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.SqlClient;
@@ -13,9 +14,11 @@ public sealed class BuildingBlocksFixture : WebApplicationFactory<Program>, IAsy
 
     public IResourceBuilder<SqlServerServerResource> SqlServer { get; private set; } = default!;
     public IResourceBuilder<SqlServerDatabaseResource> TestDb { get; private set; } = default!;
-    public IResourceBuilder<RabbitMQServerResource> RabbitMQ { get; private set; } = default!;
+    public IResourceBuilder<AzureServiceBusResource> AzureServiceBus { get; private set; }
+    public IResourceBuilder<RedisResource> RedisCache { get; private set; }
 
     private string _sqlConnectionString = default!;
+    private string _redisConnectionString;
     private string _eventBusUri = default!;
 
     public BuildingBlocksFixture()
@@ -35,8 +38,15 @@ public sealed class BuildingBlocksFixture : WebApplicationFactory<Program>, IAsy
 
         TestDb = SqlServer.AddDatabase("testDb");
 
-        RabbitMQ = appBuilder.AddRabbitMQ("eventbus")
-            .WithLifetime(ContainerLifetime.Persistent);
+        RedisCache = appBuilder.AddRedis("cache")
+                                .WithLifetime(ContainerLifetime.Persistent);
+
+        AzureServiceBus = appBuilder.AddAzureServiceBus("eventbus")
+                    .RunAsEmulator(emulator => emulator
+                    .WithLifetime(ContainerLifetime.Persistent));
+
+        var eventBusTopic = AzureServiceBus.AddServiceBusTopic("qlt-event-bus");
+        eventBusTopic.AddServiceBusSubscription("platform-sub", subscriptionName: "Platform");
 
         _app = appBuilder.Build();
     }
@@ -48,7 +58,11 @@ public sealed class BuildingBlocksFixture : WebApplicationFactory<Program>, IAsy
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 { $"ConnectionStrings:{TestDb.Resource.Name}", _sqlConnectionString },
-                { "ConnectionStrings:eventbus", _eventBusUri }
+                { $"ConnectionStrings:{RedisCache.Resource.Name}", _redisConnectionString },
+                { $"ConnectionStrings:{AzureServiceBus.Resource.Name}", _eventBusUri },
+                { "EventBus:SubscriptionClientName", "Platform"},
+                { $"Aspire:Azure:Messaging:ServiceBus:{AzureServiceBus.Resource.Name}:DisableHealthChecks", "true" },
+                { "Aspire:Azure:Messaging:ServiceBus:eventbus:DisableTracing", "true" }
             }!);
         });
 
@@ -75,12 +89,13 @@ public sealed class BuildingBlocksFixture : WebApplicationFactory<Program>, IAsy
         await _app.StartAsync();
 
         _sqlConnectionString = await TestDb.Resource.ConnectionStringExpression.GetValueAsync(default);
-        _eventBusUri = await RabbitMQ.Resource.ConnectionStringExpression.GetValueAsync(default);
-
-        await WaitForSqlServerReadyAsync(_sqlConnectionString);
+        _redisConnectionString = await RedisCache.Resource.ConnectionStringExpression.GetValueAsync(default);
+        _eventBusUri = await AzureServiceBus.Resource.ConnectionStringExpression.GetValueAsync(default);
+         
 
         Console.WriteLine($"SQL Server Connection String: {_sqlConnectionString}");
-        Console.WriteLine($"RabbitMQ Event Bus URI: {_eventBusUri}");
+        Console.WriteLine($"Azure Service Bus URI: {_eventBusUri}");
+        Console.WriteLine($"Redis Connection String: {_redisConnectionString}");
     }
 
     private static async Task WaitForSqlServerReadyAsync(string connectionString, int maxRetries = 30, int delayMs = 2000)

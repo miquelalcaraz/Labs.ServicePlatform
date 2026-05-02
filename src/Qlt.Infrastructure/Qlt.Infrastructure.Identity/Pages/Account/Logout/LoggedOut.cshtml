@@ -3,24 +3,24 @@
 @using Qlt.Infrastructure.Identity.Pages.Account.Logout
 @model Qlt.Infrastructure.Identity.Pages.Account.Logout.LoggedOut
 
-<div class="logged-out-page">
-    <h1>
-        Logout
-        <small>You are now logged out</small>
-    </h1>
+<div class="identity-page identity-page-result logged-out-page">
+    <section class="identity-card identity-card-narrow identity-result-card">
+        <h1 class="identity-title">Signed out</h1>
+        <p class="identity-support-text">You are now logged out.</p>
 
-    @if (Model.View.PostLogoutRedirectUri is not null)
-    {
-        <div>
-            Click <a class="PostLogoutRedirectUri" href="@Model.View.PostLogoutRedirectUri">here</a> to return to the
-            <span>@Model.View.ClientName</span> application.
-        </div>
-    }
+        @if (Model.View.PostLogoutRedirectUri is not null)
+        {
+            <p class="identity-support-text identity-support-text-sm">
+                Click <a class="PostLogoutRedirectUri" href="@Model.View.PostLogoutRedirectUri">here</a> to return to the
+                <span>@Model.View.ClientName</span> application.
+            </p>
+        }
 
-    @if (Model.View.SignOutIframeUrl is not null)
-    {
-        <iframe width="0" height="0" class="signout" src="@Model.View.SignOutIframeUrl"></iframe>
-    }
+        @if (Model.View.SignOutIframeUrl is not null)
+        {
+            <iframe width="0" height="0" class="signout" src="@Model.View.SignOutIframeUrl"></iframe>
+        }
+    </section>
 </div>
 
 @section scripts

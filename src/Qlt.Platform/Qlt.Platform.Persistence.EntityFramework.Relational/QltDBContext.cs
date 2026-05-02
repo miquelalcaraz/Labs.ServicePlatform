@@ -1,4 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -17,9 +17,7 @@ namespace Qlt.Platform.Persistence;
 /// </summary>
 public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityChangeTracker
 {
-
-    private IDbContextTransaction? _currentTransaction = null!;
-    public bool HasActiveTransaction => _currentTransaction is not null;
+    public bool HasActiveTransaction => Database.CurrentTransaction is not null;
     public Guid? LastCommittedTransactionId { get; private set; }
 
     protected readonly QltDbContextConfiguration _configuration;
@@ -29,14 +27,13 @@ public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityCh
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     }
 
-    public IDbContextTransaction? GetCurrentTransaction()
-    {
-        return _currentTransaction;
-    }
+    public IDbContextTransaction? GetCurrentTransaction() => Database.CurrentTransaction;
+
     public IDbContextTransaction? UseTransaction(IDbContextTransaction transaction)
     {
         return Database.UseTransaction(transaction.GetDbTransaction());
     }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -94,16 +91,15 @@ public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityCh
 
     public async Task<IDbContextTransaction?> BeginTransactionAsync()
     {
-        if (_currentTransaction is not null) return null;
+        if (Database.CurrentTransaction is not null) return null;
 
-        _currentTransaction = await Database.BeginTransactionAsync();
-        return _currentTransaction;
+        return await Database.BeginTransactionAsync();
     }
 
     public async Task CommitTransactionAsync(IDbContextTransaction transaction, CancellationToken cancellationToken = default)
     {
         if (transaction is null) throw new ArgumentNullException(nameof(transaction));
-        if (transaction != _currentTransaction) throw new InvalidOperationException($"Transaction {transaction.TransactionId} is not current");
+        if (transaction != Database.CurrentTransaction) throw new InvalidOperationException($"Transaction {transaction.TransactionId} is not current");
 
         try
         {
@@ -119,27 +115,20 @@ public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityCh
         }
         finally
         {
-            if (_currentTransaction is not null)
-            {
-                _currentTransaction.Dispose();
-                _currentTransaction = null;
-            }
+            transaction.Dispose();
         }
     }
 
     public void RollbackTransaction()
     {
+        var transaction = Database.CurrentTransaction;
         try
         {
-            _currentTransaction?.Rollback();
+            transaction?.Rollback();
         }
         finally
         {
-            if (_currentTransaction is not null)
-            {
-                _currentTransaction.Dispose();
-                _currentTransaction = null;
-            }
+            transaction?.Dispose();
         }
     }
 

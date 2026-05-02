@@ -1,5 +1,4 @@
 @using Qlt.BackOfficeApp.Components.Pages
-<CascadingAuthenticationState>
 <Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="@routeData">
@@ -13,4 +12,3 @@
         <NotFound />
     </NotFound>
 </Router>
-</CascadingAuthenticationState>

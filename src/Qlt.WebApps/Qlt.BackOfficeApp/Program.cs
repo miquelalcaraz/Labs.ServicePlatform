@@ -23,7 +23,7 @@ builder.Services.AddRadzenComponents();
 
 builder.Services.AddRadzenCookieThemeService(options =>
 {
-    options.Name = "QltBackOfficeTheme";
+    options.Name = "Qlt.BackOfficeAppTheme";
     options.Duration = TimeSpan.FromDays(365);
 });
 

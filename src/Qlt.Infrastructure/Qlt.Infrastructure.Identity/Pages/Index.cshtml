@@ -1,46 +1,50 @@
 @page
 @model Qlt.Infrastructure.Identity.Pages.Index
 
-<div class="welcome-page">
-    <h1>
-        <img src="~/duende-logo.svg" class="logo">
-        Welcome to Duende IdentityServer
-        <small class="text-muted">(version @Model.Version)</small>
-    </h1>
+<div class="identity-page welcome-page">
+    <section class="identity-card identity-card-wide identity-welcome-card">
+        <div class="identity-page-header">
+            <h1 class="identity-title">Qlt Identity</h1>
+            <p class="identity-support-text">Identity and access services for Qlt-System <span class="identity-version">v@Model.Version</span></p>
+        </div>
 
-    <ul>
-        <li>
-            IdentityServer publishes a
-            <a href="~/.well-known/openid-configuration">discovery document</a>
-            where you can find metadata and links to all the endpoints, key material, etc.
-        </li>
-        <li>
-            Click <a href="~/diagnostics">here</a> to see the claims for your current session.
-        </li>
-        <li>
-            Click <a href="~/grants">here</a> to manage your stored grants.
-        </li>
-        <li>
-            Click <a href="~/serversidesessions">here</a> to view the server side sessions.
-        </li>
-        <li>
-            Click <a href="~/ciba/all">here</a> to view your pending CIBA login requests.
-        </li>
-        <li>
-            Here are links to the
-            <a href="https://github.com/duendesoftware/IdentityServer">source code repository</a>,
-            and <a href="https://github.com/duendesoftware/samples">ready to use samples</a>.
-        </li>
-    </ul>
+        <ul class="identity-link-list">
+            <li>
+                Review the <a href="~/.well-known/openid-configuration">discovery document</a> for metadata, endpoints, and key material.
+            </li>
+            <li>
+                Open <a href="~/diagnostics">Diagnostics</a> to inspect the claims in the current session.
+            </li>
+            <li>
+                Open <a href="~/grants">Grants</a> to manage stored grants.
+            </li>
+            <li>
+                Open <a href="~/serversidesessions">Server-side sessions</a> to inspect active sessions.
+            </li>
+            <li>
+                Open <a href="~/ciba/all">Pending CIBA requests</a> to review pending authentication flows.
+            </li>
+            <li>
+                Refer to the <a href="https://github.com/duendesoftware/IdentityServer">IdentityServer source repository</a>
+                and <a href="https://github.com/duendesoftware/samples">samples</a> if needed for implementation details.
+            </li>
+        </ul>
 
-    @if(Model.License is not null)
-    {
-        <h2>License</h2>
-        <dl>
-            <dt>Serial Number</dt>
-            <dd>@Model.License.SerialNumber</dd>
-            <dt>Expiration</dt>
-            <dd>@Model.License.Expiration!.Value.ToLongDateString()</dd>
-        </dl>
-    }
+        @if(Model.License is not null)
+        {
+            <section class="identity-license-section">
+                <h2 class="identity-section-title">License</h2>
+                <dl class="identity-license-list">
+                    <div>
+                        <dt>Serial Number</dt>
+                        <dd>@Model.License.SerialNumber</dd>
+                    </div>
+                    <div>
+                        <dt>Expiration</dt>
+                        <dd>@Model.License.Expiration!.Value.ToLongDateString()</dd>
+                    </div>
+                </dl>
+            </section>
+        }
+    </section>
 </div>

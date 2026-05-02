@@ -1,7 +1,8 @@
 ﻿using Qlt.Platform.Builders;
 using Qlt.Platform.Middleware;
 using Qlt.Platform.ServiceDefaults;
-using Qlt.Services.Accounts.Api;
+using Qlt.Services.Accounts.APIs;
+using Qlt.Services.Accounts.Authorization;
 using Qlt.Services.Accounts.Extensions;
 
 
@@ -17,22 +18,38 @@ builder.AddApplicationServices();
 builder.Services.AddProblemDetails();
 
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy(BackOfficeAuthorizationPolicies.OnboardingWrite, policy =>
+    .AddPolicy(AccountsAuthorizationPolicies.OnboardingWrite, policy =>
         policy.RequireRole(
-            BackOfficeAuthorizationPolicies.Roles.ProjectManager,
-            BackOfficeAuthorizationPolicies.Roles.BusinessAdmin,
-            BackOfficeAuthorizationPolicies.Roles.PlatformAdmin))
-    .AddPolicy(BackOfficeAuthorizationPolicies.OnboardingRead, policy =>
+            AccountsAuthorizationPolicies.Roles.ProjectManager,
+            AccountsAuthorizationPolicies.Roles.BusinessAdmin,
+            AccountsAuthorizationPolicies.Roles.PlatformAdmin))
+    .AddPolicy(AccountsAuthorizationPolicies.OnboardingRead, policy =>
         policy.RequireRole(
-            BackOfficeAuthorizationPolicies.Roles.ProjectManager,
-            BackOfficeAuthorizationPolicies.Roles.BusinessAdmin,
-            BackOfficeAuthorizationPolicies.Roles.SupportAgent,
-            BackOfficeAuthorizationPolicies.Roles.PlatformAdmin))
-    .AddPolicy(BackOfficeAuthorizationPolicies.OnboardingRetry, policy =>
+            AccountsAuthorizationPolicies.Roles.ProjectManager,
+            AccountsAuthorizationPolicies.Roles.BusinessAdmin,
+            AccountsAuthorizationPolicies.Roles.SupportAgent,
+            AccountsAuthorizationPolicies.Roles.PlatformAdmin))
+    .AddPolicy(AccountsAuthorizationPolicies.OnboardingRetry, policy =>
         policy.RequireRole(
-            BackOfficeAuthorizationPolicies.Roles.ProjectManager,
-            BackOfficeAuthorizationPolicies.Roles.SupportAgent,
-            BackOfficeAuthorizationPolicies.Roles.PlatformAdmin));
+            AccountsAuthorizationPolicies.Roles.ProjectManager,
+            AccountsAuthorizationPolicies.Roles.SupportAgent,
+            AccountsAuthorizationPolicies.Roles.PlatformAdmin))
+    .AddPolicy(AccountsAuthorizationPolicies.ActivationRead, policy =>
+        policy.RequireRole(
+            AccountsAuthorizationPolicies.Roles.ProjectManager,
+            AccountsAuthorizationPolicies.Roles.BusinessAdmin,
+            AccountsAuthorizationPolicies.Roles.SupportAgent,
+            AccountsAuthorizationPolicies.Roles.PlatformAdmin))
+    .AddPolicy(AccountsAuthorizationPolicies.ActivationRetry, policy =>
+        policy.RequireRole(
+            AccountsAuthorizationPolicies.Roles.ProjectManager,
+            AccountsAuthorizationPolicies.Roles.SupportAgent,
+            AccountsAuthorizationPolicies.Roles.PlatformAdmin))
+    .AddPolicy(AccountsAuthorizationPolicies.ActivationResend, policy =>
+        policy.RequireRole(
+            AccountsAuthorizationPolicies.Roles.ProjectManager,
+            AccountsAuthorizationPolicies.Roles.SupportAgent,
+            AccountsAuthorizationPolicies.Roles.PlatformAdmin));
 
 var withApiVersioning = builder.Services.AddApiVersioning();
 
@@ -48,12 +65,11 @@ var accounts = app.NewVersionedApi("accounts");
 accounts.MapAccountsApiV1()
      .RequireAuthorization();
 
-var subscriptions = app.NewVersionedApi("subscriptions");
-subscriptions.MapSubscriptionsApiV1()
+var onboarding = app.NewVersionedApi("customer-onboarding");
+onboarding.MapOnboardingApiV1()
      .RequireAuthorization();
 
-var backofficeOnboarding = app.NewVersionedApi("backoffice-onboarding");
-backofficeOnboarding.MapBackOfficeOnboardingApiV1()
+ActivationApi.MapActivationApiV1(app)
      .RequireAuthorization();
 
 // OpenAPI/Swagger UI only in Development

@@ -39,7 +39,8 @@ namespace Qlt.BackOfficeApp.Components.Pages.Onboarding
         private bool isRetrying;
         private bool isPolling;
         private string? errorMessage;
-        private int pollingIntervalSeconds = 5;
+        private int pollingIntervalSeconds = 10;
+        private static bool pollingEnabled = true;
 
         private CancellationTokenSource? pollingCts;
 
@@ -164,7 +165,7 @@ namespace Qlt.BackOfficeApp.Components.Pages.Onboarding
         }
 
         private static bool ShouldPoll(string status)
-            => status is "InProgress" or "WaitingForExternalProvisioning";
+            => pollingEnabled && (status is "InProgress" or "WaitingForExternalProvisioning");
 
         private static int GetPollingInterval(string status) => status switch
         {

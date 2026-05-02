@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Qlt.Platform.Persistence;
 using Qlt.Platform.Persistence.Options;
 using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
+using Qlt.Services.Accounts.Domain.Models.CustomerActivationProcessAggregate;
 using Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
 using Qlt.Services.Accounts.Domain.Models.SubscriptionAggregate;
 using Qlt.Services.Accounts.Domain.Models.TenantAggregate;
@@ -29,6 +30,8 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence
         public DbSet<UserMembership> UserMemberships { get; set; } = null!;
 
         public DbSet<OnboardingProcess> OnboardingProcesses { get; set; } = null!;
+
+        public DbSet<CustomerActivationProcess> CustomerActivationProcesses { get; set; } = null!;
 
         public AccountContext(
             DbContextOptions<AccountContext> options,

@@ -7,3 +7,4 @@ Items designed but intentionally deferred following YAGNI. Each document include
 | [Audit Log Proposal](audit-log-proposal.md) | Automatic ChangeTracker-based audit logging | Proposed |
 | [MassTransit Comparison](masstransit-comparison.md) | MassTransit vs custom EventBus evaluation | Evaluated |
 | [UoW Future Improvements](uow-future-improvements.md) | Transaction isolation, SavePoints, multi-context | Parked (YAGNI) |
+| [Platform Observability Improvements](platform-observability-improvements.md) | Auto DB health check in `AddQltSDBContext` + `CorrelationIdLoggingIntegrationEventDecorator<T>` | Proposed |

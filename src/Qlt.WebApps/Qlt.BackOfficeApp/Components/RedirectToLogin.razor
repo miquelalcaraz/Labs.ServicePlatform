@@ -4,16 +4,21 @@
     [Parameter]
     public bool IsAuthenticated { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnAfterRender(bool firstRender)
     {
+        if (!firstRender) return;
+
+        var currentPath = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+
         if (!IsAuthenticated)
         {
-            var redirectUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
-            var returnUrl = string.IsNullOrEmpty(redirectUrl) ? "/" : $"/{redirectUrl}";
+            if (currentPath.StartsWith("auth/", StringComparison.OrdinalIgnoreCase)) return;
+            var returnUrl = string.IsNullOrEmpty(currentPath) ? "/" : $"/{currentPath}";
             NavigationManager.NavigateTo($"auth/Login?returnUrl={Uri.EscapeDataString(returnUrl)}", true);
         }
         else
         {
+            if (currentPath.Equals("unauthorized", StringComparison.OrdinalIgnoreCase)) return;
             NavigationManager.NavigateTo("Unauthorized");
         }
     }

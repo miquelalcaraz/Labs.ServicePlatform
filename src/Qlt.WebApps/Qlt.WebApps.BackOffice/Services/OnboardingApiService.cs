@@ -5,11 +5,11 @@ using System.Web;
 namespace Qlt.WebApps.BackOffice.Services;
 
 /// <summary>
-/// Typed HTTP client service for communicating with the Backoffice Onboarding API.
+/// Typed HTTP client service for communicating with the Onboarding API.
 /// </summary>
 public class OnboardingApiService(HttpClient httpClient, ILogger<OnboardingApiService> logger)
 {
-    private const string BasePath = "/api/backoffice/onboarding-processes";
+    private const string BasePath = "/api/accounts/customer-onboarding";
 
     public async Task<ApiResult<OnboardingProcessStartedResponse>> StartOnboardingAsync(
         StartOnboardingRequest request, CancellationToken cancellationToken = default)

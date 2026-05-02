@@ -1,7 +1,7 @@
 ﻿@if (ViewContext.ModelState.IsValid == false)
 {
-    <div class="alert alert-danger">
-        <strong>Error</strong>
-        <div asp-validation-summary="All" class="danger"></div>
+    <div class="alert alert-danger identity-alert" role="alert">
+        <strong>There was a problem signing you in.</strong>
+        <div asp-validation-summary="All" class="identity-validation-summary"></div>
     </div>
 }

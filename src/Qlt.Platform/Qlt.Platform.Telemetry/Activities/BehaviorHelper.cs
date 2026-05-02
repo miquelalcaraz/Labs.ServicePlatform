@@ -1,8 +1,8 @@
-﻿using Qlt.Platform.Meters;
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+
+using Qlt.Platform.Meters;
 
 namespace Qlt.Platform.Activities;
 

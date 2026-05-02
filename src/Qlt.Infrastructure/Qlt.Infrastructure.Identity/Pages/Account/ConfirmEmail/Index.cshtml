@@ -1,0 +1,24 @@
+@page
+@namespace Qlt.Infrastructure.Identity.Pages.Account.ConfirmEmail
+@model Qlt.Infrastructure.Identity.Pages.Account.ConfirmEmail.IndexModel
+@using Qlt.Infrastructure.Identity.Commands
+
+<div class="identity-page identity-page-result">
+    <section class="identity-card identity-card-narrow identity-result-card">
+        @if (Model.Status == ConfirmEmailStatus.Success)
+        {
+            <h1 class="identity-title">Email confirmed</h1>
+            <p class="identity-support-text">Your account has been activated successfully. You can now <a href="/">sign in</a>.</p>
+        }
+        else if (Model.Status == ConfirmEmailStatus.AlreadyConfirmed)
+        {
+            <h1 class="identity-title">Already active</h1>
+            <p class="identity-support-text">Your account is already active. <a href="/">Sign in</a>.</p>
+        }
+        else
+        {
+            <h1 class="identity-title">Confirmation failed</h1>
+            <p class="identity-support-text">The activation link is invalid or has expired. Please contact support.</p>
+        }
+    </section>
+</div>

@@ -17,8 +17,8 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("accounts")
-                .HasAnnotation("ProductVersion", "10.0.5")
+                .HasDefaultSchema("Accounts")
+                .HasAnnotation("ProductVersion", "10.0.6")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -51,7 +51,7 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Id", "Scope");
 
-                    b.ToTable("IdempotencyEntry", "infra");
+                    b.ToTable("IdempotencyEntry", "Accounts");
                 });
 
             modelBuilder.Entity("Qlt.Platform.Messaging.Models.OutboxMessage", b =>
@@ -92,7 +92,7 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Status", "CreatedAt");
 
-                    b.ToTable("OutboxMessage", "infra");
+                    b.ToTable("OutboxMessage", "Accounts");
                 });
 
             modelBuilder.Entity("Qlt.Services.Accounts.Domain.Models.CompanyAggregate.Company", b =>
@@ -150,7 +150,7 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("Company", "accounts");
+                    b.ToTable("Company", "Accounts");
                 });
 
             modelBuilder.Entity("Qlt.Services.Accounts.Domain.Models.CompanyAggregate.CompanyContact", b =>
@@ -201,7 +201,104 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("Email");
 
-                    b.ToTable("CompanyContact", "accounts");
+                    b.ToTable("CompanyContact", "Accounts");
+                });
+
+            modelBuilder.Entity("Qlt.Services.Accounts.Domain.Models.CustomerActivationProcessAggregate.CustomerActivationProcess", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("ActivationDeliveredAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("ActivationRequestedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("AdminEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<Guid>("AdminMembershipId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AdminUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CompanyLegalName")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("CorrelationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("CurrentStep")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("LastErrorCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("LastErrorMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTimeOffset?>("LastRetryAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("OwnerCompanyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset>("StartedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SubscriptionPlanCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("UserActivatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CorrelationId");
+
+                    b.HasIndex("SubscriptionId")
+                        .IsUnique();
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("CustomerActivationProcess", "Accounts");
                 });
 
             modelBuilder.Entity("Qlt.Services.Accounts.Domain.Models.OnboardingAggregate.OnboardingProcess", b =>
@@ -311,7 +408,7 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("OnboardingProcess", "accounts");
+                    b.ToTable("OnboardingProcess", "Accounts");
                 });
 
             modelBuilder.Entity("Qlt.Services.Accounts.Domain.Models.SubscriptionAggregate.Subscription", b =>
@@ -368,7 +465,7 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("TenantId");
 
-                    b.ToTable("Subscription", "accounts");
+                    b.ToTable("Subscription", "Accounts");
                 });
 
             modelBuilder.Entity("Qlt.Services.Accounts.Domain.Models.TenantAggregate.Tenant", b =>
@@ -413,7 +510,7 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OwnerCompanyId");
 
-                    b.ToTable("Tenant", "accounts");
+                    b.ToTable("Tenant", "Accounts");
                 });
 
             modelBuilder.Entity("Qlt.Services.Accounts.Domain.Models.UserMembershipAggregate.UserMembership", b =>
@@ -476,7 +573,7 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserMembership", "accounts");
+                    b.ToTable("UserMembership", "Accounts");
                 });
 
             modelBuilder.Entity("Qlt.Services.Accounts.Domain.Models.CompanyAggregate.Company", b =>
@@ -515,7 +612,7 @@ namespace Qlt.Services.Accounts.Infrastructure.Persistence.Migrations
 
                             b1.HasKey("CompanyId");
 
-                            b1.ToTable("Company", "accounts");
+                            b1.ToTable("Company", "Accounts");
 
                             b1.WithOwner()
                                 .HasForeignKey("CompanyId");

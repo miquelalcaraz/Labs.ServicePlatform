@@ -1,3 +1,5 @@
+using System;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -5,8 +7,6 @@ using Qlt.Platform.Messaging.Options;
 using Qlt.Platform.Messaging.Services;
 
 using StackExchange.Redis;
-
-using System;
 
 namespace Qlt.Platform.Messaging.Builders;
 

@@ -5,7 +5,13 @@
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var cache = builder.AddRedis("cache");
+var cache = builder.AddRedis("cache")
+      .WithEndpoint("tcp", endpoint =>
+      {
+          endpoint.Port = 56208;
+          endpoint.IsProxied = false;
+      })
+      .WithLifetime(ContainerLifetime.Persistent);
 
 #if USE_RABBITMQ
 var eventbus = builder.AddRabbitMQ("eventbus")
@@ -24,35 +30,44 @@ eventBusTopic.AddServiceBusSubscription("identity-sub", subscriptionName: "Ident
 #endif
 
 var sqlPassword = builder.AddParameter("sqlPassword", value: "***REMOVED***", secret: true);
+
 var sqlserver = builder.AddSqlServer("sqlserver", sqlPassword, 1444)
     .WithImageTag("latest")
-    .WithLifetime(ContainerLifetime.Persistent);
+    .WithLifetime(ContainerLifetime.Persistent)
+    .WithEndpoint("tcp", endpoint =>
+    {
+        endpoint.Port = 1444;
+        endpoint.IsProxied = false;
+    });
 
 //Databases
-var accountDb = sqlserver.AddDatabase("AccountsDb");
-var identityDb = sqlserver.AddDatabase("IdentityDb");
-var notificationsDb = sqlserver.AddDatabase("NotificationsDb");
+var QltSystemDb = sqlserver.AddDatabase("QltSystemDb");
+var identityDb = sqlserver.AddDatabase("IdentityDb"); 
 
 
 var launchProfileName = ShouldUseHttpForEndpoints() ? "http" : "https";
-var identity = builder.AddProject<Projects.Qlt_Infrastructure_Identity>("identity")
-   .WithHttpHealthCheck("/health")
-   .WithExternalHttpEndpoints()
+var identity = builder.AddProject<Projects.Infrastructure_Identity>("identity")
+    .WithHttpHealthCheck("/health")
+    .WithExternalHttpEndpoints()
+    .WithReference(cache)
+    .WaitFor(cache)
     .WithReference(identityDb)
     .WaitFor(identityDb)
     .WithReference(eventbus).WaitFor(eventbus);
 
-var notifications = builder.AddProject<Projects.Services_Notifications>("notifications")
-   .WithHttpHealthCheck("/health")
-   .WaitFor(identity)
-    .WithReference(notificationsDb)
-    .WaitFor(notificationsDb)
+var notifications = builder.AddProject<Projects.Notifications_API>("notifications")
+    .WithHttpHealthCheck("/health")
+    .WithReference(cache)
+    .WaitFor(cache)
+    .WaitFor(identity)
+    .WithReference(QltSystemDb)
+    .WaitFor(QltSystemDb)
     .WithReference(eventbus).WaitFor(eventbus);
 
-var accountApiService = builder.AddProject<Projects.Services_Accounts_API>("accounts")
+var accountApiService = builder.AddProject<Projects.Accounts_API>("accounts")
     .WithHttpHealthCheck("/health")
-    .WithReference(accountDb)
-    .WaitFor(accountDb)
+    .WithReference(QltSystemDb)
+    .WaitFor(QltSystemDb)
     .WithReference(cache)
     .WaitFor(cache)
     .WithReference(eventbus).WaitFor(eventbus)
@@ -60,7 +75,7 @@ var accountApiService = builder.AddProject<Projects.Services_Accounts_API>("acco
 
 
 
-var backofficeBff = builder.AddProject<Projects.Qlt_Infrastructure_Bff_BackOffice>("backoffice-bff")
+var backofficeBff = builder.AddProject<Projects.Infrastructure_Bff_BackOffice>("backoffice-bff")
     .WithExternalHttpEndpoints()
     .WithHttpHealthCheck("/health")
     .WithReference(accountApiService)
@@ -80,19 +95,21 @@ var backOfficeApp = builder.AddProject<Projects.Qlt_BackOfficeApp>("BackOfficeAp
 var bffEndpoint = backofficeBff.GetEndpoint(launchProfileName);
 var identityEndpoint = identity.GetEndpoint(launchProfileName);
 
-// Wire up Identity URLs through the BFF
-accountApiService.WithEnvironment("Identity__Url", bffEndpoint);
+// Internal services connect directly (no BFF hop needed)
+accountApiService.WithEnvironment("Identity__Url", identityEndpoint);
+notifications.WithEnvironment("Identity__Url", identityEndpoint);
 
+// Wire up Identity URLs through the BFF
 backOfficeApp.WithEnvironment("Identity__Url", bffEndpoint);
-backOfficeApp.WithEnvironment("Identity__Authority", identityEndpoint);
+backOfficeApp.WithEnvironment("Identity__Authority", bffEndpoint);
 identity.WithEnvironment("IssuerUri", bffEndpoint);
 
 // Wire up the callback urls (self referencing)
-
 backOfficeApp.WithEnvironment("CallBackUrl", backOfficeApp.GetEndpoint(launchProfileName));
 
 // Identity has a reference to all of the apps for callback urls, this is a cyclic reference
 identity.WithEnvironment("AccountApiClient", accountApiService.GetEndpoint(launchProfileName))
+    .WithEnvironment("NotificationsApiClient", notifications.GetEndpoint(launchProfileName))
     .WithEnvironment("BackOfficeClient", backOfficeApp.GetEndpoint(launchProfileName));
 
 builder.Build().Run();

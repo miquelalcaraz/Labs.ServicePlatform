@@ -1,8 +1,7 @@
 using Microsoft.Extensions.Logging;
 
-using Qlt.Platform.Messaging.Services;
 using Qlt.Services.Accounts.Application.Commands;
-using Qlt.Services.Accounts.Contracts.IntegrationEvents;
+using Qlt.Services.Accounts.Domain.Events;
 using Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
 using Qlt.Services.Accounts.Domain.Repositories;
 
@@ -13,9 +12,9 @@ public class RetryOnboardingProcessCommandHandlerTests
     [Fact]
     public async Task Handle_WhenOnboardingNotFound_ReturnsNotFoundFailure()
     {
-        var (repo, outbox) = CreateMocks();
+        var (repo, _) = CreateMocks();
         repo.Setup(r => r.GetAsync(It.IsAny<Guid>())).ReturnsAsync((OnboardingProcess?)null);
-        var handler = CreateHandler(repo, outbox);
+        var handler = CreateHandler(repo);
 
         var result = await handler.Handle(
             new RetryOnboardingProcessCommand(Guid.NewGuid(), requestId: Guid.NewGuid()),
@@ -29,9 +28,9 @@ public class RetryOnboardingProcessCommandHandlerTests
     public async Task Handle_WhenOnboardingNotFailed_ReturnsConflictFailure()
     {
         var onboarding = CreateOnboardingAtStep(OnboardingStatus.InProgress, OnboardingStep.TenantCreated);
-        var (repo, outbox) = CreateMocks();
+        var (repo, _) = CreateMocks();
         repo.Setup(r => r.GetAsync(onboarding.Id)).ReturnsAsync(onboarding);
-        var handler = CreateHandler(repo, outbox);
+        var handler = CreateHandler(repo);
 
         var result = await handler.Handle(
             new RetryOnboardingProcessCommand(onboarding.Id, requestId: Guid.NewGuid()),
@@ -45,9 +44,9 @@ public class RetryOnboardingProcessCommandHandlerTests
     public async Task Handle_WhenOnboardingFailed_RetriesSuccessfully()
     {
         var onboarding = CreateFailedOnboarding(OnboardingStep.AdminProvisioningRequested);
-        var (repo, outbox) = CreateMocks(saveChangesReturn: 1);
+        var (repo, _) = CreateMocks(saveChangesReturn: 1);
         repo.Setup(r => r.GetAsync(onboarding.Id)).ReturnsAsync(onboarding);
-        var handler = CreateHandler(repo, outbox);
+        var handler = CreateHandler(repo);
 
         var result = await handler.Handle(
             new RetryOnboardingProcessCommand(onboarding.Id, "Test retry", Guid.NewGuid()),
@@ -59,55 +58,51 @@ public class RetryOnboardingProcessCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenFailedAtAdminProvisioning_RepublishesProvisioningEvent()
+    public async Task Handle_WhenFailedAtAdminProvisioning_RaisesDomainEvent()
     {
         var onboarding = CreateFailedOnboarding(OnboardingStep.AdminProvisioningRequested);
-        var (repo, outbox) = CreateMocks(saveChangesReturn: 1);
+        var (repo, _) = CreateMocks(saveChangesReturn: 1);
         repo.Setup(r => r.GetAsync(onboarding.Id)).ReturnsAsync(onboarding);
-        var handler = CreateHandler(repo, outbox);
+        var handler = CreateHandler(repo);
 
         await handler.Handle(
             new RetryOnboardingProcessCommand(onboarding.Id, requestId: Guid.NewGuid()),
             CancellationToken.None);
 
-        outbox.Verify(o => o.AddAndSaveEventAsync(
-            It.IsAny<CustomerAdminProvisioningRequestedIntegrationEvent>()),
-            Times.Once);
+        onboarding.DomainEvents.Should().NotBeNull();
+        onboarding.DomainEvents!.OfType<AdminProvisioningRequestedDomainEvent>().Should().HaveCountGreaterThanOrEqualTo(2);
     }
 
     [Fact]
-    public async Task Handle_WhenFailedAtEarlyStep_DoesNotRepublishEvent()
+    public async Task Handle_WhenFailedAtEarlyStep_DoesNotRaiseDomainEvent()
     {
-        var onboarding = CreateFailedOnboarding(OnboardingStep.SubscriptionCreated);
-        var (repo, outbox) = CreateMocks(saveChangesReturn: 1);
+        var onboarding = CreateFailedOnboarding(OnboardingStep.TenantCreated);
+        var (repo, _) = CreateMocks(saveChangesReturn: 1);
         repo.Setup(r => r.GetAsync(onboarding.Id)).ReturnsAsync(onboarding);
-        var handler = CreateHandler(repo, outbox);
+        var handler = CreateHandler(repo);
 
         await handler.Handle(
             new RetryOnboardingProcessCommand(onboarding.Id, requestId: Guid.NewGuid()),
             CancellationToken.None);
 
-        outbox.Verify(o => o.AddAndSaveEventAsync(
-            It.IsAny<CustomerAdminProvisioningRequestedIntegrationEvent>()),
-            Times.Never);
+        var domainEvents = onboarding.DomainEvents;
+        if (domainEvents is not null)
+            domainEvents.Should().NotContain(e => e is AdminProvisioningRequestedDomainEvent);
     }
 
     [Fact]
     public async Task Handle_WhenSaveChangesFails_ReturnsFailure()
     {
         var onboarding = CreateFailedOnboarding(OnboardingStep.AdminProvisioningRequested);
-        var (repo, outbox) = CreateMocks(saveChangesReturn: 0);
+        var (repo, _) = CreateMocks(saveChangesReturn: 0);
         repo.Setup(r => r.GetAsync(onboarding.Id)).ReturnsAsync(onboarding);
-        var handler = CreateHandler(repo, outbox);
+        var handler = CreateHandler(repo);
 
         var result = await handler.Handle(
             new RetryOnboardingProcessCommand(onboarding.Id, requestId: Guid.NewGuid()),
             CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        outbox.Verify(o => o.AddAndSaveEventAsync(
-            It.IsAny<CustomerAdminProvisioningRequestedIntegrationEvent>()),
-            Times.Never);
     }
 
     [Fact]
@@ -115,9 +110,9 @@ public class RetryOnboardingProcessCommandHandlerTests
     {
         var onboarding = CreateFailedOnboarding(OnboardingStep.AdminProvisioningRequested);
         var initialRetryCount = onboarding.RetryCount;
-        var (repo, outbox) = CreateMocks(saveChangesReturn: 1);
+        var (repo, _) = CreateMocks(saveChangesReturn: 1);
         repo.Setup(r => r.GetAsync(onboarding.Id)).ReturnsAsync(onboarding);
-        var handler = CreateHandler(repo, outbox);
+        var handler = CreateHandler(repo);
 
         await handler.Handle(
             new RetryOnboardingProcessCommand(onboarding.Id, requestId: Guid.NewGuid()),
@@ -131,9 +126,9 @@ public class RetryOnboardingProcessCommandHandlerTests
     public async Task Handle_WhenFailedAtAdminProvisioning_RestoresWaitingForExternalProvisioningStatus()
     {
         var onboarding = CreateFailedOnboarding(OnboardingStep.AdminProvisioningRequested);
-        var (repo, outbox) = CreateMocks(saveChangesReturn: 1);
+        var (repo, _) = CreateMocks(saveChangesReturn: 1);
         repo.Setup(r => r.GetAsync(onboarding.Id)).ReturnsAsync(onboarding);
-        var handler = CreateHandler(repo, outbox);
+        var handler = CreateHandler(repo);
 
         await handler.Handle(
             new RetryOnboardingProcessCommand(onboarding.Id, requestId: Guid.NewGuid()),
@@ -147,9 +142,9 @@ public class RetryOnboardingProcessCommandHandlerTests
     public async Task Handle_WhenFailedAtEarlyStep_StatusRemainsInProgress()
     {
         var onboarding = CreateFailedOnboarding(OnboardingStep.TenantCreated);
-        var (repo, outbox) = CreateMocks(saveChangesReturn: 1);
+        var (repo, _) = CreateMocks(saveChangesReturn: 1);
         repo.Setup(r => r.GetAsync(onboarding.Id)).ReturnsAsync(onboarding);
-        var handler = CreateHandler(repo, outbox);
+        var handler = CreateHandler(repo);
 
         await handler.Handle(
             new RetryOnboardingProcessCommand(onboarding.Id, requestId: Guid.NewGuid()),
@@ -202,7 +197,7 @@ public class RetryOnboardingProcessCommandHandlerTests
         return onboarding;
     }
 
-    private static (Mock<IOnboardingProcessRepository> Repo, Mock<IEventBusOutboxService> Outbox)
+    private static (Mock<IOnboardingProcessRepository> Repo, Mock<object> _)
         CreateMocks(int saveChangesReturn = 1)
     {
         var unitOfWork = new Mock<Qlt.Domain.SeedWork.IUnitOfWork>();
@@ -212,13 +207,10 @@ public class RetryOnboardingProcessCommandHandlerTests
         var repo = new Mock<IOnboardingProcessRepository>();
         repo.Setup(r => r.UnitOfWork).Returns(unitOfWork.Object);
 
-        var outbox = new Mock<IEventBusOutboxService>();
-
-        return (repo, outbox);
+        return (repo, new Mock<object>());
     }
 
     private static RetryOnboardingProcessCommandHandler CreateHandler(
-        Mock<IOnboardingProcessRepository> repo,
-        Mock<IEventBusOutboxService> outbox) =>
-        new(repo.Object, outbox.Object, new Mock<ILogger<RetryOnboardingProcessCommandHandler>>().Object);
+        Mock<IOnboardingProcessRepository> repo) =>
+        new(repo.Object, new Mock<ILogger<RetryOnboardingProcessCommandHandler>>().Object);
 }
