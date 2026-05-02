@@ -1,6 +1,6 @@
-using Qlt.Platform.Messaging.Models;
-
 using System.Threading.Tasks;
+
+using Qlt.Platform.Messaging.Models;
 
 namespace Qlt.Platform.Messaging.Services;
 

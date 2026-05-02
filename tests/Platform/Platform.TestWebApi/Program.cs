@@ -1,5 +1,6 @@
 using Platform.TestWebApi;
 
+using Qlt.Platform.Builders;
 using Qlt.Platform.Middleware;
 using Qlt.Platform.ServiceDefaults;
 
@@ -7,8 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
-
-builder.AddTestInfrastructure();
+builder.AddApiServiceDefaults();
+builder.AddApplicationServices();
 
 builder.Services.AddProblemDetails();
 
@@ -19,6 +20,7 @@ builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.MapDefaultEndpoints();
 app.MapControllers();
 
 

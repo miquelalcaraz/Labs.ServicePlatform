@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<RootNamespace>Qlt.Infrastructure.Identity</RootNamespace>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Duende.IdentityServer" Version="7.4.7" />
+		<PackageReference Include="Duende.IdentityServer.AspNetIdentity" Version="7.4.7" />
+		<PackageReference Include="Duende.IdentityServer.EntityFramework" Version="7.4.7" />
+		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.7" />
+		<PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="10.0.7" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.7" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.7">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.7">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\Qlt.Contracts\Qlt.Contracts.Accounts\Contracts.Accounts.csproj" />
+		<ProjectReference Include="..\..\Qlt.Contracts\Qlt.Contracts.Identity\Contracts.Identity.csproj" />
+		<ProjectReference Include="..\..\Qlt.Platform\Qlt.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
+		<ProjectReference Include="..\..\Qlt.Platform\Qlt.Platform.Persistence.EntityFramework.Relational\Platform.Persistence.EntityFramework.Relational.csproj" />
+		<ProjectReference Include="..\..\Qlt.Platform\Qlt.Platform.ServiceDefaults\Platform.ServiceDefaults.csproj" />
+		<ProjectReference Include="..\..\Qlt.Platform\Qlt.Platform.EventBus.ServiceBus\Platform.EventBus.ServiceBus.csproj" />
+		<ProjectReference Include="..\..\Qlt.Domain\Qlt.Domain.Application\Domain.Application.csproj" />
+	</ItemGroup>
+
+</Project>

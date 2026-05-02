@@ -1,14 +1,14 @@
-﻿using Duende.IdentityModel;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+
+using Duende.IdentityModel;
 using Duende.IdentityServer.Models;
 using Duende.IdentityServer.Services;
 
 using Microsoft.AspNetCore.Identity;
 
-using Qlt.Infrastructure.Identity.Models;
 using Qlt.Infrastructure.Identity.Configuration;
-
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
+using Qlt.Infrastructure.Identity.Models;
 
 namespace Qlt.Infrastructure.Identity.Services
 {
@@ -92,7 +92,7 @@ namespace Qlt.Infrastructure.Identity.Services
 
             if (!string.IsNullOrWhiteSpace(user.PreferredLanguage))
                 claims.Add(new Claim("preferred_language", user.PreferredLanguage));
-             
+
 
             if (_userManager.SupportsUserEmail)
             {

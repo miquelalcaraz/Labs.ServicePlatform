@@ -1,9 +1,9 @@
+using System;
+using System.Linq;
+
 using Microsoft.Extensions.DependencyInjection;
 
 using Qlt.Platform.Messaging.Behaviors;
-
-using System;
-using System.Linq;
 
 namespace Qlt.Platform.Messaging.Builders;
 

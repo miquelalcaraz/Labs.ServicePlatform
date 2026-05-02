@@ -1,4 +1,4 @@
-﻿<Project Sdk="Aspire.AppHost.Sdk/13.2.1">
+﻿<Project Sdk="Aspire.AppHost.Sdk/13.2.4">
 
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
@@ -8,22 +8,22 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Asp.Versioning.Http.Client" Version="8.1.0" />
-		<PackageReference Include="Aspire.Hosting.SqlServer" Version="13.2.1" />
-		<PackageReference Include="Aspire.Hosting.RabbitMQ" Version="13.2.1" />
-		<PackageReference Include="Aspire.Hosting.Redis" Version="13.2.1" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.5" />
-		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.5" />
+		<PackageReference Include="Asp.Versioning.Http.Client" Version="10.0.0" />
+		<PackageReference Include="Aspire.Hosting.SqlServer" Version="13.2.4" />
+		<PackageReference Include="Aspire.Hosting.Azure.ServiceBus" Version="13.2.4" />
+		<PackageReference Include="Aspire.Hosting.Redis" Version="13.2.4" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.7" />
+		<PackageReference Include="Microsoft.AspNetCore.TestHost" Version="10.0.7" />
 		<PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\..\src\Qlt.Infrastructure\Qlt.Infrastructure.Identity\Qlt.Infrastructure.Identity.csproj" />
-		<ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Api\Services.Accounts.API.csproj" IsAspireProjectResource="false" />
-		<ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Application\Services.Accounts.Application.csproj" IsAspireProjectResource="false" />
-		<ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Contracts\Services.Accounts.Contracts.csproj" IsAspireProjectResource="false" />
-		<ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Domain\Services.Accounts.Domain.csproj" IsAspireProjectResource="false" />
-		<ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Infrastructure\Services.Accounts.Infrastructure.csproj" IsAspireProjectResource="false" />
+		<ProjectReference Include="..\..\..\src\Qlt.Contracts\Qlt.Contracts.Accounts\Contracts.Accounts.csproj" IsAspireProjectResource="false" />
+		<ProjectReference Include="..\..\..\src\Qlt.Infrastructure\Qlt.Infrastructure.Identity\Infrastructure.Identity.csproj" />
+		<ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Api\Accounts.API.csproj" IsAspireProjectResource="false" />
+		<ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Application\Accounts.Application.csproj" IsAspireProjectResource="false" />
+		<ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Domain\Accounts.Domain.csproj" IsAspireProjectResource="false" />
+		<ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Infrastructure\Accounts.Infrastructure.csproj" IsAspireProjectResource="false" />
 	</ItemGroup>
 
 

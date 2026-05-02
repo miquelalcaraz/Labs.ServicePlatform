@@ -1,15 +1,15 @@
-using Qlt.BackOfficeApp.Models;
-
 using System.Web;
+
+using Qlt.BackOfficeApp.Models;
 
 namespace Qlt.BackOfficeApp.Services;
 
 /// <summary>
-/// Typed HTTP client service for communicating with the Backoffice Onboarding API.
+/// Typed HTTP client service for communicating with the Onboarding API.
 /// </summary>
 public class OnboardingApiService(HttpClient httpClient, ILogger<OnboardingApiService> logger)
 {
-    private const string BasePath = "/api/backoffice/onboarding-processes";
+    private const string BasePath = "/api/accounts/customer-onboarding";
 
     public async Task<ApiResult<OnboardingProcessStartedResponse>> StartOnboardingAsync(
         StartOnboardingRequest request, CancellationToken cancellationToken = default)
@@ -158,27 +158,3 @@ public class OnboardingApiService(HttpClient httpClient, ILogger<OnboardingApiSe
     }
 }
 
-/// <summary>
-/// Represents the outcome of an API call with success/failure semantics.
-/// </summary>
-public class ApiResult<T>
-{
-    public bool IsSuccess { get; private init; }
-    public T? Value { get; private init; }
-    public int StatusCode { get; private init; }
-    public string? ErrorMessage { get; private init; }
-
-    public static ApiResult<T> Success(T value) => new()
-    {
-        IsSuccess = true,
-        Value = value,
-        StatusCode = 200
-    };
-
-    public static ApiResult<T> Failure(int statusCode, string? errorMessage = null) => new()
-    {
-        IsSuccess = false,
-        StatusCode = statusCode,
-        ErrorMessage = errorMessage
-    };
-}

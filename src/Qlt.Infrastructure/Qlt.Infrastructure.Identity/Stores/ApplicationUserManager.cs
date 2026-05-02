@@ -8,7 +8,7 @@ namespace Qlt.Infrastructure.Identity.Stores
 {
     public class ApplicationUserManager : UserManager<ApplicationUser>
     {
-        //private readonly IBusService _bus;
+        
         public ApplicationUserManager(
             IUserStore<ApplicationUser> store,
             IOptions<IdentityOptions> optionsAccessor,
@@ -30,14 +30,7 @@ namespace Qlt.Infrastructure.Identity.Stores
             IdentityResult result = await base.CreateAsync(user);
             if (result.Succeeded)
             {
-                //await _bus.Publish(new UserCreatedIntegrationEvent()
-                //{
-                //    Id = Guid.Parse(user.Id),
-                //    Email = user.Email,
-                //    UserName = user.UserName,
-                //    PhoneNumber = user.PhoneNumber,
-                //    OrganizationId = user.OrganizationId
-                //});
+
             }
             return result;
         }
@@ -46,13 +39,7 @@ namespace Qlt.Infrastructure.Identity.Stores
             IdentityResult result = await base.UpdateAsync(user);
             if (result.Succeeded)
             {
-                //await _bus.Publish(new UserUpdatedIntegrationEvent()
-                //{
-                //    Id = Guid.Parse(user.Id),
-                //    Email = user.Email,
-                //    PhoneNumber = user.PhoneNumber,
-                //    OrganizationId = user.OrganizationId
-                //});
+
             }
             return result;
         }

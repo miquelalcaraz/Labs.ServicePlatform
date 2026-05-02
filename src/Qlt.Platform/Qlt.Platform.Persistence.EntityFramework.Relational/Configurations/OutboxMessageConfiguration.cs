@@ -15,7 +15,7 @@ public static class OutboxMessageConfiguration
 
     public static void Configure(this EntityTypeBuilder<OutboxMessage> entity)
     {
-        entity.ToTable("OutboxMessage", "infra");
+        entity.ToTable("OutboxMessage");
 
         entity.HasKey(e => e.Id);
 

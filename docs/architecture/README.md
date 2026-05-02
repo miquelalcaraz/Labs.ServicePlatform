@@ -35,6 +35,7 @@ For high-level principles, ADRs, and project context see [PROJECT-CONTEXT.md](..
 | [Telemetry](06-telemetry.md) | OpenTelemetry strategy, INotificationPublisher, decorator approach |
 | [Event Bus](07-event-bus.md) | IEventBus abstraction, Azure Service Bus implementation |
 | [CQRS Read Model](08-cqrs-read-model.md) | Read-only DbContext, query-side separation |
+| [Identity & BFF URL Configuration](09-identity-bff-url-configuration.md) | BFF as public identity facade, correct URL wiring, IssuerUri |
 
 ---
 

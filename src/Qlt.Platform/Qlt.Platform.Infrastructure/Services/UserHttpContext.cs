@@ -12,6 +12,15 @@ public class UserHttpContext(IHttpContextAccessor context) : IUserHttpContext
     public string GetUserName()
         => context.HttpContext?.User.Identity?.Name!;
 
+    public string? TraceId
+    {
+        get
+        {
+            return context.HttpContext?.TraceIdentifier;
+        }
+    }
+
+
     public string? RequestId
     {
         get
@@ -43,4 +52,6 @@ public class UserHttpContext(IHttpContextAccessor context) : IUserHttpContext
             return null;
         }
     }
+
+
 }

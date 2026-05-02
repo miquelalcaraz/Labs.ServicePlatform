@@ -1,10 +1,10 @@
+using MediatR;
+
 using Microsoft.Extensions.Logging;
 
-using Qlt.Domain.SeedWork;
-using Qlt.Infrastructure.Identity.Contracts.IntegrationEvents;
-using Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
-using Qlt.Services.Accounts.Domain.Models.UserMembershipAggregate;
-using Qlt.Services.Accounts.Domain.Repositories;
+using Qlt.Contracts.Identity.IntegrationEvents;
+using Qlt.Platform;
+using Qlt.Services.Accounts.Application.Commands;
 using Qlt.Services.Accounts.Infrastructure.IntegrationEvents.EventHandling;
 
 namespace Services.UnitTests.Accounts.Infrastructure;
@@ -12,105 +12,85 @@ namespace Services.UnitTests.Accounts.Infrastructure;
 public class ExternalUserProvisionedIntegrationEventHandlerTests
 {
     [Fact]
-    public async Task Handle_WhenOnboardingExists_CreatesMembershipAndCompletesOnboarding()
+    public async Task Handle_SendsCompleteOnboardingCommand()
     {
-        var onboarding = CreateOnboardingAtProvisioningRequested();
+        var mediator = new Mock<IMediator>();
+        mediator.Setup(m => m.Send(It.IsAny<CompleteOnboardingCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new CompleteOnboardingResult(Guid.NewGuid(), "Acme Corp", "starter")));
+        mediator.Setup(m => m.Send(It.IsAny<StartCustomerActivationProcessCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(true));
 
-        var unitOfWork = new Mock<IUnitOfWork>();
-        unitOfWork.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
-
-        var membershipRepo = new Mock<IUserMembershipRepository>();
-        membershipRepo.Setup(r => r.UnitOfWork).Returns(unitOfWork.Object);
-        membershipRepo.Setup(r => r.Add(It.IsAny<UserMembership>())).Returns<UserMembership>(m => m);
-
-        var onboardingRepo = new Mock<IOnboardingProcessRepository>();
-        onboardingRepo.Setup(r => r.GetAsync(onboarding.Id)).ReturnsAsync(onboarding);
-
-        var handler = CreateHandler(membershipRepo, onboardingRepo);
-        var @event = CreateProvisioningEvent(onboarding.Id, onboarding.TenantId);
+        var handler = CreateHandler(mediator);
+        var @event = CreateProvisioningEvent();
 
         await handler.Handle(@event);
 
-        membershipRepo.Verify(r => r.Add(It.Is<UserMembership>(m =>
-            m.UserId == @event.UserId &&
-            m.TenantId == @event.TenantId &&
-            m.CompanyId == @event.CompanyId &&
-            m.MembershipType == MembershipType.External &&
-            m.RoleCode == MembershipRole.TenantAdmin &&
-            m.IsPrimary == true)),
-            Times.Once);
+        mediator.Verify(m => m.Send(
+            It.Is<CompleteOnboardingCommand>(c =>
+                c.OnboardingProcessId == @event.OnboardingProcessId &&
+                c.UserId == @event.UserId &&
+                c.TenantId == @event.TenantId &&
+                c.CompanyId == @event.CompanyId),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task Handle_WhenOnboardingExists_SetsAdminUserAndCompletesOnboarding()
+    public async Task Handle_WhenOnboardingCompletes_SendsStartActivationCommandWithOnboardingResult()
     {
-        var onboarding = CreateOnboardingAtProvisioningRequested();
+        var membershipId = Guid.NewGuid();
+        var mediator = new Mock<IMediator>();
+        mediator.Setup(m => m.Send(It.IsAny<CompleteOnboardingCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(new CompleteOnboardingResult(membershipId, "Acme Corp", "starter")));
+        mediator.Setup(m => m.Send(It.IsAny<StartCustomerActivationProcessCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(true));
 
-        var unitOfWork = new Mock<IUnitOfWork>();
-        unitOfWork.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
-
-        var membershipRepo = new Mock<IUserMembershipRepository>();
-        membershipRepo.Setup(r => r.UnitOfWork).Returns(unitOfWork.Object);
-        membershipRepo.Setup(r => r.Add(It.IsAny<UserMembership>())).Returns<UserMembership>(m => m);
-
-        var onboardingRepo = new Mock<IOnboardingProcessRepository>();
-        onboardingRepo.Setup(r => r.GetAsync(onboarding.Id)).ReturnsAsync(onboarding);
-
-        var handler = CreateHandler(membershipRepo, onboardingRepo);
-        var @event = CreateProvisioningEvent(onboarding.Id, onboarding.TenantId);
+        var handler = CreateHandler(mediator);
+        var @event = CreateProvisioningEvent();
 
         await handler.Handle(@event);
 
-        onboarding.AdminUserId.Should().Be(@event.UserId);
-        onboarding.Status.Should().Be(OnboardingStatus.Completed);
-        onboarding.CurrentStep.Should().Be(OnboardingStep.Completed);
-        onboardingRepo.Verify(r => r.Update(onboarding), Times.Once);
-        unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        mediator.Verify(m => m.Send(
+            It.Is<StartCustomerActivationProcessCommand>(c =>
+                c.SubscriptionId == @event.SubscriptionId &&
+                c.AdminUserId == @event.UserId &&
+                c.AdminMembershipId == membershipId &&
+                c.CompanyLegalName == "Acme Corp" &&
+                c.SubscriptionPlanCode == "starter" &&
+                c.RequestId == @event.OnboardingProcessId),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task Handle_WhenOnboardingNotFound_DoesNotCreateMembership()
+    public async Task Handle_WhenCompleteOnboardingFails_DoesNotSendActivationCommand()
     {
-        var membershipRepo = new Mock<IUserMembershipRepository>();
-        var onboardingRepo = new Mock<IOnboardingProcessRepository>();
-        onboardingRepo.Setup(r => r.GetAsync(It.IsAny<Guid>())).ReturnsAsync((OnboardingProcess?)null);
+        var mediator = new Mock<IMediator>();
+        mediator.Setup(m => m.Send(It.IsAny<CompleteOnboardingCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<CompleteOnboardingResult>(Error.NotFound));
 
-        var handler = CreateHandler(membershipRepo, onboardingRepo);
-        var @event = CreateProvisioningEvent(Guid.NewGuid(), Guid.NewGuid());
+        var handler = CreateHandler(mediator);
 
-        await handler.Handle(@event);
+        await handler.Handle(CreateProvisioningEvent());
 
-        membershipRepo.Verify(r => r.Add(It.IsAny<UserMembership>()), Times.Never);
+        mediator.Verify(m => m.Send(It.IsAny<StartCustomerActivationProcessCommand>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    private static ExternalUserProvisionedIntegrationEvent CreateProvisioningEvent(
-        Guid onboardingProcessId, Guid tenantId) =>
+    private static ExternalUserProvisionedIntegrationEvent CreateProvisioningEvent() =>
         new(
             UserId: Guid.NewGuid(),
-            TenantId: tenantId,
+            TenantId: Guid.NewGuid(),
             CompanyId: Guid.NewGuid(),
             SubscriptionId: Guid.NewGuid(),
-            OnboardingProcessId: onboardingProcessId,
+            OnboardingProcessId: Guid.NewGuid(),
             Email: "admin@acme.com",
             FirstName: "John",
             LastName: "Doe");
 
     private static ExternalUserProvisionedIntegrationEventHandler CreateHandler(
-        Mock<IUserMembershipRepository> membershipRepo,
-        Mock<IOnboardingProcessRepository> onboardingRepo) =>
-        new(
-            new Mock<ILogger<ExternalUserProvisionedIntegrationEventHandler>>().Object,
-            membershipRepo.Object,
-            onboardingRepo.Object);
-
-    private static OnboardingProcess CreateOnboardingAtProvisioningRequested()
+        Mock<IMediator>? mediator = null)
     {
-        var onboarding = OnboardingProcess.Create(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid());
-        onboarding.Start();
-        onboarding.MarkSubscriptionCreated();
-        onboarding.MarkTenantCreated();
-        onboarding.MarkOwnerCompanyCreated(Guid.NewGuid());
-        onboarding.MarkAdminProvisioningRequested();
-        return onboarding;
+        mediator ??= new Mock<IMediator>();
+        return new(
+            mediator.Object,
+            new Mock<ILogger<ExternalUserProvisionedIntegrationEventHandler>>().Object);
     }
 }

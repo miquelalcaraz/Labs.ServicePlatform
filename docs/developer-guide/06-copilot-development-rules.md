@@ -419,31 +419,181 @@ public class OrderCreatedDomainEventHandler : IDomainEventHandler<OrderCreatedDo
 
 ## Integration Event Handlers (Consuming Events)
 
-When your service consumes events from another service:
+Integration event handlers act as **thin translators** — they receive an external event, map it to an internal command, and delegate all business logic to MediatR. This preserves DDD layer separation and ensures business operations run inside the proper transactional pipeline.
+
+### Architecture — Thin Translator Pattern
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Event Bus message arrives                                      │
+│       ↓                                                         │
+│  IdempotencyIntegrationEventEfDecorator                         │
+│       ├── BEGIN TX on LogsContext (idempotency + outbox)         │
+│       ├── Check idempotency → if duplicate, skip                │
+│       ├── Call handler.Handle(@event)                            │
+│       │       ↓                                                 │
+│       │   IntegrationEventHandler (THIN TRANSLATOR)             │
+│       │       ├── Log "Received event..."                       │
+│       │       ├── _mediator.Send(new SomeCommand(...))          │
+│       │       │       ↓                                         │
+│       │       │   MediatR Pipeline → Command Handler            │
+│       │       │       (business logic lives HERE)               │
+│       │       └── Log warning if result.IsFailure               │
+│       ├── Save idempotency entry                                │
+│       └── COMMIT TX on LogsContext                              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Handler Template (5-Layer Services)
 
 ```csharp
+using MediatR;
 using Qlt.Platform.Messaging.IntegrationEvents;
-using Qlt.Services.Orders.Contracts.IntegrationEvents;  // Reference to producer's Contracts
 
-public class OrderCompletedIntegrationEventHandler : IIntegrationEventHandler<OrderCompletedIntegrationEvent>
+public class OrderCompletedIntegrationEventHandler
+    : IIntegrationEventHandler<OrderCompletedIntegrationEvent>
 {
+    private readonly IMediator _mediator;
     private readonly ILogger<OrderCompletedIntegrationEventHandler> _logger;
 
     public OrderCompletedIntegrationEventHandler(
+        IMediator mediator,
         ILogger<OrderCompletedIntegrationEventHandler> logger)
     {
-        _logger = logger;
+        _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task Handle(OrderCompletedIntegrationEvent @event)
     {
-        _logger.LogInformation("Processing order completed: {OrderId}", @event.OrderId);
+        _logger.LogInformation(
+            "Received OrderCompleted event for order {OrderId}.",
+            @event.OrderId);
 
-        // Telemetry and idempotency are handled automatically by decorators
-        // Just implement business logic here
+        var result = await _mediator.Send(
+            new ProcessCompletedOrderCommand(
+                @event.OrderId,
+                @event.CustomerId,
+                @event.Total));
+
+        if (result.IsFailure)
+            _logger.LogWarning(
+                "ProcessCompletedOrder failed for order {OrderId}: {Error}",
+                @event.OrderId,
+                result.Error.Message);
     }
 }
 ```
+
+### Command from Integration Event
+
+Commands triggered by integration events use `ICommand<T>` — **not** `IdempotentCommand<T>` — because idempotency is already handled by the `IdempotencyIntegrationEventEfDecorator`.
+
+```csharp
+using Qlt.Platform.Messaging.Commands;
+
+public record ProcessCompletedOrderCommand(
+    Guid OrderId,
+    Guid CustomerId,
+    decimal Total) : ICommand<bool>;
+```
+
+In 5-layer services, the command handler benefits from the full MediatR pipeline (`TransactionBehavior` → `DomainEventProcessorBehavior` → `IntegrationEventProcessorBehavior`), so `SaveChangesAsync()` flushes within the managed transaction — same pattern as API-facing commands.
+
+### Handler Template (Identity — Dual DbContext)
+
+Identity uses a **monolithic project** with two separate DbContexts:
+- `IdentityContext` (`IdentityDbContext`) — users, tenants, roles
+- `IdentityLogsContext` (`QltDBContext`) — idempotency, outbox
+
+These contexts do **not** share a transaction. The approach is:
+1. **Decorator** wraps the handler with a transaction on `IdentityLogsContext` (idempotency + outbox)
+2. **Command handler** uses `ResilientTransaction.New(IdentityContext)` for business operations
+3. **Outbox publish** runs within the decorator's `IdentityLogsContext` transaction
+
+```
+┌── Decorator TX (IdentityLogsContext) ──────────────────────────┐
+│                                                                 │
+│  Handler → _mediator.Send(command)                              │
+│       ↓                                                         │
+│  ┌── ResilientTransaction (IdentityContext) ──────────────┐     │
+│  │   EnsureTenantExists → repo.CreateAsync (flush)        │     │
+│  │   CreateUserIfNotExists → repo.CreateAsync (flush)     │     │
+│  │   COMMIT IdentityContext TX                            │     │
+│  └────────────────────────────────────────────────────────┘     │
+│       ↓                                                         │
+│  _outboxService.AddAndSaveEventAsync(...)                       │
+│       → uses GetCurrentTransaction() from IdentityLogsContext   │
+│                                                                 │
+│  COMMIT IdentityLogsContext TX (idempotency + outbox saved)     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Integration event handler** — identical thin translator pattern:
+
+```csharp
+public class CustomerAdminProvisioningRequestedIntegrationEventHandler
+    : IIntegrationEventHandler<CustomerAdminProvisioningRequestedIntegrationEvent>
+{
+    private readonly IMediator _mediator;
+    private readonly ILogger<CustomerAdminProvisioningRequestedIntegrationEventHandler> _logger;
+
+    // Constructor: IMediator + ILogger only
+
+    public async Task Handle(CustomerAdminProvisioningRequestedIntegrationEvent @event)
+    {
+        _logger.LogInformation("Received event for tenant {TenantId}.", @event.TenantId);
+
+        var result = await _mediator.Send(
+            new ProvisionCustomerAdminCommand(
+                @event.SubscriptionId, @event.TenantId, @event.CompanyId,
+                @event.OnboardingProcessId, @event.AdminEmail,
+                @event.AdminFirstName, @event.AdminLastName, @event.TenantName));
+
+        if (result.IsFailure)
+            _logger.LogWarning("ProvisionCustomerAdmin failed: {Error}", result.Error.Message);
+    }
+}
+```
+
+**Command handler** — uses `ResilientTransaction` for `IdentityContext`:
+
+```csharp
+public class ProvisionCustomerAdminCommandHandler
+    : ICommandHandler<ProvisionCustomerAdminCommand, bool>
+{
+    private readonly IdentityContext _identityContext;
+    private readonly ITenantRepository _tenantRepository;
+    private readonly IUserRepository _userRepository;
+    private readonly IEventBusOutboxService _outboxService;
+    private readonly ILogger<ProvisionCustomerAdminCommandHandler> _logger;
+
+    public async Task<Result<bool>> Handle(
+        ProvisionCustomerAdminCommand message, CancellationToken cancellationToken)
+    {
+        ApplicationUser? adminUser = null;
+
+        await ResilientTransaction.New(_identityContext).ExecuteAsync(async () =>
+        {
+            await EnsureTenantExistsAsync(message);
+            adminUser = await CreateAdminUserIfNotExistsAsync(message);
+        });
+
+        // Outbox publish runs within the decorator's IdentityLogsContext transaction
+        await _outboxService.AddAndSaveEventAsync(
+            new ExternalUserProvisionedIntegrationEvent(
+                Guid.Parse(adminUser!.Id), message.TenantId, ...));
+
+        return Result.Success(true);
+    }
+}
+```
+
+**Key differences from 5-layer services:**
+- Identity MediatR pipeline only has `LoggingBehavior` (no `TransactionBehavior`, no `DomainEventProcessorBehavior`)
+- Handler must manage its own `IdentityContext` transaction via `ResilientTransaction`
+- `AddAndSaveEventAsync` works because the decorator's active transaction on `IdentityLogsContext` satisfies `GetCurrentTransaction()`
+- Multiple `SaveChangesAsync` calls inside `ResilientTransaction` are safe — they flush within the transaction, commit happens at end
 
 ### Registration
 
@@ -456,10 +606,15 @@ private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)
 
 ### Integration Event Handler Rules
 
+- **Thin translator only** — handlers inject `IMediator` + `ILogger`, nothing else
+- **Never inject repositories, DbContexts, or domain services** into the handler — those belong in the command handler
+- **Use `ICommand<T>`** for commands triggered by integration events — not `IdempotentCommand<T>` (decorator handles idempotency)
 - Implement `IIntegrationEventHandler<T>` — telemetry and idempotency decorators are applied automatically
 - Reference the **Contracts project** of the producing service
 - Register via `AddSubscription<TEvent, THandler>()` in `AddEventBusSubscriptions`
-- The handler runs outside MediatR — it is registered directly in DI
+- Log the received event at `Information` level, log failures at `Warning` level
+- **5-layer services**: command handler benefits from full MediatR pipeline (transactions, domain events, outbox — all automatic)
+- **Identity**: command handler must use `ResilientTransaction.New(IdentityContext)` for business operations and `AddAndSaveEventAsync` for outbox (leveraging decorator's transaction)
 
 ---
 
@@ -717,4 +872,91 @@ await _eventBus.PublishAsync(integrationEvent);
 
 // ✅ CORRECT — Saves to outbox within the transaction
 await _outboxService.AddAndSaveEventAsync(integrationEvent);
+```
+
+### Never publish integration events from command handlers
+
+```csharp
+// ❌ WRONG — Command handler should not inject or use IEventBusOutboxService
+public class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand, bool>
+{
+    private readonly IOrderRepository _orderRepository;
+    private readonly IEventBusOutboxService _outboxService;
+
+    public async Task<Result<bool>> Handle(CreateOrderCommand message, CancellationToken ct)
+    {
+        var order = Order.Create(message.CustomerName);
+        _orderRepository.Add(order);
+        await _orderRepository.UnitOfWork.SaveChangesAsync(ct);
+        await _outboxService.AddAndSaveEventAsync(new OrderCreatedIntegrationEvent(order.Id));
+        return Result.Success(true);
+    }
+}
+
+// ✅ CORRECT — Aggregate raises domain event, domain event handler publishes to outbox
+public class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand, bool>
+{
+    private readonly IOrderRepository _orderRepository;
+
+    public async Task<Result<bool>> Handle(CreateOrderCommand message, CancellationToken ct)
+    {
+        var order = Order.Create(message.CustomerName); // raises OrderCreatedDomainEvent
+        _orderRepository.Add(order);
+        await _orderRepository.UnitOfWork.SaveChangesAsync(ct);
+        return Result.Success(true);
+    }
+}
+
+// Domain event handler publishes the integration event
+public class OrderCreatedDomainEventHandler : IDomainEventHandler<OrderCreatedDomainEvent>
+{
+    private readonly IEventBusOutboxService _outboxService;
+
+    public async Task Handle(OrderCreatedDomainEvent notification, CancellationToken ct)
+    {
+        await _outboxService.AddAndSaveEventAsync(
+            new OrderCreatedIntegrationEvent(notification.OrderId));
+    }
+}
+```
+
+**Why:** The aggregate owns the decision of when to publish. Domain event handlers run inside the same transaction (via `DomainEventProcessorBehavior`), so the outbox entry is committed atomically. This keeps command handlers focused on orchestration and keeps the integration event trigger close to the domain logic that produces it.
+
+### Never put business logic in integration event handlers
+
+```csharp
+// ❌ WRONG — Handler directly uses repositories and domain logic
+public class OrderCompletedIntegrationEventHandler
+    : IIntegrationEventHandler<OrderCompletedIntegrationEvent>
+{
+    private readonly IOrderRepository _repository;
+    private readonly IEventBusOutboxService _outboxService;
+
+    public async Task Handle(OrderCompletedIntegrationEvent @event)
+    {
+        var order = await _repository.GetAsync(@event.OrderId);
+        order.MarkAsProcessed();
+        await _repository.UnitOfWork.SaveChangesAsync();
+        await _outboxService.AddAndSaveEventAsync(new OrderProcessedEvent(...));
+    }
+}
+
+// ✅ CORRECT — Thin translator delegates to a command via MediatR
+public class OrderCompletedIntegrationEventHandler
+    : IIntegrationEventHandler<OrderCompletedIntegrationEvent>
+{
+    private readonly IMediator _mediator;
+    private readonly ILogger<OrderCompletedIntegrationEventHandler> _logger;
+
+    public async Task Handle(OrderCompletedIntegrationEvent @event)
+    {
+        _logger.LogInformation("Received OrderCompleted for {OrderId}.", @event.OrderId);
+
+        var result = await _mediator.Send(
+            new ProcessCompletedOrderCommand(@event.OrderId, @event.CustomerId));
+
+        if (result.IsFailure)
+            _logger.LogWarning("ProcessCompletedOrder failed: {Error}", result.Error.Message);
+    }
+}
 ```

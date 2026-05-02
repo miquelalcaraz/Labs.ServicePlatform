@@ -1,9 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System;
+
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 using Qlt.Platform.EventBus.Options;
-
-using System;
 
 namespace Qlt.Platform.EventBus.Builders;
 

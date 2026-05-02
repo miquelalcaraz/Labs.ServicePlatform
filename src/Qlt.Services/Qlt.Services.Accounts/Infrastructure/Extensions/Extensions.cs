@@ -3,7 +3,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-using Qlt.Infrastructure.Identity.Contracts.IntegrationEvents;
+using Qlt.Contracts.Identity.IntegrationEvents;
+using Qlt.Contracts.Notifications.IntegrationEvents;
 using Qlt.Platform.EventBus;
 using Qlt.Platform.EventBus.Builders;
 using Qlt.Platform.EventBus.Extensions;
@@ -24,13 +25,13 @@ namespace Qlt.Services.Accounts.Infrastructure.Extensions
         {
             var services = builder.Services;
 
-            var connectionString = builder.Configuration.GetConnectionString("AccountsDb");
-            var readConnectionString = builder.Configuration.GetConnectionString("accountdb-readonly")
+            var connectionString = builder.Configuration.GetConnectionString("QltSystemDb");
+            var readConnectionString = builder.Configuration.GetConnectionString("QltSystemDbReadonly")
                 ?? connectionString;
 
             services.AddQltSDBContext<AccountContext>(
                 conf => conf
-                    .SetDefaultSchema("accounts")
+                    .SetDefaultSchema("Accounts")
                     .WithIdempotency()
                     .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
                 options => options.UseSqlServer(connectionString, sqlOptions =>
@@ -41,11 +42,13 @@ namespace Qlt.Services.Accounts.Infrastructure.Extensions
 
             services.AddQltReadDbContext<AccountReadContext>(
                 conf => conf
-                    .SetDefaultSchema("accounts")
+                    .SetDefaultSchema("Accounts")
                     .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
                 options => options.UseSqlServer(readConnectionString)
             );
 
+            services.AddHealthChecks()
+                .AddDbContextCheck<AccountContext>(name: "accounts-db", tags: ["ready"]);
 
             services.AddMigration<AccountContext, QltDBContextSeed>();
 
@@ -64,8 +67,9 @@ namespace Qlt.Services.Accounts.Infrastructure.Extensions
             services.AddTransactionalOutbox<AccountContext>(options =>
             {
                 options.RegisterEventTypes(
-                    typeof(Contracts.AssemblyReference).Assembly,
-                    typeof(Qlt.Infrastructure.Identity.Contracts.AssemblyReference).Assembly);
+                    typeof(Qlt.Contracts.Accounts.AssemblyReference).Assembly,
+                    typeof(Qlt.Contracts.Identity.AssemblyReference).Assembly,
+                    typeof(Qlt.Contracts.Notifications.AssemblyReference).Assembly);
             });
 
 
@@ -74,12 +78,15 @@ namespace Qlt.Services.Accounts.Infrastructure.Extensions
             services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
             services.AddScoped<IUserMembershipRepository, UserMembershipRepository>();
             services.AddScoped<IOnboardingProcessRepository, OnboardingProcessRepository>();
+            services.AddScoped<ICustomerActivationProcessRepository, CustomerActivationProcessRepository>();
 
         }
 
         private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)
         {
             eventBus.AddSubscription<ExternalUserProvisionedIntegrationEvent, ExternalUserProvisionedIntegrationEventHandler>();
+            eventBus.AddSubscription<ActivationDeliveredIntegrationEvent, ActivationDeliveredIntegrationEventHandler>();
+            eventBus.AddSubscription<UserActivatedIntegrationEvent, UserActivatedIntegrationEventHandler>();
         }
     }
 

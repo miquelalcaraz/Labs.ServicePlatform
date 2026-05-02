@@ -24,6 +24,19 @@ namespace Qlt.Infrastructure.Identity.Configuration
                         QltClaimTypes.TenantId,
                     }
                 },
+                new ApiResource
+                {    Name = QltApiResources.NotificationsService,
+                    Description = "Notifications Service",
+                    Scopes = new List<string>
+                    {
+                        QltApiScopes.Notifications,
+                    },
+                    UserClaims = new List<string>
+                    {
+                        QltClaimTypes.Role,
+                        QltClaimTypes.TenantId,
+                    }
+                  }
              };
         }
 
@@ -34,7 +47,8 @@ namespace Qlt.Infrastructure.Identity.Configuration
             return new List<ApiScope>
             {
                 new ApiScope(IdentityServerConstants.LocalApi.ScopeName),
-                new ApiScope(QltApiScopes.Accounts, "Accounts Service")
+                new ApiScope(QltApiScopes.Accounts, "Accounts Service"),
+                new ApiScope(QltApiScopes.Notifications, "Notifications Service"),
             };
         }
 
@@ -116,12 +130,12 @@ namespace Qlt.Infrastructure.Identity.Configuration
                     RedirectUris = new List<string>
                     {
                         $"{configuration["BackOfficeClient"]}/signin-oidc",
-                        "https://localhost:5011/signin-oidc"
+                        "https://localhost:5001/signin-oidc"
                     },
                     PostLogoutRedirectUris = new List<string>
                     {
                         $"{configuration["BackOfficeClient"]}/signout-callback-oidc",
-                        "https://localhost:5011/signout-callback-oidc"
+                        "https://localhost:5001/signout-callback-oidc"
                     },
                     AllowedScopes = new List<string>
                     {
@@ -149,7 +163,20 @@ namespace Qlt.Infrastructure.Identity.Configuration
                     {
                         QltApiScopes.Accounts
                     }
-                }
+                },
+                new Client
+                {
+                    ClientId = "notificationsswaggerui",
+                    ClientName = "Notifications Swagger UI",
+                    AllowedGrantTypes = GrantTypes.Implicit,
+                    AllowAccessTokensViaBrowser = true,
+                    RedirectUris = { $"{configuration["NotificationsApiClient"]}/scalar/v1" },
+                    PostLogoutRedirectUris = { $"{configuration["NotificationsApiClient"]}/scalar/v1" },
+                    AllowedScopes =
+                    {
+                        QltApiScopes.Notifications
+                    }
+                 }
             };
         }
     }

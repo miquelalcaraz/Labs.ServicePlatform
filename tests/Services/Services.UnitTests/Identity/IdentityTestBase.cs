@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-using Qlt.Infrastructure.Identity.Repositories;
-using Qlt.Platform.Messaging.Services;
-using Qlt.Services.Accounts.Contracts.IntegrationEvents;
+using Qlt.Contracts.Accounts.IntegrationEvents;
 
 namespace Services.UnitTests.Identity;
 
@@ -34,18 +32,6 @@ public abstract class IdentityTestBase
             Name: "Acme Tenant",
             OwnerCompanyId: ownerCompanyId ?? CompanyId,
             CreatedByInternalUserId: Guid.NewGuid());
-
-    protected static (
-        Mock<ITenantRepository> TenantRepo,
-        Mock<IUserRepository> UserRepo,
-        Mock<IEventBusOutboxService> Outbox)
-        CreateIdentityMocks()
-    {
-        var tenantRepo = new Mock<ITenantRepository>();
-        var userRepo = new Mock<IUserRepository>();
-        var outbox = new Mock<IEventBusOutboxService>();
-        return (tenantRepo, userRepo, outbox);
-    }
 
     protected static Mock<ILogger<T>> CreateLogger<T>() => new();
 }

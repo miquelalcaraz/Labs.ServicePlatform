@@ -54,6 +54,7 @@ namespace Qlt.Infrastructure.Identity.Models
         }
 
         public static ApplicationUser ProvisionInternalUser(
+            Guid tenantId,
             string email,
             string? firstName = null,
             string? lastName = null,
@@ -61,6 +62,7 @@ namespace Qlt.Infrastructure.Identity.Models
         {
             return new ApplicationUser(id)
             {
+                TenantId = tenantId,
                 UserName = email,
                 Email = email,
                 FirstName = firstName,

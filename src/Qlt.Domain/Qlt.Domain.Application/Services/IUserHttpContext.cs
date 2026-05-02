@@ -6,6 +6,8 @@ public interface IUserHttpContext
 
     string GetUserName();
 
+    string? TraceId { get; }
+
     /// <summary>
     /// Gets the unique identifier for the current request.
     /// Used for idempotency and request tracking.

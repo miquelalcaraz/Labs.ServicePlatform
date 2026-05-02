@@ -1,3 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -7,14 +15,6 @@ using Qlt.Platform.Messaging.Models;
 using Qlt.Platform.Messaging.Options;
 using Qlt.Platform.Meters;
 using Qlt.Platform.Persistence;
-
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 namespace Qlt.Platform.Messaging.Services;
 
 /// <summary>

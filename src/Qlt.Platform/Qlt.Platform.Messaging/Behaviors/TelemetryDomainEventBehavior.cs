@@ -1,14 +1,14 @@
-using MediatR;
-
-using Qlt.Platform.Activities;
-using Qlt.Platform.Messaging.DomainEvents;
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
+using MediatR;
+
+using Qlt.Platform.Activities;
+using Qlt.Platform.Messaging.DomainEvents;
 
 namespace Qlt.Platform.Messaging.Behaviors;
 

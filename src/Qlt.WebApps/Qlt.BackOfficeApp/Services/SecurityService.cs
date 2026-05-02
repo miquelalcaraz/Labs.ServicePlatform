@@ -1,9 +1,9 @@
+using System.Security.Claims;
+
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 
 using Qlt.BackOfficeApp.Models;
-
-using System.Security.Claims;
 
 namespace Qlt.BackOfficeApp.Services
 {
@@ -21,7 +21,7 @@ namespace Qlt.BackOfficeApp.Services
         {
             this.identityBaseUri = new Uri(configuration["Identity:Url"]!.TrimEnd('/'));
             this.identityHttpClient = factory.CreateClient("IdentityServer");
-            this.httpClient = factory.CreateClient("QltBackOffice");
+            this.httpClient = factory.CreateClient("Qlt.BackOfficeApp");
             this.navigationManager = navigationManager;
         }
 

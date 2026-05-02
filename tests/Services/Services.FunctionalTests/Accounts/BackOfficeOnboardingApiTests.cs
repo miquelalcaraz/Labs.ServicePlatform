@@ -1,22 +1,26 @@
-using Asp.Versioning;
-using Asp.Versioning.Http;
-
-using Microsoft.AspNetCore.Mvc.Testing;
-
-using Qlt.Services.Accounts.Api;
-using Qlt.Services.Accounts.Application.Queries;
-using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
-
 using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using Asp.Versioning;
+using Asp.Versioning.Http;
+
+using MediatR;
+
+using Microsoft.AspNetCore.Mvc.Testing;
+
+using Qlt.Contracts.Identity.IntegrationEvents;
+using Qlt.Platform.Messaging.IntegrationEvents;
+using Qlt.Services.Accounts.APIs;
+using Qlt.Services.Accounts.Application.Queries;
+using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
+
 namespace Services.FunctionalTests.Accounts;
 
-public sealed class BackOfficeOnboardingApiTests : IClassFixture<AccountsFixture>
+public sealed class OnboardingApiTests : IClassFixture<AccountsFixture>
 {
-    private const string BasePath = "api/backoffice/onboarding-processes";
+    private const string BasePath = "api/accounts/customer-onboarding";
 
     private readonly WebApplicationFactory<Program> _webApplicationFactory;
     private readonly HttpClient _httpClient;
@@ -27,7 +31,7 @@ public sealed class BackOfficeOnboardingApiTests : IClassFixture<AccountsFixture
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public BackOfficeOnboardingApiTests(AccountsFixture fixture)
+    public OnboardingApiTests(AccountsFixture fixture)
     {
         var handler = new ApiVersionHandler(new QueryStringApiVersionWriter(), new ApiVersion(1.0));
         _webApplicationFactory = fixture;
@@ -229,6 +233,64 @@ public sealed class BackOfficeOnboardingApiTests : IClassFixture<AccountsFixture
         var response = await _httpClient.GetAsync($"{BasePath}/{Guid.NewGuid()}/result", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    // ── E2E: Full Onboarding Flow ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task OnboardingFlow_WhenExternalUserProvisioned_CompletesAndStartsActivation()
+    {
+        var request = FakeStartRequest();
+        var onboardingId = await StartOnboardingAndGetId(request);
+
+        var detailResponse = await _httpClient.GetAsync($"{BasePath}/{onboardingId}", TestContext.Current.CancellationToken);
+        var detailBody = await detailResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var detail = JsonSerializer.Deserialize<OnboardingProcessDetailResponse>(detailBody, JsonOptions)!;
+
+        Assert.Equal("WaitingForExternalProvisioning", detail.Status);
+        Assert.Equal("AdminProvisioningRequested", detail.CurrentStep);
+
+        var adminUserId = Guid.NewGuid();
+        using (var scope = _webApplicationFactory.Services.CreateScope())
+        {
+            var handler = scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<ExternalUserProvisionedIntegrationEvent>>();
+
+            await handler.Handle(new ExternalUserProvisionedIntegrationEvent(
+                UserId: adminUserId,
+                TenantId: detail.References.TenantId,
+                CompanyId: detail.References.OwnerCompanyId!.Value,
+                SubscriptionId: detail.References.SubscriptionId,
+                OnboardingProcessId: onboardingId,
+                Email: request.AdminUser.Email,
+                FirstName: request.AdminUser.FirstName,
+                LastName: request.AdminUser.LastName));
+        }
+
+        var completedResponse = await _httpClient.GetAsync($"{BasePath}/{onboardingId}", TestContext.Current.CancellationToken);
+        var completedBody = await completedResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var completedDetail = JsonSerializer.Deserialize<OnboardingProcessDetailResponse>(completedBody, JsonOptions)!;
+
+        Assert.Equal("Completed", completedDetail.Status);
+        Assert.Equal("Completed", completedDetail.CurrentStep);
+        Assert.NotNull(completedDetail.CompletedAtUtc);
+        Assert.Equal(adminUserId, completedDetail.References.AdminUserId);
+        Assert.NotNull(completedDetail.References.AdminMembershipId);
+        Assert.Equal(100, completedDetail.ProgressPercent);
+
+        var resultResponse = await _httpClient.GetAsync($"{BasePath}/{onboardingId}/result", TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, resultResponse.StatusCode);
+
+        const string activationBasePath = "api/accounts/customer-activation";
+        var activationListResponse = await _httpClient.GetAsync(
+            $"{activationBasePath}?adminEmail={Uri.EscapeDataString(request.AdminUser.Email)}",
+            TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.OK, activationListResponse.StatusCode);
+
+        var activationBody = await activationListResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var activationList = JsonSerializer.Deserialize<CustomerActivationProcessListResponse>(activationBody, JsonOptions)!;
+
+        Assert.True(activationList.TotalCount >= 1);
+        Assert.Contains(activationList.Items, i => i.AdminEmail == request.AdminUser.Email);
     }
 
     private async Task<Guid> StartOnboardingAndGetId(StartOnboardingProcessRequest? request = null)

@@ -18,7 +18,7 @@ namespace Platform.TestWebApi.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("test")
-                .HasAnnotation("ProductVersion", "10.0.5")
+                .HasAnnotation("ProductVersion", "10.0.6")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -81,7 +81,7 @@ namespace Platform.TestWebApi.Infrastructure.Migrations
 
                     b.HasIndex("Id", "Scope");
 
-                    b.ToTable("IdempotencyEntry", "infra");
+                    b.ToTable("IdempotencyEntry", "test");
                 });
 
             modelBuilder.Entity("Qlt.Platform.Messaging.Models.OutboxMessage", b =>
@@ -122,7 +122,7 @@ namespace Platform.TestWebApi.Infrastructure.Migrations
 
                     b.HasIndex("Status", "CreatedAt");
 
-                    b.ToTable("OutboxMessage", "infra");
+                    b.ToTable("OutboxMessage", "test");
                 });
 #pragma warning restore 612, 618
         }

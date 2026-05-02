@@ -1,11 +1,11 @@
+using System.Diagnostics;
+
 using MediatR;
 
 using Microsoft.Extensions.Logging;
 
 using Qlt.Domain.Services;
 using Qlt.Platform.Activities;
-
-using System.Diagnostics;
 
 
 namespace Qlt.Domain.Behaviors;

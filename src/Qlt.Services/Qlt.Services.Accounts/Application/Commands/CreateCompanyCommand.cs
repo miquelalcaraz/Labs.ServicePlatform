@@ -1,8 +1,8 @@
+using System.Runtime.Serialization;
+
 using Qlt.Platform;
 using Qlt.Platform.Messaging.Commands;
 using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
-
-using System.Runtime.Serialization;
 
 namespace Qlt.Services.Accounts.Application.Commands;
 

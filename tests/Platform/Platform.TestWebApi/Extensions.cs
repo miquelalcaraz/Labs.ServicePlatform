@@ -1,3 +1,5 @@
+using FluentValidation;
+
 using Microsoft.EntityFrameworkCore;
 
 using Platform.TestWebApi.Infrastructure;
@@ -9,19 +11,43 @@ using Qlt.Platform.Messaging.Builders;
 using Qlt.Platform.Persistence.Builders;
 using Qlt.Platform.Persistence.Migrations;
 
+using System.Diagnostics.Contracts;
 using System.Reflection;
 
 namespace Platform.TestWebApi;
 
 public static class Extensions
 {
-    public static WebApplicationBuilder AddTestInfrastructure(this WebApplicationBuilder builder)
+    public static IServiceCollection AddApplicationServices(this IHostApplicationBuilder builder)
+    {
+        var services = builder.Services;
+
+        builder.AddInfrastructureServices();
+        builder.AddRedisClient("cache");
+
+        services.AddHttpContextAccessor();
+
+        services.AddQltMediator(cfg =>
+        {
+            cfg.RegisterServicesFromAssembly(AssemblyReference.Assembly);
+            cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly);
+            cfg.WithLogging(typeof(LoggingBehavior<,>));
+            cfg.WithValidation(typeof(ValidationBehavior<,>));
+        });
+
+        //services.AddValidatorsFromAssembly(AssemblyReference.Assembly);
+
+        return services;
+    }
+
+    public static void AddInfrastructureServices(this IHostApplicationBuilder builder)
     {
         var services = builder.Services;
         var configuration = builder.Configuration;
 
-        var connectionString = configuration.GetConnectionString("testDb")
-            ?? throw new InvalidOperationException("Connection string 'testDb' not found");
+        var connectionString = builder.Configuration.GetConnectionString("TestDb");
+        var readConnectionString = builder.Configuration.GetConnectionString("TestDbReadonly")
+            ?? connectionString;
 
         services.AddQltSDBContext<TestDbContext>(
             conf => conf
@@ -32,33 +58,36 @@ public static class Extensions
                 sqlOptions.MigrationsAssembly(Assembly.GetExecutingAssembly().FullName);
             })
         );
+
+        services.AddQltReadDbContext<TestReadDbContext>(
+                conf => conf
+                    .SetDefaultSchema("test")
+                    .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
+                options => options.UseSqlServer(readConnectionString)
+            );
+
+
         services.AddMigration<TestDbContext, TestDbContextSeed>();
 
-        builder.AddRabbitMqEventBus("eventbus")
+        builder.AddServiceBusEventBus("eventbus")
             .AddEventBusSubscriptions();
+
+        services.AddRedisIdempotencyCache(builder.Configuration)
+               .ForApiRequests()
+            .ForIntegrationEventHandlers();
+
+        services.AddIdempotencyEntityFramework<TestDbContext>()
+            .ForApiRequests()
+            .ForIntegrationEventHandlers();
 
         services.AddTransactionalOutbox<TestDbContext>(options =>
         {
-            options.RegisterEventTypes(typeof(AssemblyReference).Assembly);
-        });
-
-        services.AddIdempotencyEntityFramework<TestDbContext>()
-            .ForIntegrationEventHandlers();
-
-        services.AddRepositories();
-
-        services.AddQltMediator(cfg =>
-        {
-            cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
-            cfg.WithLogging(typeof(LoggingBehavior<,>));
-            cfg.WithValidation(typeof(ValidationBehavior<,>));
+            options.RegisterEventTypes(
+                typeof( AssemblyReference).Assembly);
         });
 
         services.AddQueryRepositories();
-
-        return builder;
     }
-
     private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)
     {
 

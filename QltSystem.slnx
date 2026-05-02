@@ -21,25 +21,28 @@
     <Project Path="src/Qlt.Platform/Qlt.Platform.WebApi/Platform.WebApi.csproj" />
   </Folder>
   <Folder Name="/src/" />
+  <Folder Name="/src/Contracts/">
+    <Project Path="src/Qlt.Contracts/Qlt.Contracts.Accounts/Contracts.Accounts.csproj" />
+    <Project Path="src/Qlt.Contracts/Qlt.Contracts.Identity/Contracts.Identity.csproj" />
+    <Project Path="src/Qlt.Contracts/Qlt.Contracts.Notifications/Contracts.Notifications.csproj" />
+  </Folder>
   <Folder Name="/src/Infrastructure/">
-    <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.AppHost/Qlt.Infrastructure.AppHost.csproj" />
-    <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.Bff.BackOffice/Qlt.Infrastructure.Bff.BackOffice.csproj" />
-    <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.Identity.Contracts/Qlt.Infrastructure.Identity.Contracts.csproj" />
-    <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.Identity/Qlt.Infrastructure.Identity.csproj" />
+    <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.AppHost/Infrastructure.AppHost.csproj" />
+    <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.Bff.BackOffice/Infrastructure.Bff.BackOffice.csproj" />
+    <Project Path="src/Qlt.Infrastructure/Qlt.Infrastructure.Identity/Infrastructure.Identity.csproj" />
   </Folder>
   <Folder Name="/src/Services/" />
-  <Folder Name="/src/Services/Accounts/" />
-  <Folder Name="/src/Services/Accounts/Core/">
-    <Project Path="src/Qlt.Services/Qlt.Services.Accounts/Application/Services.Accounts.Application.csproj" />
-    <Project Path="src/Qlt.Services/Qlt.Services.Accounts/Domain/Services.Accounts.Domain.csproj" />
-  </Folder>
-  <Folder Name="/src/Services/Accounts/External/">
-    <Project Path="src/Qlt.Services/Qlt.Services.Accounts/Api/Services.Accounts.API.csproj" />
-    <Project Path="src/Qlt.Services/Qlt.Services.Accounts/Contracts/Services.Accounts.Contracts.csproj" />
-    <Project Path="src/Qlt.Services/Qlt.Services.Accounts/Infrastructure/Services.Accounts.Infrastructure.csproj" />
+  <Folder Name="/src/Services/Accounts/">
+    <Project Path="src/Qlt.Services/Qlt.Services.Accounts/Api/Accounts.API.csproj" />
+    <Project Path="src/Qlt.Services/Qlt.Services.Accounts/Application/Accounts.Application.csproj" />
+    <Project Path="src/Qlt.Services/Qlt.Services.Accounts/Domain/Accounts.Domain.csproj" />
+    <Project Path="src/Qlt.Services/Qlt.Services.Accounts/Infrastructure/Accounts.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Services/Notifications/">
-    <Project Path="src/Qlt.Services/Qlt.Services.Notifications/Services.Notifications.csproj" />
+    <Project Path="src/Qlt.Services/Qlt.Services.Notifications/Api/Notifications.API.csproj" />
+    <Project Path="src/Qlt.Services/Qlt.Services.Notifications/Application/Notifications.Application.csproj" />
+    <Project Path="src/Qlt.Services/Qlt.Services.Notifications/Domain/Notifications.Domain.csproj" />
+    <Project Path="src/Qlt.Services/Qlt.Services.Notifications/Infrastructure/Notifications.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/WebApp/">
     <Project Path="src/Qlt.WebApps/Qlt.BackOfficeApp/Qlt.BackOfficeApp.csproj" />

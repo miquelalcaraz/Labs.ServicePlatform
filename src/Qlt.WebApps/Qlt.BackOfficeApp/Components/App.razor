@@ -15,7 +15,7 @@
     <RadzenTheme Theme="material" />
     <link rel="stylesheet" href="css/theme-overrides.css" />
     <link rel="stylesheet" href="css/site.css" />
-    <link rel="stylesheet" href="@Assets["QltBackOffice.styles.css"]" />
+    <link rel="stylesheet" href="@Assets["Qlt.BackOfficeApp.styles.css"]" />
     <link rel="icon" href="favicon.ico" />
     <HeadOutlet @rendermode="@InteractiveServer" />
 </head>
@@ -40,7 +40,7 @@
     {
         if (HttpContext != null)
         {
-            var theme = HttpContext.Request.Cookies["QltBackOfficeTheme"];
+            var theme = HttpContext.Request.Cookies["Qlt.BackOfficeAppTheme"];
 
             if (!string.IsNullOrEmpty(theme))
             {

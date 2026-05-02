@@ -1,3 +1,10 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -7,13 +14,6 @@ using Qlt.Platform.EventBus;
 using Qlt.Platform.Messaging.Options;
 using Qlt.Platform.Meters;
 using Qlt.Platform.Persistence;
-
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Qlt.Platform.Messaging.Services;
 

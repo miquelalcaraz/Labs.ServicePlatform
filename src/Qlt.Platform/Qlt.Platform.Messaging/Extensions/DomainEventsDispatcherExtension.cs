@@ -1,12 +1,12 @@
-using MediatR;
-
-using Qlt.Domain.SeedWork;
-using Qlt.Platform.Activities;
-
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+
+using MediatR;
+
+using Qlt.Domain.SeedWork;
+using Qlt.Platform.Activities;
 
 namespace Qlt.Platform.Messaging.Extensions;
 

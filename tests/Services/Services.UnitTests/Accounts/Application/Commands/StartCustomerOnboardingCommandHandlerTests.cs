@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Logging;
 
 using Qlt.Services.Accounts.Application.Commands;
-using Qlt.Services.Accounts.Contracts.IntegrationEvents;
+using Qlt.Services.Accounts.Domain.Events;
 using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
 using Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
 using Qlt.Services.Accounts.Domain.Models.SubscriptionAggregate;
@@ -14,8 +14,8 @@ public class StartCustomerOnboardingCommandHandlerTests : AccountsTestBase
     [Fact]
     public async Task Handle_WithValidCommand_ReturnsSuccessTrue()
     {
-        var (tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, outbox, _) = CreateRepositoryMocks();
-        var handler = CreateHandler(tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, outbox);
+        var (tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, _, _) = CreateRepositoryMocks();
+        var handler = CreateHandler(tenantRepo, subscriptionRepo, companyRepo, onboardingRepo);
 
         var result = await handler.Handle(CreateValidCommand(), CancellationToken.None);
 
@@ -26,8 +26,8 @@ public class StartCustomerOnboardingCommandHandlerTests : AccountsTestBase
     [Fact]
     public async Task Handle_WithValidCommand_AddsAllFourAggregates()
     {
-        var (tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, outbox, _) = CreateRepositoryMocks();
-        var handler = CreateHandler(tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, outbox);
+        var (tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, _, _) = CreateRepositoryMocks();
+        var handler = CreateHandler(tenantRepo, subscriptionRepo, companyRepo, onboardingRepo);
 
         await handler.Handle(CreateValidCommand(), CancellationToken.None);
 
@@ -38,40 +38,44 @@ public class StartCustomerOnboardingCommandHandlerTests : AccountsTestBase
     }
 
     [Fact]
-    public async Task Handle_WithValidCommand_PublishesCustomerAdminProvisioningRequestedEvent()
+    public async Task Handle_WithValidCommand_RaisesAdminProvisioningRequestedDomainEvent()
     {
-        var (tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, outbox, _) = CreateRepositoryMocks();
-        var handler = CreateHandler(tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, outbox);
+        OnboardingProcess? capturedOnboarding = null;
+        var (tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, _, _) = CreateRepositoryMocks();
+        onboardingRepo
+            .Setup(r => r.Add(It.IsAny<OnboardingProcess>()))
+            .Callback<OnboardingProcess>(o => capturedOnboarding = o);
+
+        var handler = CreateHandler(tenantRepo, subscriptionRepo, companyRepo, onboardingRepo);
         var command = CreateValidCommand();
 
         await handler.Handle(command, CancellationToken.None);
 
-        outbox.Verify(o => o.AddAndSaveEventAsync(
-            It.Is<CustomerAdminProvisioningRequestedIntegrationEvent>(e =>
-                e.AdminEmail == command.AdminEmail &&
-                e.AdminFirstName == command.AdminFirstName &&
-                e.AdminLastName == command.AdminLastName &&
-                e.TenantName == command.TenantName)),
-            Times.Once);
+        capturedOnboarding.Should().NotBeNull();
+        capturedOnboarding!.DomainEvents.Should().ContainSingle(e => e is AdminProvisioningRequestedDomainEvent);
     }
 
     [Fact]
-    public async Task Handle_WhenSaveChangesFails_ReturnsFailureAndDoesNotPublishEvent()
+    public async Task Handle_WhenSaveChangesFails_ReturnsFailure()
     {
-        var (tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, outbox, _) = CreateRepositoryMocks(saveChangesReturn: 0);
-        var handler = CreateHandler(tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, outbox);
+        var (tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, _, _) = CreateRepositoryMocks(saveChangesReturn: 0);
+        var handler = CreateHandler(tenantRepo, subscriptionRepo, companyRepo, onboardingRepo);
 
         var result = await handler.Handle(CreateValidCommand(), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        outbox.Verify(o => o.AddAndSaveEventAsync(It.IsAny<CustomerAdminProvisioningRequestedIntegrationEvent>()), Times.Never);
     }
 
     [Fact]
     public async Task Handle_WhenTenantNameIsNull_UsesFallbackToCompanyLegalName()
     {
-        var (tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, outbox, _) = CreateRepositoryMocks();
-        var handler = CreateHandler(tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, outbox);
+        Tenant? capturedTenant = null;
+        var (tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, _, _) = CreateRepositoryMocks();
+        tenantRepo
+            .Setup(r => r.Add(It.IsAny<Tenant>()))
+            .Callback<Tenant>(t => capturedTenant = t);
+
+        var handler = CreateHandler(tenantRepo, subscriptionRepo, companyRepo, onboardingRepo);
         var command = new StartCustomerOnboardingCommand(
             planCode: "STANDARD",
             companyLegalName: "FallbackName Corp",
@@ -89,51 +93,19 @@ public class StartCustomerOnboardingCommandHandlerTests : AccountsTestBase
 
         await handler.Handle(command, CancellationToken.None);
 
-        outbox.Verify(o => o.AddAndSaveEventAsync(
-            It.Is<CustomerAdminProvisioningRequestedIntegrationEvent>(e =>
-                e.TenantName == "FallbackName Corp")),
-            Times.Once);
-    }
-
-    [Fact]
-    public async Task Handle_PublishedEventContainsCorrectTenantAndCompanyIds()
-    {
-        Guid? capturedTenantId = null;
-        Guid? capturedCompanyId = null;
-        Guid? capturedSubscriptionId = null;
-
-        var (tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, outbox, _) = CreateRepositoryMocks();
-
-        outbox
-            .Setup(o => o.AddAndSaveEventAsync(It.IsAny<CustomerAdminProvisioningRequestedIntegrationEvent>()))
-            .Callback<Qlt.Platform.Messaging.IntegrationEvents.IntegrationEvent>(e =>
-            {
-                var evt = (CustomerAdminProvisioningRequestedIntegrationEvent)e;
-                capturedTenantId = evt.TenantId;
-                capturedCompanyId = evt.CompanyId;
-                capturedSubscriptionId = evt.SubscriptionId;
-            })
-            .Returns(Task.CompletedTask);
-
-        var handler = CreateHandler(tenantRepo, subscriptionRepo, companyRepo, onboardingRepo, outbox);
-        await handler.Handle(CreateValidCommand(), CancellationToken.None);
-
-        capturedTenantId.Should().NotBeEmpty();
-        capturedCompanyId.Should().NotBeEmpty();
-        capturedSubscriptionId.Should().NotBeEmpty();
+        capturedTenant.Should().NotBeNull();
+        capturedTenant!.Name.Should().Be("FallbackName Corp");
     }
 
     private static StartCustomerOnboardingCommandHandler CreateHandler(
         Mock<Qlt.Services.Accounts.Domain.Repositories.ITenantRepository> tenantRepo,
         Mock<Qlt.Services.Accounts.Domain.Repositories.ISubscriptionRepository> subscriptionRepo,
         Mock<Qlt.Services.Accounts.Domain.Repositories.ICompanyRepository> companyRepo,
-        Mock<Qlt.Services.Accounts.Domain.Repositories.IOnboardingProcessRepository> onboardingRepo,
-        Mock<Qlt.Platform.Messaging.Services.IEventBusOutboxService> outbox) =>
+        Mock<Qlt.Services.Accounts.Domain.Repositories.IOnboardingProcessRepository> onboardingRepo) =>
         new(
             tenantRepo.Object,
             subscriptionRepo.Object,
             companyRepo.Object,
             onboardingRepo.Object,
-            outbox.Object,
             new Mock<ILogger<StartCustomerOnboardingCommandHandler>>().Object);
 }

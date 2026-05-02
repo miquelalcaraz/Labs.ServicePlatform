@@ -1,7 +1,7 @@
+using System.Runtime.Serialization;
+
 using Qlt.Platform;
 using Qlt.Platform.Messaging.Commands;
-
-using System.Runtime.Serialization;
 
 namespace Qlt.Services.Accounts.Application.Commands;
 

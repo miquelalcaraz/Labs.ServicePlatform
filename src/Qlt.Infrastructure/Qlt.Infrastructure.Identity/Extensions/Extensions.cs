@@ -1,8 +1,11 @@
+using System.Reflection;
+
 using Duende.IdentityServer.Stores;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
+using Qlt.Contracts.Accounts.IntegrationEvents;
 using Qlt.Domain.Behaviors;
 using Qlt.Infrastructure.Identity.Extensions;
 using Qlt.Infrastructure.Identity.Infrastructure;
@@ -18,9 +21,6 @@ using Qlt.Platform.EventBus.Extensions;
 using Qlt.Platform.Messaging.Builders;
 using Qlt.Platform.Persistence.Builders;
 using Qlt.Platform.Persistence.Migrations;
-using Qlt.Services.Accounts.Contracts.IntegrationEvents;
-
-using System.Reflection;
 
 namespace Qlt.Infrastructure.Identity.Extensions
 {
@@ -62,8 +62,8 @@ namespace Qlt.Infrastructure.Identity.Extensions
             services.AddTransactionalOutbox<IdentityLogsContext>(options =>
             {
                 options.RegisterEventTypes(
-                    typeof(Qlt.Services.Accounts.Contracts.AssemblyReference).Assembly,
-                    typeof(global::Qlt.Infrastructure.Identity.Contracts.AssemblyReference).Assembly);
+                    typeof(Contracts.Accounts.AssemblyReference).Assembly,
+                    typeof(Contracts.Identity.AssemblyReference).Assembly);
             });
         }
         private static void AddDbContext(this IHostApplicationBuilder builder)

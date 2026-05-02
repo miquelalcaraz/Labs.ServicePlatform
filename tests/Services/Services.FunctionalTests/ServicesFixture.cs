@@ -1,5 +1,6 @@
 ﻿using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.Azure;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Hosting;
@@ -14,8 +15,8 @@ public abstract class ServicesFixture : WebApplicationFactory<Program>, IAsyncLi
     //    public IResourceBuilder<SqlServerServerResource> IdentityDB { get; private set; }
 
     public IResourceBuilder<SqlServerDatabaseResource> IdentityDB { get; private set; }
-    public IResourceBuilder<SqlServerDatabaseResource> AccountDb { get; private set; }
-    public IResourceBuilder<RabbitMQServerResource> RabbitMQ { get; private set; }
+    public IResourceBuilder<SqlServerDatabaseResource> QltSystemDb { get; private set; }
+    public IResourceBuilder<AzureServiceBusResource> AzureServiceBus { get; private set; }
     public IResourceBuilder<RedisResource> RedisCache { get; private set; }
     public IResourceBuilder<ProjectResource> IdentityApi { get; private set; }
 
@@ -35,20 +36,34 @@ public abstract class ServicesFixture : WebApplicationFactory<Program>, IAsyncLi
 
         var sqlPassword = appBuilder.AddParameter("sqlPassword", value: "***REMOVED***", secret: true);
         SqlServer = appBuilder.AddSqlServer("sqlserver", sqlPassword, 1445)
-            .WithImageTag("latest");
-        //.WithLifetime(ContainerLifetime.Persistent);
+            .WithImageTag("latest")
+            .WithLifetime(ContainerLifetime.Persistent);
 
-        AccountDb = SqlServer.AddDatabase("AccountsDb");
+        QltSystemDb = SqlServer.AddDatabase("QltSystemDb");
         IdentityDB = SqlServer.AddDatabase("IdentityDb");
-        RedisCache = appBuilder.AddRedis("cache");
-        RabbitMQ = appBuilder.AddRabbitMQ("eventbus");
 
-        IdentityApi = appBuilder.AddProject<Projects.Qlt_Infrastructure_Identity>("identity-api")
+        RedisCache = appBuilder.AddRedis("cache")
+            .WithLifetime(ContainerLifetime.Persistent);
+
+        AzureServiceBus = appBuilder.AddAzureServiceBus("eventbus")
+                    .RunAsEmulator(emulator => emulator
+                    .WithLifetime(ContainerLifetime.Persistent));
+
+        var eventBusTopic = AzureServiceBus.AddServiceBusTopic("qlt-event-bus");
+        eventBusTopic.AddServiceBusSubscription("accounts-sub", subscriptionName: "Accounts");
+        eventBusTopic.AddServiceBusSubscription("notifications-sub", subscriptionName: "Notifications");
+        eventBusTopic.AddServiceBusSubscription("identity-sub", subscriptionName: "Identity");
+
+        IdentityApi = appBuilder.AddProject<Projects.Infrastructure_Identity>("identity-api")
             .WithReference(IdentityDB)
-            .WaitFor(AccountDb)
+            .WithReference(RedisCache)
+            .WithReference(AzureServiceBus)
+            .WaitFor(QltSystemDb)
             .WaitFor(IdentityDB)
             .WaitFor(RedisCache)
-            .WaitFor(RabbitMQ);
+            .WaitFor(AzureServiceBus)
+            .WithEnvironment("Aspire__Azure__Messaging__ServiceBus__eventbus__DisableHealthChecks", "true")
+            .WithEnvironment("Aspire__Azure__Messaging__ServiceBus__eventbus__DisableTracing", "true");
 
         _app = appBuilder.Build();
     }
@@ -57,14 +72,15 @@ public abstract class ServicesFixture : WebApplicationFactory<Program>, IAsyncLi
     {
         builder.ConfigureHostConfiguration(config =>
         {
-            // string eventBusUri = RabbitMQ.Resource.Host.Endpoint.Url;
             config.AddInMemoryCollection(new Dictionary<string, string>
             {
-                { $"ConnectionStrings:{AccountDb.Resource.Name}", _sqlserverConnectionString },
+                { $"ConnectionStrings:{QltSystemDb.Resource.Name}", _sqlserverConnectionString },
                 { $"ConnectionStrings:{RedisCache.Resource.Name}", _redisConnectionString },
-                { $"ConnectionStrings:{RabbitMQ.Resource.Name}", _eventBusUri },
+                { $"ConnectionStrings:{AzureServiceBus.Resource.Name}", _eventBusUri },
                 { "Identity:Url", IdentityApi.GetEndpoint("http").Url },
-                { "EventBus:SubscriptionClientName", "Accounts"}
+                { "EventBus:SubscriptionClientName", "Accounts"},
+                { $"Aspire:Azure:Messaging:ServiceBus:{AzureServiceBus.Resource.Name}:DisableHealthChecks", "true" },
+                { "Aspire:Azure:Messaging:ServiceBus:eventbus:DisableTracing", "true" }
             });
         });
         builder.ConfigureServices(services =>
@@ -74,7 +90,7 @@ public abstract class ServicesFixture : WebApplicationFactory<Program>, IAsyncLi
         return base.CreateHost(builder);
     }
 
-    public new async Task DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
         await _app.StopAsync();
@@ -91,12 +107,12 @@ public abstract class ServicesFixture : WebApplicationFactory<Program>, IAsyncLi
     public async ValueTask InitializeAsync()
     {
         await _app.StartAsync();
-        _sqlserverConnectionString = await AccountDb.Resource.ConnectionStringExpression.GetValueAsync(default);
+        _sqlserverConnectionString = await QltSystemDb.Resource.ConnectionStringExpression.GetValueAsync(default);
         _redisConnectionString = await RedisCache.Resource.ConnectionStringExpression.GetValueAsync(default);
-        _eventBusUri = await RabbitMQ.Resource.ConnectionStringExpression.GetValueAsync(default);
+        _eventBusUri = await AzureServiceBus.Resource.ConnectionStringExpression.GetValueAsync(default);
 
         Console.WriteLine($"SQL Server Connection String: {_sqlserverConnectionString}");
-        Console.WriteLine($"RabbitMQ Event Bus URI: {_eventBusUri}");
+        Console.WriteLine($"Azure Service Bus URI: {_eventBusUri}");
         Console.WriteLine($"Redis Connection String: {_redisConnectionString}");
     }
 

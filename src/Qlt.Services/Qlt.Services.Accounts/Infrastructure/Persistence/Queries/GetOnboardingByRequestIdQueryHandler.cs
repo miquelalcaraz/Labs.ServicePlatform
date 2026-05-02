@@ -23,7 +23,7 @@ public class GetOnboardingByRequestIdQueryHandler(AccountReadContext context)
             return Result.Failure<OnboardingProcessDetailResponse>(
                 Error.NotFound.WithMessage($"Onboarding process with correlation id '{request.CorrelationId}' was not found."));
 
-        var basePath = $"/api/backoffice/onboarding-processes/{onboarding.Id}";
+        var basePath = $"/api/accounts/customer-onboarding/{onboarding.Id}";
 
         return Result.Success(new OnboardingProcessDetailResponse
         {

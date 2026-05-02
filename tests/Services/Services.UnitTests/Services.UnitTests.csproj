@@ -9,13 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="8.0.1">
+    <PackageReference Include="coverlet.collector" Version="10.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="FluentAssertions" Version="8.9.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.5" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.7" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
@@ -25,9 +25,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Application\Services.Accounts.Application.csproj" />
-    <ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Infrastructure\Services.Accounts.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\..\src\Qlt.Infrastructure\Qlt.Infrastructure.Identity\Qlt.Infrastructure.Identity.csproj" />
+    <ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Application\Accounts.Application.csproj" />
+    <ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Infrastructure\Accounts.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\Qlt.Infrastructure\Qlt.Infrastructure.Identity\Infrastructure.Identity.csproj" />
+    <ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Notifications\Application\Notifications.Application.csproj" />
+    <ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Notifications\Infrastructure\Notifications.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.HttpOverrides;
+
 using Qlt.Infrastructure.Identity.Extensions;
 using Qlt.Platform.ServiceDefaults;
 
@@ -21,6 +23,14 @@ builder.AddDefaultOpenApi(withApiVersioning);
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
+
+var forwardingOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost
+};
+forwardingOptions.KnownIPNetworks.Clear();
+forwardingOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardingOptions);
 
 app.UseStaticFiles();
 

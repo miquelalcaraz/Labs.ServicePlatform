@@ -1,4 +1,5 @@
 using Qlt.Domain.SeedWork;
+using Qlt.Services.Accounts.Domain.Events;
 using Qlt.Services.Accounts.Domain.Exceptions;
 
 namespace Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
@@ -129,6 +130,7 @@ public class OnboardingProcess : Entity, IAggregateRoot
         EnsureStep(OnboardingStep.OwnerCompanyCreated);
         Status = OnboardingStatus.WaitingForExternalProvisioning;
         CurrentStep = OnboardingStep.AdminProvisioningRequested;
+        AddDomainEvent(new AdminProvisioningRequestedDomainEvent(Id));
     }
 
     public void MarkAdminUserProvisioned(Guid userId)
@@ -197,6 +199,7 @@ public class OnboardingProcess : Entity, IAggregateRoot
         EnsureStatus(OnboardingStatus.InProgress);
         EnsureStep(OnboardingStep.AdminProvisioningRequested);
         Status = OnboardingStatus.WaitingForExternalProvisioning;
+        AddDomainEvent(new AdminProvisioningRequestedDomainEvent(Id));
     }
 
     private void EnsureStatus(OnboardingStatus expected)

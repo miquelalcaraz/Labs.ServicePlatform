@@ -1,27 +1,27 @@
-using Asp.Versioning;
-using Asp.Versioning.Http;
-
-using Qlt.Services.Accounts.Api;
-using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
-
 using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-using static Qlt.Services.Accounts.Api.BackOfficeAuthorizationPolicies;
+using Asp.Versioning;
+using Asp.Versioning.Http;
+
+using Qlt.Services.Accounts.APIs;
+using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
+
+using static Qlt.Services.Accounts.Authorization.AccountsAuthorizationPolicies;
 
 namespace Services.FunctionalTests.Accounts;
 
 /// <summary>
-/// Validates the BackOffice onboarding authorization matrix:
+/// Validates the onboarding authorization matrix:
 /// OnboardingWrite  → ProjectManager, BusinessAdmin, PlatformAdmin (NOT SupportAgent)
 /// OnboardingRead   → all four roles
 /// OnboardingRetry  → ProjectManager, SupportAgent, PlatformAdmin  (NOT BusinessAdmin)
 /// </summary>
-public sealed class BackOfficeOnboardingAuthorizationTests : IClassFixture<AccountsFixture>
+public sealed class OnboardingAuthorizationTests : IClassFixture<AccountsFixture>
 {
-    private const string BasePath = "api/backoffice/onboarding-processes";
+    private const string BasePath = "api/accounts/customer-onboarding";
 
     private readonly HttpClient _httpClient;
 
@@ -31,7 +31,7 @@ public sealed class BackOfficeOnboardingAuthorizationTests : IClassFixture<Accou
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public BackOfficeOnboardingAuthorizationTests(AccountsFixture fixture)
+    public OnboardingAuthorizationTests(AccountsFixture fixture)
     {
         var handler = new ApiVersionHandler(new QueryStringApiVersionWriter(), new ApiVersion(1.0));
         _httpClient = fixture.CreateDefaultClient(handler);

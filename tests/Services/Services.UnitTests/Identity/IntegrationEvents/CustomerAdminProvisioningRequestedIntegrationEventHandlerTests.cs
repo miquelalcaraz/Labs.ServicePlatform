@@ -1,107 +1,68 @@
+using MediatR;
+
 using Microsoft.Extensions.Logging;
 
-using Qlt.Infrastructure.Identity.Contracts.IntegrationEvents;
+using Qlt.Infrastructure.Identity.Commands;
 using Qlt.Infrastructure.Identity.IntegrationEvents.EventHandling;
-using Qlt.Infrastructure.Identity.Models;
-using Qlt.Infrastructure.Identity.Repositories;
-using Qlt.Platform.Messaging.Services;
+using Qlt.Platform;
 
 namespace Services.UnitTests.Identity.IntegrationEvents;
 
 public class CustomerAdminProvisioningRequestedIntegrationEventHandlerTests : IdentityTestBase
 {
     [Fact]
-    public async Task Handle_WhenUserDoesNotExist_CreatesUserAndPublishesEvent()
+    public async Task Handle_SendsProvisionCustomerAdminCommand()
     {
-        var createdUser = ApplicationUser.CreateAsUnConfirmed(
-            userName: "admin@acme.com",
-            email: "admin@acme.com",
-            tenantId: TenantId,
-            firstName: "John",
-            lastName: "Doe");
+        var mediator = new Mock<IMediator>();
+        mediator.Setup(m => m.Send(It.IsAny<ProvisionCustomerAdminCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Success(true));
 
-        var (tenantRepo, userRepo, outbox) = CreateIdentityMocks();
-        tenantRepo.Setup(r => r.GetByIdAsync(TenantId)).ReturnsAsync(
-            Tenant.Create(TenantId, CompanyId, "Acme Tenant"));
-        userRepo.Setup(r => r.GetByEmailAsync("admin@acme.com")).ReturnsAsync((ApplicationUser?)null);
-        userRepo.Setup(r => r.CreateAsync(It.IsAny<ApplicationUser>())).ReturnsAsync(createdUser);
+        var handler = new CustomerAdminProvisioningRequestedIntegrationEventHandler(
+            mediator.Object,
+            new Mock<ILogger<CustomerAdminProvisioningRequestedIntegrationEventHandler>>().Object);
 
-        var handler = CreateHandler(tenantRepo, userRepo, outbox);
         var @event = CreateValidProvisioningEvent(tenantId: TenantId, companyId: CompanyId);
 
         await handler.Handle(@event);
 
-        userRepo.Verify(r => r.CreateAsync(It.Is<ApplicationUser>(u =>
-            u.Email == @event.AdminEmail &&
-            u.TenantId == @event.TenantId &&
-            u.FirstName == @event.AdminFirstName &&
-            u.LastName == @event.AdminLastName)),
-            Times.Once);
-
-        outbox.Verify(o => o.AddAndSaveEventAsync(
-            It.Is<ExternalUserProvisionedIntegrationEvent>(e =>
-                e.TenantId == @event.TenantId &&
-                e.CompanyId == @event.CompanyId &&
-                e.Email == @event.AdminEmail)),
+        mediator.Verify(m => m.Send(
+            It.Is<ProvisionCustomerAdminCommand>(c =>
+                c.SubscriptionId == @event.SubscriptionId &&
+                c.TenantId == @event.TenantId &&
+                c.CompanyId == @event.CompanyId &&
+                c.OnboardingProcessId == @event.OnboardingProcessId &&
+                c.AdminEmail == @event.AdminEmail &&
+                c.AdminFirstName == @event.AdminFirstName &&
+                c.AdminLastName == @event.AdminLastName &&
+                c.TenantName == @event.TenantName),
+            It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
     [Fact]
-    public async Task Handle_WhenUserAlreadyExists_SkipsCreationAndPublishesEventWithExistingUser()
+    public async Task Handle_WhenCommandFails_LogsWarning()
     {
-        var existingUser = ApplicationUser.CreateAsUnConfirmed(
-            userName: "admin@acme.com",
-            email: "admin@acme.com",
-            tenantId: TenantId);
+        var mediator = new Mock<IMediator>();
+        mediator.Setup(m => m.Send(It.IsAny<ProvisionCustomerAdminCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result.Failure<bool>(Error.NotFound.WithMessage("Not found")));
 
-        var (tenantRepo, userRepo, outbox) = CreateIdentityMocks();
-        tenantRepo.Setup(r => r.GetByIdAsync(TenantId)).ReturnsAsync(
-            Tenant.Create(TenantId, CompanyId, "Acme Tenant"));
-        userRepo.Setup(r => r.GetByEmailAsync("admin@acme.com")).ReturnsAsync(existingUser);
+        var logger = new Mock<ILogger<CustomerAdminProvisioningRequestedIntegrationEventHandler>>();
 
-        var handler = CreateHandler(tenantRepo, userRepo, outbox);
-        var @event = CreateValidProvisioningEvent(tenantId: TenantId, companyId: CompanyId);
+        var handler = new CustomerAdminProvisioningRequestedIntegrationEventHandler(
+            mediator.Object,
+            logger.Object);
+
+        var @event = CreateValidProvisioningEvent();
 
         await handler.Handle(@event);
 
-        userRepo.Verify(r => r.CreateAsync(It.IsAny<ApplicationUser>()), Times.Never);
-        outbox.Verify(o => o.AddAndSaveEventAsync(It.IsAny<ExternalUserProvisionedIntegrationEvent>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task Handle_WhenTenantDoesNotExistLocally_CreatesTenantBeforeProvisioningUser()
-    {
-        var createdUser = ApplicationUser.CreateAsUnConfirmed(
-            userName: "admin@acme.com",
-            email: "admin@acme.com",
-            tenantId: TenantId);
-
-        var (tenantRepo, userRepo, outbox) = CreateIdentityMocks();
-        tenantRepo.Setup(r => r.GetByIdAsync(TenantId)).ReturnsAsync((Tenant?)null);
-        tenantRepo.Setup(r => r.CreateAsync(It.IsAny<Tenant>()))
-            .ReturnsAsync<Tenant, ITenantRepository, Tenant>(t => t);
-        userRepo.Setup(r => r.GetByEmailAsync(It.IsAny<string>())).ReturnsAsync((ApplicationUser?)null);
-        userRepo.Setup(r => r.CreateAsync(It.IsAny<ApplicationUser>())).ReturnsAsync(createdUser);
-
-        var handler = CreateHandler(tenantRepo, userRepo, outbox);
-        var @event = CreateValidProvisioningEvent(tenantId: TenantId, companyId: CompanyId);
-
-        await handler.Handle(@event);
-
-        tenantRepo.Verify(r => r.CreateAsync(It.Is<Tenant>(t =>
-            t.Id == @event.TenantId &&
-            t.CompanyId == @event.CompanyId &&
-            t.Name == @event.TenantName)),
+        logger.Verify(
+            x => x.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
             Times.Once);
     }
-
-    private static CustomerAdminProvisioningRequestedIntegrationEventHandler CreateHandler(
-        Mock<ITenantRepository> tenantRepo,
-        Mock<IUserRepository> userRepo,
-        Mock<IEventBusOutboxService> outbox) =>
-        new(
-            new Mock<ILogger<CustomerAdminProvisioningRequestedIntegrationEventHandler>>().Object,
-            tenantRepo.Object,
-            userRepo.Object,
-            outbox.Object);
 }

@@ -17,7 +17,7 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.5")
+                .HasAnnotation("ProductVersion", "10.0.6")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -50,7 +50,7 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
 
                     b.HasIndex("Id", "Scope");
 
-                    b.ToTable("IdempotencyEntry", "infra");
+                    b.ToTable("IdempotencyEntry", (string)null);
                 });
 
             modelBuilder.Entity("Qlt.Platform.Messaging.Models.OutboxMessage", b =>
@@ -91,7 +91,7 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
 
                     b.HasIndex("Status", "CreatedAt");
 
-                    b.ToTable("OutboxMessage", "infra");
+                    b.ToTable("OutboxMessage", (string)null);
                 });
 #pragma warning restore 612, 618
         }
