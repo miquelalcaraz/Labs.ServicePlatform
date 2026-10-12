@@ -22,7 +22,8 @@ namespace Qlt.Services.Accounts.APIs
 
         public static async Task<Results<Ok<bool>, BadRequest<ApiErrorResponse>>> CreateCompanyAsync(
             [FromHeader(Name = "x-requestid")] Guid requestId,
-            CreateCompanyRequest request,            [AsParameters] AccountsServices services)
+            CreateCompanyRequest request,
+            [AsParameters] AccountsServices services)
         {
             services.Logger.LogInformation(
                 "Sending command: {CommandName} - {IdProperty}: {CommandId}",
@@ -65,7 +66,8 @@ namespace Qlt.Services.Accounts.APIs
         }
 
         public static async Task<Results<Ok<CompanyDetail>, NotFound<ApiErrorResponse>>> GetCompanyByIdAsync(
-            Guid id,            [AsParameters] AccountsServices services)
+            Guid id,
+            [AsParameters] AccountsServices services)
         {
             var result = await services.Mediator.Send(new GetCompanyByIdQuery(id));
 

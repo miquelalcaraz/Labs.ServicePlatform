@@ -1,7 +1,5 @@
 using System.Reflection;
 
-using Duende.IdentityServer;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
@@ -10,11 +8,6 @@ namespace Qlt.Infrastructure.Identity.Pages;
 [AllowAnonymous]
 public class Index : PageModel
 {
-    public Index(IdentityServerLicense license = null)
-    {
-        License = license;
-    }
-
     public string Version
     {
         get => typeof(Duende.IdentityServer.Hosting.IdentityServerMiddleware).Assembly
@@ -22,5 +15,4 @@ public class Index : PageModel
             ?.InformationalVersion.Split('+').First()
             ?? "unavailable";
     }
-    public IdentityServerLicense License { get; }
 }

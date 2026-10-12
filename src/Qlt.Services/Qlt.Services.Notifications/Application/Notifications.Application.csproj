@@ -6,8 +6,8 @@
 		<RootNamespace>Qlt.Services.Notifications.Application</RootNamespace>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="MediatR" Version="14.1.0" />
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
+		<PackageReference Include="MediatR" Version="14.2.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
 	</ItemGroup>
 
 	<ItemGroup>
