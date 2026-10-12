@@ -23,26 +23,26 @@ namespace Qlt.Infrastructure.Identity.Stores
             IdentityContext applicationDbContext,
             IConfigurationDbContext context,
             ILogger<IdentityProviderStore> logger,
-            ICancellationTokenProvider cancellationTokenProvider,
+            IIdentityProviderFactory identityProviderFactory,
              UserManager<ApplicationUser> userManager
             )
 
         {
             _applicationDbContext = applicationDbContext ?? throw new ArgumentNullException(nameof(applicationDbContext));
-            _identityProviderStore = new IdentityProviderStore(context, logger, cancellationTokenProvider);
+            _identityProviderStore = new IdentityProviderStore(context, logger, identityProviderFactory);
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
 
         }
 
-        public Task<IEnumerable<IdentityProviderName>> GetAllSchemeNamesAsync()
+        public Task<IReadOnlyCollection<IdentityProviderName>> GetAllSchemeNamesAsync(CancellationToken cancellationToken = default)
         {
-            return _identityProviderStore.GetAllSchemeNamesAsync();
+            return _identityProviderStore.GetAllSchemeNamesAsync(cancellationToken);
         }
 
-        public Task<IdentityProvider> GetBySchemeAsync(string scheme)
+        public Task<IdentityProvider> GetBySchemeAsync(string scheme, CancellationToken cancellationToken = default)
         {
 
-            return _identityProviderStore.GetBySchemeAsync(scheme);
+            return _identityProviderStore.GetBySchemeAsync(scheme, cancellationToken);
         }
         public async Task<IEnumerable<IdentityProviderName>> GetSchemeNamesByOrganizationAsync(Guid? organizationId)
         {

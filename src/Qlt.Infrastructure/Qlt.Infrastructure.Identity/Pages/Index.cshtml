@@ -29,22 +29,5 @@
                 and <a href="https://github.com/duendesoftware/samples">samples</a> if needed for implementation details.
             </li>
         </ul>
-
-        @if(Model.License is not null)
-        {
-            <section class="identity-license-section">
-                <h2 class="identity-section-title">License</h2>
-                <dl class="identity-license-list">
-                    <div>
-                        <dt>Serial Number</dt>
-                        <dd>@Model.License.SerialNumber</dd>
-                    </div>
-                    <div>
-                        <dt>Expiration</dt>
-                        <dd>@Model.License.Expiration!.Value.ToLongDateString()</dd>
-                    </div>
-                </dl>
-            </section>
-        }
     </section>
 </div>

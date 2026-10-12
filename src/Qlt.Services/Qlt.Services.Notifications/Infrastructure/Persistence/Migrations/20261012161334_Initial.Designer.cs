@@ -12,7 +12,7 @@ using Qlt.Services.Notifications.Infrastructure.Persistence;
 namespace Qlt.Services.Notifications.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(NotificationsContext))]
-    [Migration("20260419181732_Initial")]
+    [Migration("20261012161334_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -21,7 +21,7 @@ namespace Qlt.Services.Notifications.Infrastructure.Persistence.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("Notifications")
-                .HasAnnotation("ProductVersion", "10.0.6")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);

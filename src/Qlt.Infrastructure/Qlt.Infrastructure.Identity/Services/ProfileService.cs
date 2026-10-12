@@ -21,7 +21,7 @@ namespace Qlt.Infrastructure.Identity.Services
             _userManager = userManager;
         }
 
-        public async Task GetProfileDataAsync(ProfileDataRequestContext context)
+        public async Task GetProfileDataAsync(ProfileDataRequestContext context, CancellationToken cancellationToken = default)
         {
             var subject = context.Subject ?? throw new ArgumentNullException(nameof(context.Subject));
 
@@ -39,7 +39,7 @@ namespace Qlt.Infrastructure.Identity.Services
             context.IssuedClaims = claims;
         }
 
-        public async Task IsActiveAsync(IsActiveContext context)
+        public async Task IsActiveAsync(IsActiveContext context, CancellationToken cancellationToken = default)
         {
             var subject = context.Subject ?? throw new ArgumentNullException(nameof(context.Subject));
 

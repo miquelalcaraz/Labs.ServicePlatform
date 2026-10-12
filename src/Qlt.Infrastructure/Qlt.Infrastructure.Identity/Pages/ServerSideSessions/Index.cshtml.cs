@@ -50,7 +50,7 @@ public class IndexModel : PageModel
                 DisplayName = DisplayNameFilter,
                 SessionId = SessionIdFilter,
                 SubjectId = SubjectIdFilter
-            });
+            }, HttpContext.RequestAborted);
         }
 
         return Page();
@@ -72,7 +72,7 @@ public class IndexModel : PageModel
         await _sessionManagementService.RemoveSessionsAsync(new RemoveSessionsContext
         {
             SessionId = SessionId,
-        });
+        }, HttpContext.RequestAborted);
 
         return RedirectToPage("/ServerSideSessions/Index", new { Token, DisplayNameFilter, SessionIdFilter, SubjectIdFilter, Prev });
     }
