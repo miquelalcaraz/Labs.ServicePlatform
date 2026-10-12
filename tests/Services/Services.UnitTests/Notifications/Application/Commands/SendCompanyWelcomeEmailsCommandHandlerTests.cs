@@ -66,7 +66,7 @@ public class SendCompanyWelcomeEmailsCommandHandlerTests
 
         repository.Verify(r => r.Add(It.Is<EmailNotification>(n =>
             n.Type == EmailType.SalesNotification &&
-            n.To == "sales@company.com")),
+            n.To == "sales@example.com")),
             Times.Once);
     }
 

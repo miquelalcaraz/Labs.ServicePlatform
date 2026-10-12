@@ -46,7 +46,6 @@
   </Folder>
   <Folder Name="/src/WebApp/">
     <Project Path="src/Qlt.WebApps/Qlt.BackOfficeApp/Qlt.BackOfficeApp.csproj" />
-    <Project Path="src/Qlt.WebApps/Radzen.Blazor/Radzen.Blazor.csproj" />
   </Folder>
   <Folder Name="/tests/" />
   <Folder Name="/tests/Platform/">
