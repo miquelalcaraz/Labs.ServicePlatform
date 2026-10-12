@@ -5,14 +5,14 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Qlt.Infrastructure.Identity.Infrastructure;
+using Platform.TestWebApi.Infrastructure;
 
 #nullable disable
 
-namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
+namespace Platform.TestWebApi.Infrastructure.Migrations
 {
-    [DbContext(typeof(IdentityLogsContext))]
-    [Migration("20260419181657_Initial")]
+    [DbContext(typeof(TestDbContext))]
+    [Migration("20261012161401_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -20,10 +20,41 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.6")
+                .HasDefaultSchema("test")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("Platform.TestWebApi.Infrastructure.TestEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Value")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TestEntities", "test");
+                });
 
             modelBuilder.Entity("Qlt.Platform.Messaging.Models.IdempotencyEntry", b =>
                 {
@@ -53,7 +84,7 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
 
                     b.HasIndex("Id", "Scope");
 
-                    b.ToTable("IdempotencyEntry", (string)null);
+                    b.ToTable("IdempotencyEntry", "test");
                 });
 
             modelBuilder.Entity("Qlt.Platform.Messaging.Models.OutboxMessage", b =>
@@ -94,7 +125,7 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Migrations.IdentityLogs
 
                     b.HasIndex("Status", "CreatedAt");
 
-                    b.ToTable("OutboxMessage", (string)null);
+                    b.ToTable("OutboxMessage", "test");
                 });
 #pragma warning restore 612, 618
         }
