@@ -34,7 +34,7 @@ public abstract class ServicesFixture : WebApplicationFactory<Program>, IAsyncLi
         };
         var appBuilder = DistributedApplication.CreateBuilder(options);
 
-        var sqlPassword = appBuilder.AddParameter("sqlPassword", value: "***REMOVED***", secret: true);
+        var sqlPassword = appBuilder.AddParameter("sqlPassword", value: "_TestPassword123", secret: true);
         SqlServer = appBuilder.AddSqlServer("sqlserver", sqlPassword, 1445)
             .WithImageTag("latest")
             .WithLifetime(ContainerLifetime.Persistent);

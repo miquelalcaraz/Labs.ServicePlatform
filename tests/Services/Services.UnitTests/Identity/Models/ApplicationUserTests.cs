@@ -139,12 +139,12 @@ public class ApplicationUserTests
         var tenantId = Guid.NewGuid();
         var user = ApplicationUser.ProvisionInternalUser(
             tenantId: tenantId,
-            email: "admin@qlt.com",
+            email: "admin@example.com",
             firstName: "Jane",
             lastName: "Smith");
 
-        user.Email.Should().Be("admin@qlt.com");
-        user.UserName.Should().Be("admin@qlt.com");
+        user.Email.Should().Be("admin@example.com");
+        user.UserName.Should().Be("admin@example.com");
         user.UserType.Should().Be(UserType.Internal);
         user.Status.Should().Be(UserStatus.PendingActivation);
         user.DisplayName.Should().Be("Jane Smith");
@@ -158,7 +158,7 @@ public class ApplicationUserTests
         var tenantId = Guid.NewGuid();
         var user = ApplicationUser.ProvisionInternalUser(
             tenantId: tenantId,
-            email: "admin@qlt.com",
+            email: "admin@example.com",
             id: id);
 
         user.Id.Should().Be(id.ToString());

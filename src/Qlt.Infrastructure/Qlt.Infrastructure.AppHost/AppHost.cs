@@ -29,9 +29,7 @@ eventBusTopic.AddServiceBusSubscription("notifications-sub", subscriptionName: "
 eventBusTopic.AddServiceBusSubscription("identity-sub", subscriptionName: "Identity");
 #endif
 
-var sqlPassword = builder.AddParameter("sqlPassword", value: "***REMOVED***", secret: true);
-
-var sqlserver = builder.AddSqlServer("sqlserver", sqlPassword, 1444)
+var sqlserver = builder.AddSqlServer("sqlserver", port: 1444)
     .WithImageTag("latest")
     .WithLifetime(ContainerLifetime.Persistent)
     .WithEndpoint("tcp", endpoint =>

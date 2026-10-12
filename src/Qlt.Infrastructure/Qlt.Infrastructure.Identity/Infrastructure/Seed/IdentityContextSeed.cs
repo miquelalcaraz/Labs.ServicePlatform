@@ -13,7 +13,10 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Seed
 {
     public class IdentityContextSeed : IDbSeeder<IdentityContext>
     {
+        private const string DemoUsersPasswordKey = "Seed:DemoUsersPassword";
+
         private readonly IConfiguration _configuration;
+        private readonly ILogger<IdentityContextSeed> _logger;
         private readonly ITenantRepository _tenantRepository;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly UserManager<ApplicationUser> _userManager;
@@ -29,6 +32,7 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Seed
             _persistedGrantDbContext.Database.Migrate();
 
             _configuration = serviceProvider.GetRequiredService<IConfiguration>();
+            _logger = serviceProvider.GetRequiredService<ILogger<IdentityContextSeed>>();
             _roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             _userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             _tenantRepository = serviceProvider.GetRequiredService<ITenantRepository>();
@@ -48,7 +52,7 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Seed
 
             if (!context.IdentityProviders.Any())
             {
-                var providers = ProviderSeeding.Get();
+                var providers = ProviderSeeding.Get(_configuration);
                 foreach (var provider in providers)
                 {
                     context.IdentityProviders.Add(provider.ToEntity());
@@ -105,22 +109,29 @@ namespace Qlt.Infrastructure.Identity.Infrastructure.Seed
         {
             if (!_userManager.Users.Any())
             {
+                var demoUsersPassword = _configuration[DemoUsersPasswordKey];
+                if (string.IsNullOrWhiteSpace(demoUsersPassword))
+                {
+                    _logger.LogWarning("Demo users were not seeded because '{SettingKey}' is not configured", DemoUsersPasswordKey);
+                    return;
+                }
+
                 Tenant tenant = UsersSeeding.GetTenant();
                 await _tenantRepository.CreateAsync(tenant);
 
                 foreach (var user in UsersSeeding.GetUsers())
                 {
-                    await _userManager.CreateAsync(user, "***REMOVED***");
+                    await _userManager.CreateAsync(user, demoUsersPassword);
                     await _userManager.AddToRolesAsync(user, new[] { Roles.PlatformRoles.PlatformAdmin, Roles.SystemRoles.SystemAdmin });
                 }
                 foreach (var user in UsersSeeding.GetApiUsers())
                 {
-                    await _userManager.CreateAsync(user, "***REMOVED***");
+                    await _userManager.CreateAsync(user, demoUsersPassword);
                     await _userManager.AddToRolesAsync(user, new[] { Roles.SystemRoles.ApiUser, });
                 }
                 foreach (var user in UsersSeeding.GetAdmins())
                 {
-                    await _userManager.CreateAsync(user, "***REMOVED***");
+                    await _userManager.CreateAsync(user, demoUsersPassword);
                     await _userManager.AddToRolesAsync(user, new[] { Roles.PlatformRoles.PlatformAdmin, Roles.SystemRoles.SystemAdmin });
                 }
             }

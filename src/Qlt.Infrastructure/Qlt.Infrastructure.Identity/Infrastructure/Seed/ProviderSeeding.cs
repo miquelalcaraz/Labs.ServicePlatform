@@ -1,91 +1,57 @@
-﻿
 using Duende.IdentityServer.Models;
+
 namespace Qlt.Infrastructure.Identity.Infrastructure.Seed
 {
-    internal class ProviderSeeding
+    /// <summary>
+    /// Builds the external OIDC identity providers from the <c>ExternalProviders</c> configuration section.
+    /// Credentials are never stored in source code: supply them through user secrets or environment variables.
+    /// </summary>
+    internal static class ProviderSeeding
     {
-        public static IEnumerable<IdentityProvider> Get()
+        private const string SectionName = "ExternalProviders";
+
+        public static IEnumerable<IdentityProvider> Get(IConfiguration configuration)
         {
-            List<IdentityProvider> providers = new List<IdentityProvider>
-            {
-                GetCompnyProvider(),
-                //GetGoogleProvider(),
-                GetOtherOidcProvider()
-            };
+            var providers = configuration.GetSection(SectionName).Get<List<ExternalProviderOptions>>() ?? [];
 
-
-            return providers;
+            return providers
+                .Where(options => !string.IsNullOrWhiteSpace(options.Scheme))
+                .Select(ToIdentityProvider)
+                .ToList();
         }
-        public static IdentityProvider GetCompnyProvider()
-        {
 
-            string tenant_id = "00000000-0000-0000-0000-000000000000";
-            string client_id = "00000000-0000-0000-0000-000000000000";
-            string client_secret = "00000000-0000-0000-0000-000000000000";
-            var azureAdProvider = new OidcProvider
+        private static IdentityProvider ToIdentityProvider(ExternalProviderOptions options)
+        {
+            var oidcProvider = new OidcProvider
             {
-                Scheme = "QltSAD",
-                DisplayName = "Qlt",
-                Authority = $"https://login.microsoftonline.com/{tenant_id}/v2.0",
-                ClientId = $"{client_id}",
-                ClientSecret = $"{client_secret}",
+                Scheme = options.Scheme,
+                DisplayName = options.DisplayName ?? options.Scheme,
+                Authority = options.Authority,
+                ClientId = options.ClientId,
+                ClientSecret = options.ClientSecret,
                 ResponseType = "code",
-                Scope = "openid profile email"
+                Scope = options.Scope ?? "openid profile email"
             };
 
+            var isConfigured = !string.IsNullOrWhiteSpace(options.Authority)
+                && !string.IsNullOrWhiteSpace(options.ClientId)
+                && !string.IsNullOrWhiteSpace(options.ClientSecret);
 
-            IdentityProvider identityProvider = new IdentityProvider(azureAdProvider.Type, azureAdProvider) { Enabled = true };
-
-
-            return identityProvider;
-        }
-
-        public static IdentityProvider GetOtherOidcProvider()
-        {
-
-            string tenant_id = "00000000-0000-0000-0000-000000000000";
-            string client_id = "00000000-0000-0000-0000-000000000000";
-            string client_secret = "00000000-0000-0000-0000-000000000000";
-            var azureAdProvider = new OidcProvider
+            return new IdentityProvider(oidcProvider.Type, oidcProvider)
             {
-                Scheme = "OtherAD",
-                DisplayName = "Other AD",
-                Authority = $"https://login.microsoftonline.com/{tenant_id}/v2.0",
-                ClientId = $"{client_id}",
-                ClientSecret = $"{client_secret}",
-                ResponseType = "code",
-                Scope = "openid profile email"
+                Enabled = options.Enabled && isConfigured
             };
-
-
-            IdentityProvider identityProvider = new IdentityProvider(azureAdProvider.Type, azureAdProvider) { Enabled = true };
-
-
-            return identityProvider;
         }
 
-        /*
-        public static IdentityProvider GetGoogleProvider()
+        private sealed class ExternalProviderOptions
         {
-            string client_id = "***REMOVED***.apps.googleusercontent.com";
-            string client_secret = "***REMOVED***";
-
-            
-            IdentityProvider identityProvider = new IdentityProvider("OAuth") //OAuth
-            {
-                Scheme = "Google",
-                DisplayName = "A Google Organization",
-                Properties = new Dictionary<string, string>
-                {
-                    { "SignInScheme", IdentityServerConstants.ExternalCookieAuthenticationScheme },
-                    { "ClientId",  $"{client_id}" },
-                    { "ClientSecret" , $"{client_secret}"},
-                },
-                Enabled = true,
-            };
-            return identityProvider;
+            public string Scheme { get; set; } = string.Empty;
+            public string? DisplayName { get; set; }
+            public string? Authority { get; set; }
+            public string? ClientId { get; set; }
+            public string? ClientSecret { get; set; }
+            public string? Scope { get; set; }
+            public bool Enabled { get; set; }
         }
-        */
-
     }
 }

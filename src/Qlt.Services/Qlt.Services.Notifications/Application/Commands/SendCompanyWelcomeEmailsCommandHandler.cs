@@ -47,7 +47,7 @@ public class SendCompanyWelcomeEmailsCommandHandler
         welcomeNotification.MarkSent();
 
         var salesNotification = EmailNotification.Create(
-            "sales@company.com",
+            "sales@example.com",
             $"New Organization Registered: {message.TradeName}",
             $"New organization registered:\n\nName: {message.TradeName}\nLegal Name: {message.LegalName}\nCountry: {message.CountryCode}",
             EmailType.SalesNotification);

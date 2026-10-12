@@ -1,8 +1,0 @@
-﻿@inherits RadzenComponentWithChildren
-
-@if (Visible)
-{
-    <div @ref="@Element" style="@GetStyle()" @attributes="Attributes" class="@GetCssClass()" id="@GetId()">
-        @ChildContent
-    </div>
-}
