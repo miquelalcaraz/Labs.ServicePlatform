@@ -2,10 +2,23 @@
 
 ## Overview
 
-The Transactional Outbox pattern guarantees that integration events are published reliably alongside business data changes. Business data and outbox entries are saved in the **same database transaction**, ensuring atomicity. Events are then published to the event bus after commit, with a background processor handling retries for any failures.
+The Transactional Outbox pattern guarantees that integration events are published reliably alongside business data changes. Business data and outbox entries are saved in the **same database transaction**, ensuring atomicity. Events are then published to the event bus right after commit (inline), and a background processor retries anything that was not published.
 
 **Layer**: `Platform.Messaging.EntityFramework`  
 **Key types**: `OutboxMessageService<TContext>`, `EventBusOutboxService<TContext>`, `OutboxProcessor`, `IntegrationEventProcessorBehavior<TRequest, TResponse>`
+
+```mermaid
+flowchart LR
+    subgraph TX["Database transaction"]
+        BD["Business data"]
+        OM["OutboxMessage<br/>(NotPublished)"]
+    end
+    DEH["Domain event handler"] -- "AddAndSaveEventAsync" --> OM
+    IEP["IntegrationEventProcessorBehavior<br/>(inline, after commit)"] -- "PublishEventsThroughEventBusAsync" --> BUS[("Event bus")]
+    OP["OutboxProcessor<br/>(background, polling)"] -- "RetrieveUnpublishedEventsAsync + PublishAsync" --> BUS
+    OM -. read .-> IEP
+    OM -. claim .-> OP
+```
 
 ---
 
@@ -16,26 +29,41 @@ The Transactional Outbox pattern guarantees that integration events are publishe
 ```csharp
 public class OutboxMessage
 {
-    public Guid Id { get; set; }
-    public string TypeName { get; set; }
-    public string Payload { get; set; }
+    public Guid Id { get; set; }                       // = IntegrationEvent.Id
+    public string TypeName { get; set; } = string.Empty; // event type FullName
     public OutboxMessageStatus Status { get; set; }
     public int SendCount { get; set; }
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; }            // = IntegrationEvent.CreationDate
+    public string Payload { get; set; } = string.Empty; // JSON
     public Guid TransactionId { get; set; }
-    public byte[] RowVersion { get; set; }
+    public byte[] RowVersion { get; set; } = null!;
+
+    // Transient, populated after deserializing Payload. Not persisted.
+    public IntegrationEvent? DeserializedEvent { get; set; }
 }
 
 public enum OutboxMessageStatus
 {
-    NotPublished,
-    InProgress,
-    Published,
-    FailedToPublish
+    NotPublished = 0,
+    InProgress = 1,
+    Published = 2,
+    FailedToPublish = 3
 }
 ```
 
-Entity configuration lives in `Platform.Persistence.EntityFramework.Relational` (`OutboxMessageConfiguration`), following the 5-layer boundary rules.
+Entity configuration lives in `Platform.Persistence.EntityFramework.Relational` (`OutboxMessageConfiguration`), following the 5-layer boundary rules: table `OutboxMessage` in the context default schema, `RowVersion` as row version, `DeserializedEvent` ignored, indexes on `TransactionId` and `(Status, CreatedAt)`.
+
+### Status Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> NotPublished: SaveEventAsync (inside transaction)
+    NotPublished --> InProgress: inline publish or OutboxProcessor claim (SendCount + 1)
+    FailedToPublish --> InProgress: OutboxProcessor claim while below MaxRetryCount
+    InProgress --> Published: PublishAsync succeeded
+    InProgress --> FailedToPublish: PublishAsync threw
+    Published --> [*]
+```
 
 ---
 
@@ -43,33 +71,41 @@ Entity configuration lives in `Platform.Persistence.EntityFramework.Relational` 
 
 ### OutboxMessageService&lt;TContext&gt;
 
-Low-level service that persists and retrieves outbox entries using EF Core:
+Low-level service (`IOutboxMessageService`) that persists and retrieves outbox entries using EF Core:
 
 | Method | Responsibility |
 |--------|---------------|
-| `SaveEventAsync` | Serializes an `IntegrationEvent` and inserts an `OutboxMessage` within the current transaction |
-| `RetrieveEventLogsPendingToPublishAsync` | Queries outbox entries by `TransactionId` with status `NotPublished` |
-| `MarkEventAsInProgressAsync` | Updates status to `InProgress`, increments `SendCount` |
-| `MarkEventAsPublishedAsync` | Updates status to `Published` |
-| `MarkEventAsFailedAsync` | Updates status to `FailedToPublish` |
+| `SaveEventAsync(event, transactionId)` | Serializes the event (`System.Text.Json`, indented) and **adds** an `OutboxMessage` to the change tracker — persisted by the next `SaveChanges`/commit |
+| `RetrieveEventLogsPendingToPublishAsync(transactionId)` | Loads `NotPublished` rows for the transaction, ordered by `CreatedAt`, and deserializes them |
+| `MarkEventAsInProgressAsync` | Loads the row, sets `InProgress`, increments `SendCount`, `SaveChangesAsync` |
+| `MarkEventAsPublishedAsync` | Sets `Published`, `SaveChangesAsync` |
+| `MarkEventAsFailedAsync` | Sets `FailedToPublish`, `SaveChangesAsync` |
+| `RetrieveUnpublishedEventsAsync(batchSize, maxRetryCount)` | Atomically claims a batch for the background processor (see [Concurrency Control](#concurrency-control)) |
+
+Status updates load the tracked entity and rely on `RowVersion`; a `DbUpdateConcurrencyException` is logged, recorded as an activity event and rethrown.
 
 ### EventBusOutboxService&lt;TContext&gt;
 
-Higher-level service that coordinates outbox persistence with event bus publishing:
+Higher-level service (`IEventBusOutboxService`) that coordinates outbox persistence with event bus publishing:
 
+```mermaid
+flowchart TB
+    subgraph ADD["AddAndSaveEventAsync(event)"]
+        A1{"GetCurrentTransaction() != null?"} -- no --> A2["throw InvalidOperationException"]
+        A1 -- yes --> A3["OutboxMessageService.SaveEventAsync(event, transaction.TransactionId)"]
+    end
+    subgraph PUB["PublishEventsThroughEventBusAsync(transactionId)"]
+        P1["RetrieveEventLogsPendingToPublishAsync(transactionId)"] --> P2{"any?"}
+        P2 -- no --> P9["return"]
+        P2 -- yes --> P3["for each event (sequential)"]
+        P3 --> P4["MarkEventAsInProgress"]
+        P4 --> P5["IEventBus.PublishAsync(DeserializedEvent)"]
+        P5 -- ok --> P6["MarkEventAsPublished"]
+        P5 -- exception --> P7["MarkEventAsFailed<br/>(retried by OutboxProcessor)"]
+    end
 ```
-AddAndSaveEventAsync(event)
-  ├─ Validate active transaction exists
-  └─ Delegate to OutboxMessageService.SaveEventAsync()
 
-PublishEventsThroughEventBusAsync(transactionId)
-  ├─ Retrieve pending events for transaction
-  └─ For each event:
-       ├─ MarkAsInProgress
-       ├─ IEventBus.PublishAsync(deserializedEvent)
-       ├─ Success → MarkAsPublished
-       └─ Failure → MarkAsFailed (retry by OutboxProcessor)
-```
+Publishing failures are logged and counted; they do **not** fail the command, which has already committed.
 
 ---
 
@@ -77,39 +113,48 @@ PublishEventsThroughEventBusAsync(transactionId)
 
 ### IntegrationEventProcessorBehavior
 
-Runs **outside** the transaction. After the inner pipeline (including `TransactionBehavior`) commits, it publishes outbox events:
+Registered **outside** `TransactionBehavior`. After the inner pipeline (including the commit) completes, it publishes the outbox events of the transaction:
 
-```
-IntegrationEventProcessorBehavior (OUTSIDE transaction)
-  └─ TransactionBehavior (BEGIN / COMMIT)
-        └─ DomainEventProcessorBehavior (INSIDE transaction)
-              └─ CommandHandler
+```mermaid
+flowchart TB
+    IEP["IntegrationEventProcessorBehavior (OUTSIDE transaction)"] --> TX
+    TX["TransactionBehavior (BEGIN / COMMIT)"] --> VAL
+    VAL["ValidationBehavior"] --> DEP
+    DEP["DomainEventProcessorBehavior (INSIDE transaction)"] --> H
+    H["CommandHandler"]
 ```
 
 ```csharp
-public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
+public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
 {
-    var response = await next(ct);
+    var response = await next(cancellationToken);
+    var transactionId = _unitOfWork.GetCurrentTransaction()?.TransactionId ?? _unitOfWork.LastCommittedTransactionId;
 
-    if (_unitOfWork.LastCommittedTransactionId is { } transactionId)
-    {
-        await _outboxService.PublishEventsThroughEventBusAsync(transactionId);
-    }
+    if (!transactionId.HasValue)
+        return response;
+
+    // activity "IntegrationEventProcessor {Command}"
+    if (_outboxService is not null)
+        await _outboxService.PublishEventsThroughEventBusAsync(transactionId.Value);
 
     return response;
 }
 ```
+
+When the command runs nested inside a transaction opened by `IdempotencyIntegrationEventEfDecorator`, the outbox rows are not flushed yet at this point, so nothing is published inline and the `OutboxProcessor` publishes them after the outer commit (see [03-domain-events-consistency.md](03-domain-events-consistency.md#integration-event--command-nested-transaction)).
 
 ### Domain Event Handlers → Outbox
 
 Domain event handlers run inside the transaction and save integration events to the outbox atomically:
 
 ```csharp
-public class OrganizationCreatedDomainEventHandler : IDomainEventHandler<OrganizationCreatedDomainEvent>
+// Accounts.Application/DomainEventHandlers/CompanyCreatedDomainEventHandler.cs
+public async Task Handle(CompanyCreatedDomainEvent notification, CancellationToken cancellationToken)
 {
-    public async Task Handle(OrganizationCreatedDomainEvent notification, CancellationToken ct)
+    var company = await _companyRepository.GetAsync(notification.CompanyId);
+    if (company != null)
     {
-        var integrationEvent = new OrganizationCreatedIntegrationEvent(...);
+        var integrationEvent = new CompanyCreatedIntegrationEvent(/* ... */);
         await _outboxService.AddAndSaveEventAsync(integrationEvent);
     }
 }
@@ -119,70 +164,130 @@ public class OrganizationCreatedDomainEventHandler : IDomainEventHandler<Organiz
 
 ## Background Processor
 
-`OutboxProcessor` is a `BackgroundService` that retries failed or stuck events:
+`OutboxProcessor` is a `BackgroundService` registered automatically by `AddTransactionalOutbox<TContext>()`:
 
-- **Polling**: Configurable interval via `OutboxProcessorOptions`
-- **Batch processing**: Retrieves events with status `NotPublished` or `FailedToPublish` (below max retries), and `InProgress` events older than a timeout threshold
-- **Retry**: Exponential backoff with configurable max retries
-- **Telemetry**: OpenTelemetry activities and metrics for each batch cycle
+```mermaid
+sequenceDiagram
+    participant OP as OutboxProcessor
+    participant SIG as MigrationReadySignal
+    participant OS as IOutboxMessageService
+    participant BUS as IEventBus
+
+    OP->>SIG: WaitAsync() (until migrations complete)
+    loop every PollingInterval (PeriodicTimer)
+        OP->>OS: RetrieveUnpublishedEventsAsync(BatchSize, MaxRetryCount)
+        OS-->>OP: claimed events (InProgress, SendCount + 1)
+        loop each event
+            OP->>BUS: PublishAsync(event)
+            alt success
+                OP->>OS: MarkEventAsPublishedAsync
+            else failure
+                OP->>OS: MarkEventAsFailedAsync
+            end
+        end
+    end
+```
+
+- **Startup gate**: waits for `MigrationReadySignal`, which is registered and signalled by `AddMigration<TContext>()` — a service that uses the outbox must also register its migrations.
+- **Polling**: `PeriodicTimer` with `OutboxProcessorOptions.PollingInterval` (default **30 s**). A new DI scope is created per cycle.
+- **Batch**: up to `BatchSize` (default **50**) events with status `NotPublished` or `FailedToPublish` and `SendCount < MaxRetryCount` (default **5**), oldest first.
+- **Retry**: one attempt per event per cycle; the effective delay between retries is the polling interval (no exponential backoff).
+- **Errors**: exceptions in a cycle are logged and the loop continues; cancellation stops the loop.
+
+```csharp
+services.AddTransactionalOutbox<AccountContext>(
+    options => options.RegisterEventTypes(/* assemblies */),
+    processor =>                                  // optional
+    {
+        processor.PollingInterval = TimeSpan.FromSeconds(10);
+        processor.BatchSize = 100;
+        processor.MaxRetryCount = 10;
+    });
+```
 
 ---
 
 ## Concurrency Control
 
-When multiple `OutboxProcessor` instances run concurrently (e.g., scaled-out services), race conditions can cause duplicate publishing. The solution uses an **atomic claim pattern**:
+When multiple `OutboxProcessor` instances run concurrently (e.g., scaled-out services), race conditions could cause duplicate publishing. The solution uses an **atomic claim pattern** in `RetrieveUnpublishedEventsAsync`:
 
 ### Three-Step Atomic Claim
 
-1. **Claim**: `ExecuteUpdateAsync` atomically sets `Status = InProgress` only for rows where `Status = NotPublished` and `RowVersion` matches
-2. **Publish**: Send claimed events to the event bus
-3. **Finalize**: Mark as `Published` or `FailedToPublish`
+1. **Select candidates**: IDs of the oldest `NotPublished` / `FailedToPublish` rows below the retry limit (`Take(batchSize)`).
+2. **Claim**: a single `ExecuteUpdateAsync` sets `Status = InProgress` and `SendCount + 1`, re-applying the status/retry predicate. Rows already claimed by another instance no longer match and are skipped by the database.
+3. **Load**: read back the candidate rows that are now `InProgress` and deserialize them.
 
 ```csharp
-var claimed = await context.Set<OutboxMessage>()
-    .Where(e => e.Status == OutboxMessageStatus.NotPublished && e.Id == target.Id)
-    .ExecuteUpdateAsync(s => s
+var claimedCount = await _context.Set<OutboxMessage>()
+    .Where(e => candidateEventIds.Contains(e.Id)
+        && (e.Status == OutboxMessageStatus.NotPublished || e.Status == OutboxMessageStatus.FailedToPublish)
+        && e.SendCount < maxRetryCount)
+    .ExecuteUpdateAsync(setters => setters
         .SetProperty(e => e.Status, OutboxMessageStatus.InProgress)
-        .SetProperty(e => e.SendCount, e => e.SendCount + 1));
+        .SetProperty(e => e.SendCount, e => e.SendCount + 1),
+        cancellationToken);
 ```
+
+If `claimedCount == 0`, another process won the race and the cycle ends.
 
 ### RowVersion Optimistic Concurrency
 
-`OutboxMessage.RowVersion` is configured as a concurrency token in `OutboxMessageConfiguration`. If two processors try to claim the same row, only one succeeds — the other gets zero rows affected from `ExecuteUpdateAsync`.
+`OutboxMessage.RowVersion` is configured with `IsRowVersion()`. The claim itself relies on the status predicate of the `UPDATE`, while status transitions performed through tracked entities (`MarkEventAs*`) are protected by `RowVersion`: if another process modified the row in between, EF throws `DbUpdateConcurrencyException`.
 
-This approach is **database-agnostic** — it uses standard EF Core API without raw SQL.
+This approach is **database-agnostic** — it uses standard EF Core APIs without raw SQL.
 
 ---
 
 ## Event Type Registration
 
-All integration event types must be registered in `OutboxMessageOptions.EventTypes` for correct deserialization:
+The outbox stores `TypeName = event.GetType().FullName` and needs the type to deserialize the payload. Types are registered in `OutboxMessageOptions` when calling `AddTransactionalOutbox`, usually by scanning the contract assemblies:
 
 ```csharp
-builder.AddServiceBusEventBus("messaging")
-    .AddSubscription<OrganizationCreatedIntegrationEvent, OrganizationCreatedIntegrationEventHandler>();
+// Accounts.Infrastructure/Extensions/Extensions.cs
+services.AddTransactionalOutbox<AccountContext>(options =>
+{
+    options.RegisterEventTypes(
+        typeof(Qlt.Contracts.Accounts.AssemblyReference).Assembly,
+        typeof(Qlt.Contracts.Identity.AssemblyReference).Assembly,
+        typeof(Qlt.Contracts.Notifications.AssemblyReference).Assembly);
+});
 ```
 
-Unregistered event types cause a runtime deserialization failure when the outbox attempts to reconstruct the event.
+`RegisterEventTypes` also accepts `params Type[]` or `IEnumerable<Type>`. Each call **replaces** the previous list. This registry is independent from the event bus subscriptions (`AddSubscription`), which only cover consumed events.
+
+Unregistered event types make deserialization throw `InvalidOperationException` ("Event type '...' is not registered").
 
 ---
 
 ## Telemetry
 
-Both `OutboxMessageService` and `OutboxProcessor` emit:
+`OutboxMessageService`, `EventBusOutboxService` and `OutboxProcessor` emit (ActivitySource / Meter `Qlt.Domain.Application`):
 
 | Signal | Details |
 |--------|---------|
-| Activities | `outbox.save`, `outbox.publish`, `outbox.process-batch` |
-| Metrics | Batch size, event state transitions, operation duration, success/failure counts |
+| Activities | `Save Event to Outbox`, `Retrieve Pending Events from Outbox`, `Update Outbox Event Status`, `Publish Outbox Events`, `Retrieve Unpublished Outbox Events`, `Outbox Background Processing` |
+| Counters | `application.outbox.events_saved`, `application.outbox.state_changes` (tag `status`), `application.outbox.events_failed` (tag `event_type`) |
+| Histograms | `application.outbox.operation_duration` (tag `operation`: `save`, `retrieve`, `update_status`, `retrieve_unpublished`), `application.outbox.batch_size` |
 
 ---
 
 ## Validation Checklist
 
 - [ ] Domain event handlers save integration events via `IEventBusOutboxService.AddAndSaveEventAsync` (inside transaction)
-- [ ] `IntegrationEventProcessorBehavior` is registered and runs outside `TransactionBehavior`
-- [ ] `OutboxProcessor` background service is registered for retry of failed events
-- [ ] All integration event types are registered in `OutboxMessageOptions.EventTypes`
-- [ ] `OutboxMessageConfiguration` configures `RowVersion` as concurrency token
-- [ ] No direct `IEventBus.PublishAsync` calls from domain event handlers (use outbox)
+- [ ] The service uses `AddQltMediator` so `IntegrationEventProcessorBehavior` runs outside `TransactionBehavior`
+- [ ] `AddTransactionalOutbox<TContext>` is registered (it also registers `OutboxProcessor` and enables the outbox mapping)
+- [ ] `AddMigration<TContext>` is registered so `MigrationReadySignal` exists and is signalled
+- [ ] All published integration event types are registered via `OutboxMessageOptions.RegisterEventTypes`
+- [ ] No direct `IEventBus.PublishAsync` calls from handlers (use the outbox)
+
+---
+
+## Known Gaps
+
+| Area | Details |
+|---|---|
+| Stuck `InProgress` events | Events claimed or marked `InProgress` are never reclaimed if the process dies (or deserialization fails) before marking them `Published`/`FailedToPublish`. There is no timeout-based recovery. |
+| Exhausted retries | Events that reach `MaxRetryCount` stay `FailedToPublish` with no dead-letter table or alert. |
+| No backoff | Retries happen on every polling cycle; there is no exponential backoff. |
+| Deferred publishing for nested commands | Commands triggered by integration events publish through the `OutboxProcessor`, adding up to one polling interval of latency. |
+| Duplicate save metric | `application.outbox.events_saved` is incremented by both `EventBusOutboxService` and `OutboxMessageService` for the same event. |
