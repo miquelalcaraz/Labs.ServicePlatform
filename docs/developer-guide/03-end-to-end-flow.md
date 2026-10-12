@@ -1,52 +1,49 @@
-# Developer Guide: End-to-End Flow — CreateOrganization
+# Developer Guide: End-to-End Flow — CreateCompany
 
 ## Overview
 
-Walkthrough of the `CreateOrganization` endpoint showing how **CQRS**, **Domain Events**, **Integration Events**, **Transactional Outbox**, **Idempotent Consumer**, **Unit of Work**, and **Result Pattern** work together in a real flow.
+Walkthrough of the `CreateCompany` endpoint (Accounts) and its consumer in Notifications, showing how **CQRS**, **Domain Events**, **Integration Events**, **Transactional Outbox**, **Idempotent Consumer**, **Unit of Work**, and **Result Pattern** work together in a real flow.
 
 ---
 
 ## Flow Diagram
 
-```
-Client → PUT /api/accounts [x-requestid: guid]
-  │
-  ├─ API validates requestId, creates CreateOrganizationCommand
-  │
-  ├─ MediatR Pipeline:
-  │   1. LoggingBehavior (start timer)
-  │   2. IdempotencyBehavior (check IIdempotencyService.ExistsAsync)
-  │   3. IntegrationEventProcessorBehavior (pass-through in)
-  │   4. TransactionBehavior (BEGIN TRANSACTION)
-  │   5. ValidationBehavior (FluentValidation)
-  │   6. DomainEventProcessorBehavior (pass-through in)
-  │   7. CommandHandler:
-  │       ├─ Organization.Create() → raises OrganizationCreatedDomainEvent
-  │       ├─ Repository.Add(organization)
-  │       └─ SaveChangesAsync() → FLUSH (not commit)
-  │   6. DomainEventProcessorBehavior (dispatches domain events):
-  │       └─ OrganizationCreatedDomainEventHandler:
-  │           ├─ Queries organization (visible in transaction)
-  │           └─ AddAndSaveEventAsync(OrganizationCreatedIntegrationEvent)
-  │   4. TransactionBehavior:
-  │       ├─ SaveChangesAsync() → flushes OutboxMessages
-  │       └─ CommitAsync() → ATOMIC COMMIT
-  │   3. IntegrationEventProcessorBehavior:
-  │       └─ PublishEventsThroughEventBusAsync(transactionId)
-  │   2. IdempotencyBehavior (mark completed in cache)
-  │   1. LoggingBehavior (log completion)
-  │
-  ├─ API returns Result → HTTP 200 OK
-  │
-  ├─ Event Bus delivers OrganizationCreatedIntegrationEvent:
-  │   ├─ Identity Service:
-  │   │   ├─ TelemetryDecorator → IdempotencyDecorator → Handler
-  │   │   └─ Creates Tenant + Admin User (within transaction)
-  │   └─ Notifications Service:
-  │       ├─ TelemetryDecorator → IdempotencyDecorator → Handler
-  │       └─ Sends welcome email + sales notification
-  │
-  └─ Eventual Consistency achieved
+```mermaid
+sequenceDiagram
+    autonumber
+    actor C as Client
+    participant API as Accounts API
+    participant P as MediatR pipeline
+    participant H as CreateCompanyCommandHandler
+    participant DEH as CompanyCreatedDomainEventHandler
+    participant DB as AccountContext (SQL)
+    participant BUS as Service Bus (qlt-event-bus)
+    participant N as Notifications
+
+    C->>API: PUT /api/accounts/companies (x-requestid)
+    API->>API: validate requestId, build CreateCompanyCommand
+    API->>P: Send(command)
+    P->>P: Logging → Idempotency (ExistsAsync) → MarkAsProcessing
+    P->>DB: BEGIN TRANSACTION
+    P->>P: ValidationBehavior (CreateCompanyCommandValidator)
+    P->>H: Handle
+    H->>H: Company.Create() raises CompanyCreatedDomainEvent
+    H->>DB: Add + SaveChangesAsync() (FLUSH)
+    H-->>P: Result.Success(true)
+    P->>DEH: dispatch CompanyCreatedDomainEvent
+    DEH->>DB: GetAsync(companyId) (visible in transaction)
+    DEH->>DB: AddAndSaveEventAsync(CompanyCreatedIntegrationEvent) → OutboxMessage
+    P->>DB: CommitTransactionAsync() (final flush + ATOMIC COMMIT)
+    P->>BUS: PublishEventsThroughEventBusAsync(transactionId)
+    P->>P: MarkAsCompleted (Redis) → Logging
+    API-->>C: 200 OK (true)
+
+    BUS->>N: CompanyCreated (subscription Notifications)
+    N->>N: Telemetry → Idempotency EF decorator (BEGIN TX)
+    N->>N: CompanyCreatedIntegrationEventHandler → Send(SendCompanyWelcomeEmailsCommand)
+    N->>N: create + send welcome & sales EmailNotifications, SaveChanges
+    N->>N: IdempotencyEntry + COMMIT
+    N-->>BUS: CompleteMessageAsync
 ```
 
 ---
@@ -56,82 +53,126 @@ Client → PUT /api/accounts [x-requestid: guid]
 ### 1. API Endpoint
 
 ```
-PUT /api/accounts HTTP/1.1
+PUT /api/accounts/companies HTTP/1.1
 x-requestid: {guid}
+Authorization: Bearer {token}
 Content-Type: application/json
 ```
 
-Validates `requestId` header, creates `CreateOrganizationCommand`, sends to MediatR. Returns `Ok(true)` or `BadRequest(error)` via Result Pattern.
-
-### 2. IdempotencyBehavior
-
-- Pattern-matches `IIdempotentCommand` (zero reflection)
-- Checks `IdempotencyKey` via `IIdempotencyService.ExistsAsync(key)` — key: `(Scope: "CreateOrganizationCommand", Id: guid, Qualifier: null)`
-- If exists: returns `CreateResultForDuplicateRequest()` without executing handler
-- If new: calls `MarkAsProcessingAsync()` (adds to EF change tracker, no `SaveChanges` yet)
-
-### 3. TransactionBehavior
-
-Begins database transaction, executes inner pipeline, commits atomically:
-
 ```csharp
-await using var transaction = await _context.BeginTransactionAsync();
-response = await next(cancellationToken);
-await _context.CommitTransactionAsync(transaction);
-```
-
-### 4. CommandHandler
-
-```csharp
-var organization = Organization.Create(message.Name, message.LegalName, address, ...);
-_organizationRepository.Add(organization);
-var saved = await _organizationRepository.UnitOfWork.SaveChangesAsync(ct);
-```
-
-`Organization.Create()` validates business rules, generates `TenantId`, and raises `OrganizationCreatedDomainEvent`.
-
-### 5. DomainEventProcessorBehavior
-
-After the handler returns, dispatches domain events within the active transaction. Cascade loop re-checks for new events.
-
-### 6. Domain Event Handler
-
-```csharp
-public class OrganizationCreatedDomainEventHandler : IDomainEventHandler<OrganizationCreatedDomainEvent>
+// Accounts.API/APIs/AccountsApi.cs
+public static async Task<Results<Ok<bool>, BadRequest<ApiErrorResponse>>> CreateCompanyAsync(
+    [FromHeader(Name = "x-requestid")] Guid requestId,
+    CreateCompanyRequest request,
+    [AsParameters] AccountsServices services)
 {
-    public async Task Handle(OrganizationCreatedDomainEvent notification, CancellationToken ct)
-    {
-        var organization = await _repository.GetAsync(notification.OrganizationId);
-        await _outboxService.AddAndSaveEventAsync(
-            new OrganizationCreatedIntegrationEvent(...));
-    }
+    if (requestId == Guid.Empty)
+        return TypedResults.BadRequest(new ApiErrorResponse { Code = "ValidationError", Message = "Empty GUID is not valid for request ID", ... });
+
+    var command = new CreateCompanyCommand(request.TenantId, request.LegalName, /* ... */ requestId: requestId);
+    var result = await services.Mediator.Send(command);
+
+    return result.ToHttpResult(services.UserHttpContext.TraceId);   // 200 OK or 400 ApiErrorResponse
 }
 ```
 
-### 7. Transaction Commit
+### 2. IdempotencyBehavior
 
-`CommitTransactionAsync()` flushes OutboxMessages + audit logs, then commits. All data (Organization + IdempotencyEntry + OutboxMessage) committed atomically.
+- Pattern-matches `IIdempotentRequest` (`CreateCompanyCommand : IdempotentCommand<bool>`)
+- Checks `IdempotencyKey.ForRequest(requestId)` — `(Id: requestId, Scope: Request, Qualifier: null)` — via Redis first, then the `IdempotencyEntry` table
+- If it exists: returns `CreateResultForDuplicateRequest()` (`Result.Success(true)`) without executing the handler
+- If new: `MarkAsProcessingAsync()` writes the Redis `processing` key and adds an `IdempotencyEntry` to the EF change tracker (no `SaveChanges` yet)
 
-### 8. IntegrationEventProcessorBehavior
+### 3. TransactionBehavior
 
-After commit, reads `LastCommittedTransactionId` from `ITransactionalUnitOfWork` and publishes outbox events to the event bus. If publishing fails, `OutboxProcessor` retries.
+Begins the database transaction inside the EF execution strategy, executes the inner pipeline, and commits atomically:
 
-### 9. Consumer Services
+```csharp
+await strategy.ExecuteAsync(async () =>
+{
+    await using var transaction = await _dbTransaction.BeginTransactionAsync();
+    response = await next(cancellationToken);
+    await _dbTransaction.CommitTransactionAsync(transaction);
+});
+```
 
-**Identity Service**: `TelemetryDecorator` → `IdempotencyIntegrationEventEfDecorator` → Handler creates Tenant + Admin User within a transaction. Idempotency entry ensures at-most-once processing.
+### 4. ValidationBehavior
 
-**Notifications Service**: Same decorator chain. Handler sends welcome email and sales notification.
+Runs `CreateCompanyCommandValidator` (tenant, names, tax id format, tax number type, country...). On failure returns `Result.ValidationFailure` → `400 Bad Request` with per-property errors.
+
+### 5. CommandHandler
+
+```csharp
+var company = Company.Create(
+    message.TenantId, message.LegalName, message.TradeName,
+    message.CompanyType, address, message.TaxId, message.TaxNumberType);
+
+_companyRepository.Add(company);
+var saved = await _companyRepository.UnitOfWork.SaveChangesAsync(cancellationToken);
+```
+
+`Company.Create()` validates business rules (throws `AccountDomainException`), sets `Status = Pending`, and raises `CompanyCreatedDomainEvent`.
+
+### 6. DomainEventProcessorBehavior
+
+After the handler returns, dispatches domain events within the active transaction. The cascade loop re-checks for new events until none remain.
+
+### 7. Domain Event Handler
+
+```csharp
+public async Task Handle(CompanyCreatedDomainEvent notification, CancellationToken cancellationToken)
+{
+    var company = await _companyRepository.GetAsync(notification.CompanyId);
+    if (company != null)
+        await _outboxService.AddAndSaveEventAsync(new CompanyCreatedIntegrationEvent(
+            company.TenantId, company.Id, company.LegalName,
+            company.TradeName, company.TaxId, company.Address?.CountryCode!));
+}
+```
+
+### 8. Transaction Commit
+
+`CommitTransactionAsync()` applies audit timestamps, flushes the OutboxMessage, then commits. Company + IdempotencyEntry + OutboxMessage are committed atomically, and `LastCommittedTransactionId` is set.
+
+### 9. IntegrationEventProcessorBehavior
+
+After commit, reads the transaction id and publishes the pending outbox events (status `NotPublished → InProgress → Published`). If publishing fails the row becomes `FailedToPublish` and the `OutboxProcessor` retries it.
+
+### 10. Consumer — Notifications
+
+`ServiceBusEventBus` receives the message on the `Notifications` subscription (rule `CompanyCreated`) and resolves the decorated handler chain:
+
+```mermaid
+flowchart LR
+    MSG["Message Subject = CompanyCreated"] --> TEL["TelemetryIntegrationEventHandlerDecorator"]
+    TEL --> IDM["IdempotencyIntegrationEventEfDecorator<br/>key = eventId + 'CompanyCreatedIntegrationEventHandler'"]
+    IDM --> H["CompanyCreatedIntegrationEventHandler<br/>(thin translator)"]
+    H --> CMD["SendCompanyWelcomeEmailsCommand : ICommand#lt;bool#gt;"]
+    CMD --> CH["SendCompanyWelcomeEmailsCommandHandler<br/>welcome + sales EmailNotification"]
+```
+
+The command handler creates two `EmailNotification` aggregates, sends them through `IEmailService`, marks them as sent and saves. The idempotency entry is committed in the same transaction; on success the message is completed, on failure it is abandoned and redelivered.
+
+> Emails are sent **before** the transaction commits. If the commit fails, the redelivered message sends them again — side effects with external systems are at-least-once.
 
 ---
 
 ## What Gets Committed Atomically
 
+Accounts transaction (database `QltSystemDb`, schema `Accounts`):
+
 | Data | Table | Same Transaction |
 |------|-------|:---:|
-| Organization entity | `accounts.Organizations` | ✅ |
-| Idempotency entry | `infra.IdempotencyEntry` | ✅ |
-| Outbox message | `infra.OutboxMessage` | ✅ |
-| Audit logs (if enabled) | `infra.AuditLog` | ✅ |
+| Company entity | `Accounts.Company` | ✅ |
+| Idempotency entry (`Scope = Request`) | `Accounts.IdempotencyEntry` | ✅ |
+| Outbox message (`CompanyCreatedIntegrationEvent`) | `Accounts.OutboxMessage` | ✅ |
+
+Notifications transaction (same database, schema `Notifications`):
+
+| Data | Table | Same Transaction |
+|------|-------|:---:|
+| Welcome + sales email notifications | `Notifications.EmailNotification` | ✅ |
+| Idempotency entry (`Scope = Event`, qualifier = handler name) | `Notifications.IdempotencyEntry` | ✅ |
 
 ---
 
@@ -139,8 +180,10 @@ After commit, reads `LastCommittedTransactionId` from `ITransactionalUnitOfWork`
 
 | Failure Point | Aggregate Persisted? | Outbox Persisted? | Event Published? |
 |---|:---:|:---:|:---:|
+| Validation fails / handler returns failed `Result` | ❌ (nothing added) | ❌ | ❌ — but the idempotency entry IS committed |
 | CommandHandler throws | ❌ | ❌ | ❌ |
 | Domain event handler throws | ❌ | ❌ | ❌ |
 | CommitAsync fails | ❌ | ❌ | ❌ |
-| Event bus publish fails | ✅ | ✅ (status: Failed) | ❌ (OutboxProcessor retries) |
-| Consumer handler throws | ✅ | ✅ (status: Published) | ✅ (consumer retries via event bus) |
+| Event bus publish fails | ✅ | ✅ (status: `FailedToPublish`) | ❌ (OutboxProcessor retries) |
+| Consumer handler throws | ✅ | ✅ (status: `Published`) | ✅ (message abandoned and redelivered) |
+| Duplicate request (same `x-requestid`) | — (handler skipped) | — | — (returns `200 OK`, `true`) |

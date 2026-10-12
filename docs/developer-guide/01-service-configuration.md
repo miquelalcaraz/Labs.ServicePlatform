@@ -8,24 +8,66 @@ This guide explains how to configure services in the QltS platform following the
 
 ## Two-Layer Configuration
 
-Every service splits its DI configuration into two layers:
+Every service splits its DI configuration into two layers, called from `Program.cs`:
 
+```mermaid
+flowchart TB
+    P["Program.cs<br/>AddServiceDefaults · AddApiServiceDefaults · AddApplicationServices"]
+
+    subgraph L1["Layer 1 — Application (Api/Extensions/Extensions.cs)"]
+        A1["builder.AddInfrastructureServices()"]
+        A2["builder.AddRedisClient('cache')"]
+        A3["AddHttpContextAccessor"]
+        A4["AddQltMediator (handlers + pipeline + telemetry)"]
+        A5["AddValidatorsFromAssembly"]
+        A1 --> A2 --> A3 --> A4 --> A5
+    end
+
+    subgraph L2["Layer 2 — Infrastructure (Infrastructure/Extensions/Extensions.cs)"]
+        B1["AddQltSDBContext#lt;T#gt; (write database)"]
+        B2["AddQltReadDbContext#lt;T#gt; (read-only database)"]
+        B3["AddMigration#lt;T, TSeeder#gt;"]
+        B4["AddServiceBusEventBus + AddSubscription"]
+        B5["AddRedisIdempotencyCache"]
+        B6["AddIdempotencyEntityFramework#lt;T#gt;"]
+        B7["AddTransactionalOutbox#lt;T#gt;"]
+        B8["Repositories"]
+        B1 --> B2 --> B3 --> B4 --> B5 --> B6 --> B7 --> B8
+    end
+
+    P --> L1
+    A1 --> L2
 ```
-Layer 1 — Application (Api/Extensions)
-  ├─ AddQltMediator (handlers + pipeline)
-  ├─ AddValidatorsFromAssembly
-  └─ AddHttpContextAccessor
 
-         calls ↓
+The order of calls is **not cosmetic**: Scrutor decorates existing registrations in call order, so event subscriptions must be registered before the idempotency builders, Redis before EF idempotency, and `AddQltMediator` last (its telemetry decorator becomes the outermost one).
 
-Layer 2 — Infrastructure (Infrastructure/Extensions)
-  ├─ AddQltSDBContext<T>          (database)
-  ├─ AddQltReadDbContext<T>       (read-only database)
-  ├─ AddServiceBusEventBus        (event bus)
-  ├─ AddIdempotencyEntityFramework<T>
-  ├─ AddRedisIdempotencyCache
-  ├─ AddTransactionalOutbox<T>    (outbox)
-  └─ Repositories
+---
+
+## Host Setup (Program.cs)
+
+```csharp
+// Accounts.API/Program.cs
+var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();        // OpenTelemetry, health checks, service discovery, HTTP resilience
+builder.AddApiServiceDefaults();     // JWT bearer authentication, IUserHttpContext
+builder.AddApplicationServices();    // Layer 1 (which calls Layer 2)
+
+builder.Services.AddProblemDetails();
+builder.Services.AddAuthorizationBuilder() /* role-based policies */;
+builder.AddDefaultOpenApi(builder.Services.AddApiVersioning());
+
+var app = builder.Build();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.NewVersionedApi("accounts").MapAccountsApiV1().RequireAuthorization();
+// ... other endpoint groups
+
+if (app.Environment.IsDevelopment())
+    app.UseDefaultOpenApi();
+
+app.MapDefaultEndpoints();           // /health and /alive
+app.Run();
 ```
 
 ---
@@ -40,29 +82,43 @@ Single entry point for the MediatR pipeline. Replaces manual `AddMediatR` + beha
 - `IntegrationEventProcessorBehavior`
 - `TransactionBehavior`
 - `DomainEventProcessorBehavior`
-- `TelemetryCommandBehavior`, `TelemetryDomainEventBehavior` (via `INotificationPublisher`), `TelemetryIntegrationEventHandlerDecorator`
+- `TelemetryCommandBehavior`, `TelemetryQueryBehavior`, `TelemetryDomainEventBehavior` (via `INotificationPublisher`), `TelemetryIntegrationEventHandlerDecorator`
+
+The call is idempotent: a second call to `AddQltMediator` is ignored.
 
 ### What the developer configures
 
 | Method | Required | Purpose |
 |--------|----------|---------|
-| `RegisterServicesFromAssembly(assembly)` | Yes | MediatR handler discovery |
+| `RegisterServicesFromAssembly(assembly)` | Yes | MediatR handler discovery (Application **and** Infrastructure for query handlers) |
 | `WithLogging(typeof(LoggingBehavior<,>))` | Optional | Logging at the outermost position |
 | `WithValidation(typeof(ValidationBehavior<,>))` | Optional | Validation inside the transaction |
 
+`WithLogging` / `WithValidation` throw `ArgumentException` if the type is not an open generic with two type parameters.
+
 ### Pipeline order (managed by platform)
 
-```
-Logging (optional)
-  └─ Idempotency (automatic)
-       └─ IntegrationEventProcessor (automatic — OUTSIDE transaction)
-            └─ Transaction (automatic — BEGIN/COMMIT)
-                 └─ Validation (optional — INSIDE transaction)
-                      └─ DomainEventProcessor (automatic — INSIDE transaction)
-                           └─ CommandHandler
+```mermaid
+flowchart TB
+    L["Logging (optional)"] --> I["Idempotency (automatic)"]
+    I --> IE["IntegrationEventProcessor (automatic — OUTSIDE transaction)"]
+    IE --> T["Transaction (automatic — BEGIN/COMMIT)"]
+    T --> V["Validation (optional — INSIDE transaction)"]
+    V --> D["DomainEventProcessor (automatic — INSIDE transaction)"]
+    D --> TEL["TelemetryCommand / TelemetryQuery (automatic — innermost)"]
+    TEL --> H[["Command / Query Handler"]]
 ```
 
-All platform behaviors degrade gracefully when their dependencies are not registered (pass-through).
+### Required dependencies
+
+| Behavior | Needs | Without it |
+|---|---|---|
+| `IdempotencyBehavior` | `IIdempotencyService` (optional) | Pass-through |
+| `TransactionBehavior`, `DomainEventProcessorBehavior`, `IntegrationEventProcessorBehavior` | `ITransactionalUnitOfWork` (registered by `AddQltSDBContext<T>`) | **DI resolution fails** for every request |
+| `IntegrationEventProcessorBehavior` | `IEventBusOutboxService` (optional, from `AddTransactionalOutbox<T>`) | No-op |
+| `DomainEventProcessorBehavior` | `IDomainEntityChangeTracker` (optional, from `AddQltSDBContext<T>`) | No-op |
+
+A service using `AddQltMediator` must therefore register a `QltDBContext` with `AddQltSDBContext<T>`.
 
 ---
 
@@ -71,6 +127,7 @@ All platform behaviors degrade gracefully when their dependencies are not regist
 ### Layer 1 — Application
 
 ```csharp
+// Accounts.API/Extensions/Extensions.cs
 public static IServiceCollection AddApplicationServices(this IHostApplicationBuilder builder)
 {
     var services = builder.Services;
@@ -97,16 +154,18 @@ public static IServiceCollection AddApplicationServices(this IHostApplicationBui
 ### Layer 2 — Infrastructure
 
 ```csharp
+// Accounts.Infrastructure/Extensions/Extensions.cs
 public static void AddInfrastructureServices(this IHostApplicationBuilder builder)
 {
     var services = builder.Services;
-    var connectionString = builder.Configuration.GetConnectionString("accountdb");
-    var readConnectionString = builder.Configuration.GetConnectionString("accountdb-readonly")
+
+    var connectionString = builder.Configuration.GetConnectionString("QltSystemDb");
+    var readConnectionString = builder.Configuration.GetConnectionString("QltSystemDbReadonly")
         ?? connectionString;
 
     services.AddQltSDBContext<AccountContext>(
         conf => conf
-            .SetDefaultSchema("accounts")
+            .SetDefaultSchema("Accounts")
             .WithIdempotency()
             .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
         options => options.UseSqlServer(connectionString, sqlOptions =>
@@ -117,10 +176,13 @@ public static void AddInfrastructureServices(this IHostApplicationBuilder builde
 
     services.AddQltReadDbContext<AccountReadContext>(
         conf => conf
-            .SetDefaultSchema("accounts")
+            .SetDefaultSchema("Accounts")
             .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
         options => options.UseSqlServer(readConnectionString)
     );
+
+    services.AddHealthChecks()
+        .AddDbContextCheck<AccountContext>(name: "accounts-db", tags: ["ready"]);
 
     services.AddMigration<AccountContext, QltDBContextSeed>();
 
@@ -137,10 +199,25 @@ public static void AddInfrastructureServices(this IHostApplicationBuilder builde
 
     services.AddTransactionalOutbox<AccountContext>(options =>
     {
-        options.RegisterEventTypes(typeof(Contracts.AssemblyReference).Assembly);
+        options.RegisterEventTypes(
+            typeof(Qlt.Contracts.Accounts.AssemblyReference).Assembly,
+            typeof(Qlt.Contracts.Identity.AssemblyReference).Assembly,
+            typeof(Qlt.Contracts.Notifications.AssemblyReference).Assembly);
     });
 
-    services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+    services.AddScoped<ICompanyRepository, CompanyRepository>();
+    services.AddScoped<ITenantRepository, TenantRepository>();
+    services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+    services.AddScoped<IUserMembershipRepository, UserMembershipRepository>();
+    services.AddScoped<IOnboardingProcessRepository, OnboardingProcessRepository>();
+    services.AddScoped<ICustomerActivationProcessRepository, CustomerActivationProcessRepository>();
+}
+
+private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)
+{
+    eventBus.AddSubscription<ExternalUserProvisionedIntegrationEvent, ExternalUserProvisionedIntegrationEventHandler>();
+    eventBus.AddSubscription<ActivationDeliveredIntegrationEvent, ActivationDeliveredIntegrationEventHandler>();
+    eventBus.AddSubscription<UserActivatedIntegrationEvent, UserActivatedIntegrationEventHandler>();
 }
 ```
 
@@ -153,20 +230,23 @@ public static void AddInfrastructureServices(this IHostApplicationBuilder builde
 ```csharp
 services.AddQltSDBContext<MyContext>(
     conf => conf
-        .SetDefaultSchema("myschema")
-        .WithIdempotency()
-        .WithAuditLogs()
+        .SetDefaultSchema("MySchema")
+        .WithIdempotency()                 // optional — also enabled by AddIdempotencyEntityFramework
         .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
     options => options.UseSqlServer(connectionString)
 );
+
+services.AddMigration<MyContext, MyContextSeed>();   // applies migrations + seed, signals MigrationReadySignal
 ```
+
+`QltDbContextConfiguration` exposes `SetDefaultSchema`, `RegisterModelsFromAssembly`, `WithIdempotency` and `WithTransactionalOutbox`. It is a process-wide singleton shared by every `QltDBContext` in the host. `AddQltSDBContext<T>` also registers `QltDBContext`, `ITransactionalUnitOfWork` and `IDomainEntityChangeTracker` as the same scoped instance.
 
 ### Read-Only Database
 
 ```csharp
 services.AddQltReadDbContext<MyReadContext>(
     conf => conf
-        .SetDefaultSchema("myschema")
+        .SetDefaultSchema("MySchema")
         .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
     options => options.UseSqlServer(readConnectionString)
 );
@@ -175,7 +255,7 @@ services.AddQltReadDbContext<MyReadContext>(
 ### Idempotency
 
 ```csharp
-// Redis + EF (recommended)
+// Redis + EF (recommended) — Redis MUST be registered first
 services.AddRedisIdempotencyCache(builder.Configuration)
     .ForApiRequests()
     .ForIntegrationEventHandlers();
@@ -184,26 +264,30 @@ services.AddIdempotencyEntityFramework<MyContext>()
     .ForApiRequests()
     .ForIntegrationEventHandlers();
 
-// EF only
+// EF only (e.g. Identity)
 services.AddIdempotencyEntityFramework<MyContext>()
     .ForIntegrationEventHandlers();
 ```
 
 | Method | Effect |
 |--------|--------|
-| `.ForApiRequests()` | Enables `IdempotencyBehavior` for MediatR commands |
-| `.ForIntegrationEventHandlers()` | Decorates `IIntegrationEventHandler<>` with idempotent consumer |
+| `AddRedisIdempotencyCache(configuration)` | Registers `IdempotencyRedisService` (binds the `IdempotencyCache` section; needs `IConnectionMultiplexer`, e.g. from `AddRedisClient("cache")`) |
+| Redis `.ForApiRequests()` | No-op (Redis is already the registered service) |
+| Redis `.ForIntegrationEventHandlers()` | Decorates handlers with the cache-only `IdempotencyIntegrationEventDecorator` |
+| EF `.ForApiRequests()` | Registers `IdempotencyEfService<T>` — decorating Redis if present — so `IdempotencyBehavior` activates |
+| EF `.ForIntegrationEventHandlers()` | Same service + decorates handlers with `IdempotencyIntegrationEventEfDecorator` (replacing the Redis decorator) |
 
 When both Redis and EF are registered, EF decorates Redis — Redis as fast cache, EF as transactional guarantee.
 
 ### Transactional Outbox
 
 ```csharp
-services.AddTransactionalOutbox<MyContext>(options =>
-{
-    options.RegisterEventTypes(typeof(Contracts.AssemblyReference).Assembly);
-});
+services.AddTransactionalOutbox<MyContext>(
+    options => options.RegisterEventTypes(typeof(Qlt.Contracts.MyService.AssemblyReference).Assembly),
+    processor => processor.PollingInterval = TimeSpan.FromSeconds(30));   // optional
 ```
+
+Registers `IOutboxMessageService`, `IEventBusOutboxService`, the `OutboxProcessor` hosted service and enables the outbox table mapping. Register **every assembly containing integration events the service publishes**. The `OutboxProcessor` waits for `MigrationReadySignal`, so `AddMigration<T>` is required.
 
 ### Event Bus
 
@@ -212,18 +296,25 @@ builder.AddServiceBusEventBus("eventbus")
     .AddSubscription<SomeIntegrationEvent, SomeIntegrationEventHandler>();
 ```
 
+Requires `EventBus:SubscriptionClientName` in `appsettings.json` (see [Event Bus](../architecture/07-event-bus.md)).
+
 ---
 
 ## New Service Checklist
 
 - [ ] Create `Api/Extensions/Extensions.cs` with `AddApplicationServices`
 - [ ] Create `Infrastructure/Extensions/Extensions.cs` with `AddInfrastructureServices`
-- [ ] Call `builder.AddInfrastructureServices()` from the application layer
+- [ ] Call `builder.AddInfrastructureServices()` first in the application layer, then `AddQltMediator`
+- [ ] In `Program.cs`: `AddServiceDefaults`, `AddApiServiceDefaults`, `ExceptionHandlingMiddleware`, `MapDefaultEndpoints`
 - [ ] Use `AddQltMediator` — do NOT call `AddMediatR` directly
 - [ ] Register handlers from all relevant assemblies via `RegisterServicesFromAssembly`
 - [ ] Add `WithLogging` / `WithValidation` as needed
-- [ ] Configure `AddQltSDBContext<T>` with `.WithIdempotency()` if using idempotency
-- [ ] Configure `AddTransactionalOutbox<T>` with the contracts assembly
+- [ ] Configure `AddQltSDBContext<T>` and `AddMigration<T, TSeeder>`
+- [ ] Register event subscriptions **before** the idempotency builders
+- [ ] Register Redis idempotency **before** EF idempotency
+- [ ] Configure `AddTransactionalOutbox<T>` with all published contract assemblies
+- [ ] Add `EventBus:SubscriptionClientName` and `IdempotencyCache` sections to `appsettings.json`
+- [ ] Add the subscription and service references in `AppHost.cs`
 - [ ] Do NOT manually register telemetry behaviors — they are implicit
 
 ---
@@ -246,6 +337,19 @@ services.AddQltMediator(cfg => { cfg.RegisterServicesFromAssembly(assembly); });
 // ❌ No longer needed — implicit in AddQltMediator
 services.AddIntegrationEventTelemetryDecorator();
 services.AddDomainEventTelemetryBehavior();
+```
+
+### Registering in the wrong order
+
+```csharp
+// ❌ EF registered first: the later Redis registration wins, IIdempotencyService resolves to the
+//    cache-only service and no IdempotencyEntry is ever persisted for commands
+services.AddIdempotencyEntityFramework<MyContext>().ForApiRequests();
+services.AddRedisIdempotencyCache(builder.Configuration);
+
+// ❌ Subscriptions after idempotency: TryDecorate finds no handlers to decorate
+services.AddIdempotencyEntityFramework<MyContext>().ForIntegrationEventHandlers();
+builder.AddServiceBusEventBus("eventbus").AddSubscription<E, H>();
 ```
 
 ### Mixing application and infrastructure concerns
