@@ -770,12 +770,12 @@ public static class OrdersApi
             {
                 Code = "ValidationError",
                 Message = "Empty GUID is not valid for request ID",
-                TraceId = services.UserHttpContext.TraceId
+                TraceId = services.CurrentUser.TraceId
             });
 
         var command = new CreateOrderCommand(/* ... */ requestId: requestId);
         var result = await services.Mediator.Send(command);
-        return result.ToHttpResult(services.UserHttpContext.TraceId);   // 200 OK or 400 ApiErrorResponse
+        return result.ToHttpResult(services.CurrentUser.TraceId);   // 200 OK or 400 ApiErrorResponse
     }
 
     public static async Task<Results<Ok<OrderViewModel>, NotFound<ApiErrorResponse>>> GetOrderByIdAsync(
@@ -789,7 +789,7 @@ public static class OrdersApi
             {
                 Code = "NotFound",
                 Message = "Order not found.",
-                TraceId = services.UserHttpContext.TraceId
+                TraceId = services.CurrentUser.TraceId
             });
 
         return TypedResults.Ok(result.Value);
@@ -810,8 +810,8 @@ app.NewVersionedApi("orders")
 ```csharp
 public class OrdersServices(
     IMediator mediator,
-    IUserHttpContext identityService,
-    ILogger<ApiServices> logger) : ApiServices(mediator, identityService, logger) { }
+    ICurrentUserContext currentUser,
+    ILogger<OrdersServices> logger) : ApiServices<OrdersServices>(mediator, currentUser, logger) { }
 ```
 
 ### API Rules
@@ -820,7 +820,8 @@ public class OrdersServices(
 - Validate `requestId != Guid.Empty` before sending
 - Use `result.ToHttpResult(traceId)` to convert `Result<T>` to HTTP responses (`200 OK` / `400 Bad Request` with `ApiErrorResponse`); map other status codes (e.g. `404`) explicitly in the endpoint
 - Duplicate requests return `200 OK` with the value from `CreateResultForDuplicateRequest()` — never `409 Conflict` (it is not a replay of the original body)
-- Create a service-specific `{Service}Services` class extending `ApiServices` (`Mediator`, `Logger`, `UserHttpContext`)
+- Create a service-specific `{Service}Services` class extending `ApiServices<{Service}Services>` (`Mediator`, `Logger`, `CurrentUser`)
+- Read caller identity (`CurrentUser.UserId`, `TenantId`, …) in the endpoint and pass it explicitly into the command — handlers must not depend on `ICurrentUserContext`
 - Unhandled exceptions are converted by `ExceptionHandlingMiddleware` (`DomainValidationException` → `400`, others → `500`)
 
 ---

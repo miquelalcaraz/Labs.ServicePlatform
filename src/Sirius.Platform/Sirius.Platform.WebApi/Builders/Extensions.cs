@@ -14,7 +14,7 @@ namespace Sirius.Platform.Builders
 
             builder.AddDefaultAuthentication();
             services.AddHttpContextAccessor();
-            services.AddTransient<IUserHttpContext, UserHttpContext>();
+            services.AddTransient<ICurrentUserContext, CurrentUserContext>();
             return builder;
         }
     }

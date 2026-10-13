@@ -49,14 +49,14 @@ public static class OnboardingApi
         if (requestId == Guid.Empty)
         {
             services.Logger.LogWarning("Invalid request - RequestId is missing - {@Request}", request);
-            return TypedResults.BadRequest(new ApiErrorResponse { Code = "ValidationError", Message = "Empty GUID is not valid for request ID", TraceId = services.UserHttpContext.TraceId });
+            return TypedResults.BadRequest(new ApiErrorResponse { Code = "ValidationError", Message = "Empty GUID is not valid for request ID", TraceId = services.CurrentUser.TraceId });
         }
 
         using (services.Logger.BeginScope(new List<KeyValuePair<string, object>> { new("IdentifiedCommandId", requestId) }))
         {
-            if (!Guid.TryParse(services.UserHttpContext.GetUserIdentity(), out var internalUserId))
+            if (services.CurrentUser.UserId == Guid.Empty)
             {
-                return TypedResults.BadRequest(new ApiErrorResponse { Code = "Unauthorized", Message = "Unable to resolve the current user identity.", TraceId = services.UserHttpContext.TraceId });
+                return TypedResults.BadRequest(new ApiErrorResponse { Code = "Unauthorized", Message = "Unable to resolve the current user identity.", TraceId = services.CurrentUser.TraceId });
             }
 
             var command = new StartCustomerOnboardingCommand(
@@ -70,7 +70,7 @@ public static class OnboardingApi
                 adminEmail: request.AdminUser.Email,
                 adminFirstName: request.AdminUser.FirstName,
                 adminLastName: request.AdminUser.LastName,
-                createdByInternalUserId: internalUserId,
+                createdByInternalUserId: services.CurrentUser.UserId,
                 tenantName: request.Company.LegalName,
                 requestId: requestId);
 
@@ -81,7 +81,7 @@ public static class OnboardingApi
                 services.Logger.LogWarning(
                     "StartOnboarding failed - RequestId: {RequestId}, ErrorCode: {ErrorCode}, Error: {ErrorMessage}",
                     requestId, result.Error.Code, result.Error.Message);
-                return TypedResults.BadRequest(ApiErrorResponse.From(result.Error, services.UserHttpContext.TraceId));
+                return TypedResults.BadRequest(ApiErrorResponse.From(result.Error, services.CurrentUser.TraceId));
             }
 
             var detailResult = await services.Mediator.Send(new GetOnboardingByRequestIdQuery(requestId));
@@ -117,7 +117,7 @@ public static class OnboardingApi
         var result = await services.Mediator.Send(new GetOnboardingProcessByIdQuery(id));
 
         if (result.IsFailure)
-            return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = "Onboarding process not found.", TraceId = services.UserHttpContext.TraceId });
+            return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = "Onboarding process not found.", TraceId = services.CurrentUser.TraceId });
 
         return TypedResults.Ok(result.Value);
     }
@@ -137,7 +137,7 @@ public static class OnboardingApi
             {
                 Code = "ValidationError",
                 Message = "The request query is invalid.",
-                TraceId = services.UserHttpContext.TraceId,
+                TraceId = services.CurrentUser.TraceId,
                 Errors = new Dictionary<string, string[]> { { "pageSize", ["Page size cannot exceed 100."] } }
             });
 
@@ -160,7 +160,7 @@ public static class OnboardingApi
         if (requestId == Guid.Empty)
         {
             services.Logger.LogWarning("Invalid request - RequestId is missing for retry of {OnboardingProcessId}", id);
-            return TypedResults.BadRequest(new ApiErrorResponse { Code = "ValidationError", Message = "Empty GUID is not valid for request ID", TraceId = services.UserHttpContext.TraceId });
+            return TypedResults.BadRequest(new ApiErrorResponse { Code = "ValidationError", Message = "Empty GUID is not valid for request ID", TraceId = services.CurrentUser.TraceId });
         }
 
         using (services.Logger.BeginScope(new List<KeyValuePair<string, object>> { new("IdentifiedCommandId", requestId) }))
@@ -179,7 +179,7 @@ public static class OnboardingApi
                     services.Logger.LogWarning(
                         "RetryOnboarding - NotFound: {OnboardingProcessId}",
                         id);
-                    return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = result.Error.Message, TraceId = services.UserHttpContext.TraceId });
+                    return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = result.Error.Message, TraceId = services.CurrentUser.TraceId });
                 }
 
                 if (result.Error.Code == Error.Conflict.Code)
@@ -187,13 +187,13 @@ public static class OnboardingApi
                     services.Logger.LogWarning(
                         "RetryOnboarding - RetryNotAllowed: {OnboardingProcessId}, Reason: {ErrorMessage}",
                         id, result.Error.Message);
-                    return TypedResults.Conflict(new ApiErrorResponse { Code = "RetryNotAllowed", Message = result.Error.Message, TraceId = services.UserHttpContext.TraceId });
+                    return TypedResults.Conflict(new ApiErrorResponse { Code = "RetryNotAllowed", Message = result.Error.Message, TraceId = services.CurrentUser.TraceId });
                 }
 
                 services.Logger.LogWarning(
                     "RetryOnboarding failed - {OnboardingProcessId}, ErrorCode: {ErrorCode}, Error: {ErrorMessage}",
                     id, result.Error.Code, result.Error.Message);
-                return TypedResults.BadRequest(ApiErrorResponse.From(result.Error, services.UserHttpContext.TraceId));
+                return TypedResults.BadRequest(ApiErrorResponse.From(result.Error, services.CurrentUser.TraceId));
             }
 
             var detailResult = await services.Mediator.Send(new GetOnboardingProcessByIdQuery(id));
@@ -229,9 +229,9 @@ public static class OnboardingApi
         if (result.IsFailure)
         {
             if (result.Error.Code == Error.NotFound.Code)
-                return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = "Onboarding process not found.", TraceId = services.UserHttpContext.TraceId });
+                return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = "Onboarding process not found.", TraceId = services.CurrentUser.TraceId });
 
-            return TypedResults.BadRequest(ApiErrorResponse.From(result.Error, services.UserHttpContext.TraceId));
+            return TypedResults.BadRequest(ApiErrorResponse.From(result.Error, services.CurrentUser.TraceId));
         }
 
         return TypedResults.Ok(result.Value);

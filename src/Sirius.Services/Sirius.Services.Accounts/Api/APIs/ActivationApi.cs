@@ -48,7 +48,7 @@ public static class ActivationApi
             {
                 Code = "ValidationError",
                 Message = "The request query is invalid.",
-                TraceId = services.UserHttpContext.TraceId,
+                TraceId = services.CurrentUser.TraceId,
                 Errors = new Dictionary<string, string[]> { { "pageSize", ["Page size cannot exceed 100."] } }
             });
 
@@ -69,7 +69,7 @@ public static class ActivationApi
             {
                 Code = "NotFound",
                 Message = result.Error.Message,
-                TraceId = services.UserHttpContext.TraceId
+                TraceId = services.CurrentUser.TraceId
             });
 
         return TypedResults.Ok(result.Value);
@@ -86,7 +86,7 @@ public static class ActivationApi
             {
                 Code = "ValidationError",
                 Message = "Empty GUID is not valid for request ID",
-                TraceId = services.UserHttpContext.TraceId
+                TraceId = services.CurrentUser.TraceId
             });
 
         using (services.Logger.BeginScope(new List<KeyValuePair<string, object>> { new("IdentifiedCommandId", requestId) }))
@@ -103,15 +103,15 @@ public static class ActivationApi
                 if (result.Error.Code == Error.NotFound.Code)
                 {
                     services.Logger.LogWarning("RetryActivation - NotFound: {ActivationProcessId}", id);
-                    return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = result.Error.Message, TraceId = services.UserHttpContext.TraceId });
+                    return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = result.Error.Message, TraceId = services.CurrentUser.TraceId });
                 }
                 if (result.Error.Code == Error.Conflict.Code)
                 {
                     services.Logger.LogWarning("RetryActivation - NotAllowed: {ActivationProcessId}, Reason: {ErrorMessage}", id, result.Error.Message);
-                    return TypedResults.Conflict(new ApiErrorResponse { Code = "RetryNotAllowed", Message = result.Error.Message, TraceId = services.UserHttpContext.TraceId });
+                    return TypedResults.Conflict(new ApiErrorResponse { Code = "RetryNotAllowed", Message = result.Error.Message, TraceId = services.CurrentUser.TraceId });
                 }
                 services.Logger.LogWarning("RetryActivation failed - {ActivationProcessId}, ErrorCode: {ErrorCode}", id, result.Error.Code);
-                return TypedResults.BadRequest(ApiErrorResponse.From(result.Error, services.UserHttpContext.TraceId));
+                return TypedResults.BadRequest(ApiErrorResponse.From(result.Error, services.CurrentUser.TraceId));
             }
 
             var detailResult = await services.Mediator.Send(new GetCustomerActivationProcessByIdQuery(id));
@@ -144,7 +144,7 @@ public static class ActivationApi
             {
                 Code = "ValidationError",
                 Message = "Empty GUID is not valid for request ID",
-                TraceId = services.UserHttpContext.TraceId
+                TraceId = services.CurrentUser.TraceId
             });
 
         using (services.Logger.BeginScope(new List<KeyValuePair<string, object>> { new("IdentifiedCommandId", requestId) }))
@@ -157,14 +157,14 @@ public static class ActivationApi
                 if (result.Error.Code == Error.NotFound.Code)
                 {
                     services.Logger.LogWarning("ResendActivation - NotFound: {ActivationProcessId}", id);
-                    return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = result.Error.Message, TraceId = services.UserHttpContext.TraceId });
+                    return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = result.Error.Message, TraceId = services.CurrentUser.TraceId });
                 }
                 if (result.Error.Code == Error.Conflict.Code)
                 {
                     services.Logger.LogWarning("ResendActivation - NotAllowed: {ActivationProcessId}, Reason: {ErrorMessage}", id, result.Error.Message);
-                    return TypedResults.Conflict(new ApiErrorResponse { Code = "ResendNotAllowed", Message = result.Error.Message, TraceId = services.UserHttpContext.TraceId });
+                    return TypedResults.Conflict(new ApiErrorResponse { Code = "ResendNotAllowed", Message = result.Error.Message, TraceId = services.CurrentUser.TraceId });
                 }
-                return TypedResults.BadRequest(ApiErrorResponse.From(result.Error, services.UserHttpContext.TraceId));
+                return TypedResults.BadRequest(ApiErrorResponse.From(result.Error, services.CurrentUser.TraceId));
             }
 
             return TypedResults.Accepted($"{BasePath}/{id}");

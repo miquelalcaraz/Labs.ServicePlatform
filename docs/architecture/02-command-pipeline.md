@@ -222,7 +222,7 @@ sequenceDiagram
 
 | Behavior | Project | Why |
 |---|---|---|
-| LoggingBehavior, ValidationBehavior | Domain.Application | Service-level concerns (FluentValidation, `IUserHttpContext`), plugged in via `WithLogging` / `WithValidation` |
+| LoggingBehavior, ValidationBehavior | Domain.Application | Service-level concerns (FluentValidation, `ICurrentUserContext`), plugged in via `WithLogging` / `WithValidation` |
 | IdempotencyBehavior | Platform.Messaging | Uses the `IIdempotencyService` abstraction, no EF |
 | TelemetryCommandBehavior, TelemetryQueryBehavior | Platform.Messaging | OpenTelemetry, no EF |
 | TransactionBehavior | Platform.Messaging.EntityFramework | Needs `ICommandRequest` (messaging) + `ITransactionalUnitOfWork` (persistence) |

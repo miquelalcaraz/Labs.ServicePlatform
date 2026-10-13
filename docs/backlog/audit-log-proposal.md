@@ -21,7 +21,7 @@ Only the simplified `AuditLog` POCO, its `AuditLogConfiguration` and the `AuditA
 
 ### Core Idea
 
-Intercept `SaveChangesAsync` to automatically capture entity changes using EF's `ChangeTracker`, enriched with user identity from `IUserHttpContext`.
+Intercept `SaveChangesAsync` to automatically capture entity changes using EF's `ChangeTracker`, enriched with user identity from `ICurrentUserContext`.
 
 ### Architecture
 
@@ -32,7 +32,7 @@ CommitTransactionAsync / SaveChangesAsync
        │    ├─ EntityState.Added    → AuditActionType.Create
        │    ├─ EntityState.Modified → AuditActionType.Update
        │    └─ EntityState.Deleted  → AuditActionType.Delete
-       ├─ IUserHttpContext.GetUserIdentity() → UserId
+       ├─ ICurrentUserContext.UserId → UserId
        ├─ Capture OldValues / NewValues → JSON
        └─ Add AuditLog entries to same transaction
 ```
@@ -93,16 +93,16 @@ public class AuditLog
 | Interceptor implementation | Platform.Persistence.EntityFramework | Uses `ChangeTracker` API (provider-agnostic) |
 | `AuditLogConfiguration` | Platform.Persistence.EntityFramework.Relational | Table/index definitions (already there) |
 
-#### 5. IUserHttpContext injection
+#### 5. ICurrentUserContext injection
 
-`IUserHttpContext` already exists in `Domain.Application` and is implemented by `UserHttpContext` in `Platform.Infrastructure`. The interceptor/service receives it via DI:
+`ICurrentUserContext` already exists in `Domain.Application` and is implemented by `CurrentUserContext` in `Platform.Infrastructure` (registered by `AddApiServiceDefaults()`). The interceptor/service receives it via DI. This is an exception to the interface's rule that identity is resolved at the API boundary and passed explicitly into commands, and must be stated as such if adopted:
 
 ```csharp
-public class AuditChangeTrackerService(IUserHttpContext userContext)
+public class AuditChangeTrackerService(ICurrentUserContext currentUser)
 {
     public IReadOnlyList<AuditLog> CaptureChanges(ChangeTracker changeTracker)
     {
-        var userId = userContext.GetUserIdentity();
+        var userId = currentUser.UserId.ToString();
         var entries = changeTracker.Entries<IAuditable>()
             .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
 
@@ -127,7 +127,7 @@ public class AuditSaveChangesInterceptor : SaveChangesInterceptor
 ```
 
 **Pro:** Clean separation, testable, follows EF Core conventions.
-**Con:** Requires `IUserHttpContext` injection into the interceptor (needs `IServiceProvider` in DbContext options).
+**Con:** Requires `ICurrentUserContext` injection into the interceptor (needs `IServiceProvider` in DbContext options).
 
 #### Option B: Override in SiriusDBContext
 
@@ -145,7 +145,7 @@ await base.SaveChangesAsync(cancellationToken);
 
 ### Edge Cases to Consider
 
-1. **Background jobs / message consumers** — No `HttpContext`, so `IUserHttpContext` returns null. Needs a strategy: a system user constant, or an `IAuditContextProvider` abstraction that supports both HTTP and non-HTTP contexts.
+1. **Background jobs / message consumers** — No `HttpContext`, so `ICurrentUserContext.IsAuthenticated` is `false` and `UserId` is `Guid.Empty`. Needs a strategy: a system user constant, or an `IAuditContextProvider` abstraction that supports both HTTP and non-HTTP contexts.
 2. **Batch operations with `ExecuteUpdateAsync`** — Bypass the ChangeTracker entirely. Not auditable through this mechanism; document as a known limitation or use DB triggers for batch audit.
 3. **Sensitive data** — Some properties should not appear in audit logs (passwords, tokens). Consider an `[AuditIgnore]` attribute.
 4. **Performance** — Serializing changes on every save adds overhead. Consider whether audit is needed on every DbContext or only on specific ones.

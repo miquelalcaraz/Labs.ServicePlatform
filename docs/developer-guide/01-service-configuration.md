@@ -50,7 +50,7 @@ The order of calls is **not cosmetic**: Scrutor decorates existing registrations
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();        // OpenTelemetry, health checks, service discovery, HTTP resilience
-builder.AddApiServiceDefaults();     // JWT bearer authentication, IUserHttpContext
+builder.AddApiServiceDefaults();     // JWT bearer authentication, ICurrentUserContext
 builder.AddApplicationServices();    // Layer 1 (which calls Layer 2)
 
 builder.Services.AddProblemDetails();

@@ -12,7 +12,7 @@ namespace Sirius.Domain.SeedWork
 
     /// <summary>
     /// Placeholder POCO for audit log entries.
-    /// Pending redesign: automatic capture via EF ChangeTracker + IUserHttpContext.
+    /// Pending redesign: automatic capture via EF ChangeTracker + ICurrentUserContext.
     /// See docs/backlog/audit-log-proposal.md for the design proposal.
     /// </summary>
     public class AuditLog
