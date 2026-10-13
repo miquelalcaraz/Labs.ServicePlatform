@@ -158,4 +158,4 @@ If `SiriusDbReadonly` is not configured, the read context transparently falls ba
 | Area | Details |
 |---|---|
 | Shared read configuration | `SiriusReadDbContextConfiguration` is a process-wide singleton: two read contexts in the same host would share schema and assemblies (last `SetDefaultSchema` wins). |
-| Replica lag | Reading from a replica right after a command may return stale data; no read-your-writes mechanism is provided. |
+| Replica lag *(design note)* | The read context accepts a `SiriusDbReadonly` connection string, but none is configured today, so it falls back to the write connection. If a replica is added, reading right after a command may return stale data — no read-your-writes mechanism is provided. |
