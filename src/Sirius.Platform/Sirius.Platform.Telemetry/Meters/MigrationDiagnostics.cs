@@ -9,7 +9,7 @@ namespace Sirius.Platform.Meters
     /// </summary>
     public static class MigrationDiagnostics
     {
-        public const string SourceName = "Sirius.Core.Persistence.Migrations";
+        public const string SourceName = "Sirius.Platform.Persistence.Migrations";
         public const string Version = "1.0.0";
 
         /// <summary>

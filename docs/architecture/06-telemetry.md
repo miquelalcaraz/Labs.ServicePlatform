@@ -189,7 +189,7 @@ Meter `Sirius.Domain.Application` (version `1.0.0`):
 | Idempotency | `application.idempotency.check_duration`, `application.idempotency.duplicate_commands`, `application.idempotency.duplicates_detected` | `IdempotencyBehavior`, idempotency decorators |
 | Outbox | `application.outbox.events_saved`, `application.outbox.state_changes`, `application.outbox.events_failed`, `application.outbox.operation_duration`, `application.outbox.batch_size` | outbox services (see [05-transactional-outbox.md](05-transactional-outbox.md#telemetry)) |
 
-Meter `Sirius.Core.Persistence.Migrations`: `persistence.migrations.executed`, `persistence.migrations.duration` (activities `Migration operation {Context}`, `Migrating {Context}`, `Seeding {Context}`).
+Meter `Sirius.Platform.Persistence.Migrations`: `persistence.migrations.executed`, `persistence.migrations.duration` (activities `Migration operation {Context}`, `Migrating {Context}`, `Seeding {Context}`).
 
 ---
 

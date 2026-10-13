@@ -39,7 +39,7 @@ var sqlserver = builder.AddSqlServer("sqlserver", port: 1444)
     });
 
 //Databases
-var SiriusDb = sqlserver.AddDatabase("SiriusDb");
+var siriusDb =sqlserver.AddDatabase("SiriusDb");
 var identityDb = sqlserver.AddDatabase("IdentityDb"); 
 
 
@@ -58,14 +58,14 @@ var notifications = builder.AddProject<Projects.Notifications_API>("notification
     .WithReference(cache)
     .WaitFor(cache)
     .WaitFor(identity)
-    .WithReference(SiriusDb)
-    .WaitFor(SiriusDb)
+    .WithReference(siriusDb)
+    .WaitFor(siriusDb)
     .WithReference(eventbus).WaitFor(eventbus);
 
 var accountApiService = builder.AddProject<Projects.Accounts_API>("accounts")
     .WithHttpHealthCheck("/health")
-    .WithReference(SiriusDb)
-    .WaitFor(SiriusDb)
+    .WithReference(siriusDb)
+    .WaitFor(siriusDb)
     .WithReference(cache)
     .WaitFor(cache)
     .WithReference(eventbus).WaitFor(eventbus)
