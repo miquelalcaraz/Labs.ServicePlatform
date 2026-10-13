@@ -1,19 +1,19 @@
-# Sirius · Building Blocks Reference Architecture
+# Sirius · Service Platform
 
 ![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)
 ![Aspire](https://img.shields.io/badge/Aspire-13.6-512BD4)
 ![Status](https://img.shields.io/badge/status-in%20progress-yellow)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-A set of **reusable, isolated building blocks** for event-driven microservices on **.NET 10** and **Aspire**: a CQRS command pipeline, domain and integration events, transactional outbox, idempotent commands and consumers, a read model and built-in observability — each one behind its own abstraction, so the technology underneath can change without touching business code.
+A **reusable base architecture for event-driven .NET services** on **.NET 10** and **Aspire**. The platform is made of isolated building blocks — a CQRS command pipeline, domain and integration events, transactional outbox, idempotent commands and consumers, a read model and built-in observability — each one behind its own abstraction, so the technology underneath can change without touching business code.
 
-The blocks are exercised by a [sample B2B domain](docs/features/README.md) (customer onboarding and activation) that proves they work end to end across several services.
+The platform is exercised by a [sample B2B domain](docs/features/README.md) (customer onboarding and activation) that proves it works end to end across several services.
 
 **Start here:** [Principle](#-design-principle) · [Building blocks](#-building-blocks) · [Isolation & abstractions](#-isolation-and-abstractions) · [Reference implementation](#-reference-implementation) · [AI-assisted development](#-ai-assisted-development) · [Run locally](#-running-the-project) · [Docs](#-documentation)
 
 > [!NOTE]
 > **Continuation of [Labs.Aspire.uSLearn](https://github.com/miquelalcaraz/Labs.Aspire.uSLearn).**
-> uSLearn rebuilt the patterns of [dotnet/eShop](https://github.com/dotnet/eShop) step by step. This repository takes the next step: it **extracts those patterns into layered, reusable building blocks** with explicit dependency rules, and validates them with a multi-service sample, identity (Duende IdentityServer) and a Blazor + Radzen back office.
+> uSLearn rebuilt the patterns of [dotnet/eShop](https://github.com/dotnet/eShop) step by step. This repository takes the next step: it **extracts those patterns into a reusable service platform** of layered building blocks with explicit dependency rules, and validates them with a multi-service sample, identity (Duende IdentityServer) and a Blazor + Radzen back office.
 >
 > **Educational reference** — not intended for direct production use. See [known limitations](#️-project-status-and-known-limitations).
 
@@ -333,8 +333,8 @@ docs/                          → Architecture, developer guide, sample feature
 ### Run with Aspire
 
 ```bash
-git clone https://github.com/miquelalcaraz/Labs.CleanArchitecture.BuildingBlocks.git
-cd Labs.CleanArchitecture.BuildingBlocks
+git clone https://github.com/miquelalcaraz/Labs.ServicePlatform.git
+cd Labs.ServicePlatform
 dotnet build Sirius.slnx
 dotnet run --project src/Sirius.Infrastructure/Sirius.Infrastructure.AppHost
 
