@@ -17,8 +17,8 @@ This repository is licensed under the [MIT License](LICENSE). It builds on the w
 
 | Project | License | Notes |
 |---|---|---|
-| [dotnet/eShop](https://github.com/dotnet/eShop) | MIT | Architecture and several building blocks (event bus, integration event log, `IdentifiedCommand`, transaction behavior, service defaults) follow eShop's patterns. |
-| [Labs.Aspire.uSLearn](https://github.com/miquelalcaraz/Labs.Aspire.uSLearn) | MIT | Predecessor of this repository; the building blocks were first developed there, stage by stage. |
+| [dotnet/eShop](https://github.com/dotnet/eShop) | MIT | Copyright (c) .NET Foundation and Contributors. Architecture and several building blocks (event bus, integration event log, `IdentifiedCommand`, transaction behavior, service defaults) follow eShop's patterns. |
+| [Labs.Aspire.uSLearn](https://github.com/miquelalcaraz/Labs.Aspire.uSLearn) | MIT | Copyright (c) 2026 Miquel Alcaraz. Predecessor of this repository; the building blocks were first developed there, stage by stage. |
 | Duende IdentityServer UI templates | See [Duende templates](https://github.com/DuendeSoftware/products/tree/main/templates) | The Razor pages under `src/Sirius.Infrastructure/Sirius.Infrastructure.Identity/Pages` started from Duende's UI templates. |
 
 ## Bundled static assets
