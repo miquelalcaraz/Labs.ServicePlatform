@@ -18,7 +18,7 @@ This document explains:
 **When implementing features in `Sirius.Services.*` microservices**, follow the rules in [Copilot Development Rules](../docs/developer-guide/06-copilot-development-rules.md).
 
 This document defines:
-- Service project structure (Api, Application, Domain, Infrastructure, Contracts)
+- Service project structure (Api, Application, Domain, Infrastructure, plus a shared `Sirius.Contracts.{ServiceName}` project)
 - Command, Query, Domain Event, and Integration Event patterns
 - DI configuration templates
 - Entity configuration rules and what NOT to create (platform tables)
@@ -48,8 +48,8 @@ public Task CreateRequestForCommandAsync<T>(Guid id)
     // The idempotency entry is added to ChangeTracker...
     // (10 lines of comments explaining the pattern)
 
-    var request = new RequestIdempotency { ... };
-    _context.Add(request);
+    var entry = new IdempotencyEntry { ... };
+    _context.Add(entry);
     return Task.CompletedTask;
 }
 
@@ -59,20 +59,20 @@ public Task CreateRequestForCommandAsync<T>(Guid id)
 /// </summary>
 public Task CreateRequestForCommandAsync<T>(Guid id)
 {
-    var request = new RequestIdempotency
+    var entry = new IdempotencyEntry
     {
-        RequestId = id,
-        CommandName = typeof(T).Name,
-        ProcessedAt = DateTime.UtcNow
+        Id = id,
+        Scope = IdempotencyScope.Request,
+        Qualifier = typeof(T).Name
     };
 
-    _context.Add(request);
+    _context.Add(entry);
     return Task.CompletedTask;
 }
 ```
 
 ## Project Guidelines
-- Working on a microservices architecture with reusable NuGet packages. Currently implementing core components in the "Platform" and "Domain" folders as projects (not yet packaged as NuGets) referenced by initial services like Accounts and Identity. 
+- Working on a microservices architecture with reusable NuGet packages. Currently implementing core components in the "Platform" and "Domain" folders as projects (not yet packaged as NuGets) referenced by the services Accounts, Notifications and Identity.
 - Project uses .NET 10, C# 14.0, and Blazor. Implementing patterns like idempotency, domain events, and integration events.
 - **Critical Patterns Implemented**: 
   - Result Pattern for Railway-Oriented Programming
@@ -104,7 +104,7 @@ The project follows a **5-layer architecture** for messaging and persistence. **
 - ❌ Contain implementation logic (services, repositories)
 - ❌ Know about persistence details
 
-**Dependencies allowed:** MediatR, Microsoft.Extensions.Options, Platform (base types)
+**Dependencies allowed:** MediatR, Microsoft.Extensions.Options, Platform.Core (`Result`, `Error`), Domain.Core (`IDomainEvent`)
 
 ---
 
@@ -179,8 +179,8 @@ The project follows a **5-layer architecture** for messaging and persistence. **
 
 #### 5️⃣ Platform.Persistence.EntityFramework.Relational (SQL/PostgreSQL Specifics)
 **Responsibilities:**
-- Concrete DbContext: `SiriusDBContext` with relational features
-- Entity Configurations: `IdempotencyEntryConfiguration`, `OutboxMessageConfiguration`, `AuditLogConfiguration`
+- Concrete DbContexts: `SiriusDBContext` (write, transactional) and `SiriusReadDbContext` (read-only, no tracking) for the CQRS read side
+- Entity Configurations: `IdempotencyEntryConfiguration`, `OutboxMessageConfiguration`, `AuditLogConfiguration` (audit log designed but not wired yet — see the backlog)
 - Resilient transactions: `ResilientTransaction` (retry logic)
 - Generic repositories: `Repository<T>`
 - Migrations: `MigrateDbContextExtensions`
@@ -248,7 +248,7 @@ The project follows a **5-layer architecture** for messaging and persistence. **
    {
        public static void Configure(this EntityTypeBuilder<IdempotencyEntry> entity)
        {
-           entity.ToTable("IdempotencyEntry", "infra");
+           entity.ToTable("IdempotencyEntry");
            entity.HasKey(e => new { e.Id, e.Scope, e.Qualifier });
        }
    }
@@ -322,13 +322,14 @@ public virtual Result<TResponse> CreateResultForDuplicateRequest()
 
 **✅ GOOD** - Return meaningful value indicating success:
 ```csharp
-public record CreateOrganizationCommand : IdempotentCommand<bool>
+// src/Sirius.Services/Sirius.Services.Accounts/Application/Commands/CreateCompanyCommand.cs
+public record CreateCompanyCommand : IdempotentCommand<bool>
 {
     // ... properties and constructor ...
 
     public override Result<bool> CreateResultForDuplicateRequest()
     {
-        return Result.Success(true);  // Organization exists/was created successfully
+        return Result.Success(true);  // Company exists/was created successfully
     }
 }
 ```
@@ -345,18 +346,16 @@ public record CreateOrganizationCommand : IdempotentCommand<bool>
 
 **Example**:
 ```csharp
-// API Endpoint
-public async Task<Results<Ok<bool>, BadRequest<string>>> CreateOrganization(
+// API Endpoint (simplified from AccountsApi.CreateCompanyAsync — PUT /api/accounts/companies)
+public static async Task<Results<Ok<bool>, BadRequest<ApiErrorResponse>>> CreateCompanyAsync(
     [FromHeader(Name = "x-requestid")] Guid requestId,
-    CreateOrganizationRequest request,
-    [AsParameters] Services services)
+    CreateCompanyRequest request,
+    [AsParameters] AccountsServices services)
 {
-    var command = new CreateOrganizationCommand(..., requestId: requestId);
+    var command = new CreateCompanyCommand(..., requestId: requestId);
     var result = await services.Mediator.Send(command);
 
-    return result.IsSuccess 
-        ? TypedResults.Ok(result.Value)      // 200 OK with true
-        : TypedResults.BadRequest(result.Error.Message);
+    return result.ToHttpResult(services.UserHttpContext.TraceId);  // 200 OK with true, or 400 with ApiErrorResponse
 }
 ```
 
@@ -382,18 +381,21 @@ if (isDuplicate)
 - ❌ Requires special client logic: `if (status == 409) treat_as_success()`
 - ❌ Against industry standards
 
+`409 Conflict` remains valid for **business** conflicts on a new request (e.g. `RetryNotAllowed` / `ResendNotAllowed` in the activation API), not for replays of the same `x-requestid`.
+
 ### 4. Advanced: Returning Full DTOs
 
 For commands that return complex objects, consider querying the entity:
 
 ```csharp
-public record CreateOrganizationCommand : IdempotentCommand<OrganizationDto>
+// Illustrative — not implemented in the sample
+public record CreateCompanyCommand : IdempotentCommand<CompanyDto>
 {
-    public override Result<OrganizationDto> CreateResultForDuplicateRequest()
+    public override Result<CompanyDto> CreateResultForDuplicateRequest()
     {
-        // Query organization by RequestId (if stored as FK)
-        var org = _repository.GetByRequestId(RequestId);
-        return Result.Success(OrganizationDto.FromEntity(org));
+        // Query company by RequestId (if stored as FK)
+        var company = _repository.GetByRequestId(RequestId);
+        return Result.Success(CompanyDto.FromEntity(company));
     }
 }
 ```

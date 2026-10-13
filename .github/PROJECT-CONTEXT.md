@@ -1,8 +1,8 @@
-# SiriusS - Project Context & Architectural Principles
+# Sirius - Project Context & Architectural Principles
 
 ## 🎯 Project Mission
 
-This repository contains the **foundational architecture** for the SiriusS system. The primary objective is to develop **stable base components** that:
+This repository contains the **foundational architecture** for the Sirius lab project. The primary objective is to develop **stable base components** that:
 
 - ✅ **Minimize breaking changes** when business services are built on top
 - ✅ **Allow platform evolution** without drastically impacting existing services
@@ -16,7 +16,7 @@ This repository contains the **foundational architecture** for the SiriusS syste
 
 We are building the architectural foundation **before** knowing all final technology decisions:
 
-- **Event Bus**: Currently RabbitMQ, but could be Azure EventHub, MassTransit, or others
+- **Event Bus**: Azure Service Bus by default, RabbitMQ as an alternative, and possibly Event Hubs, MassTransit or others in the future
 - **Persistence**: EF Core with SQL Server/PostgreSQL, but Cosmos DB may be added
 - **Features**: Incomplete by design (e.g., no retries in EventBus yet)
 
@@ -27,7 +27,7 @@ We are building the architectural foundation **before** knowing all final techno
 1. **Dependency Inversion**: Services depend on abstractions, not implementations
 2. **Layered Architecture**: Clear separation between contracts and implementations
 3. **Extensibility by Composition**: Decorators over inheritance
-4. **Versioned Abstractions**: Semantic versioning guarantees stability
+4. **Versioned Abstractions**: Semantic versioning guarantees stability *(design goal — components are project references today, not yet published as NuGet packages)*
 
 ---
 
@@ -38,13 +38,13 @@ We are building the architectural foundation **before** knowing all final techno
 │  Sirius.Services.* (Business Logic)            │  ← Services built by teams
 │       ↓ (Depends only on abstractions)      │
 ├─────────────────────────────────────────────┤
-│  Sirius.Platform.*.Abstractions                │  ← Stable contracts (NuGet)
+│  Sirius.Platform.*.Abstractions                │  ← Stable contracts
 │       ↓                                      │
 ├─────────────────────────────────────────────┤
 │  Sirius.Platform.* (Core Logic)                │  ← Can evolve
 │       ↓                                      │
 ├─────────────────────────────────────────────┤
-│  Sirius.Platform.*.RabbitMQ / EventHub / etc.  │  ← Swappable implementations
+│  Sirius.Platform.*.ServiceBus / RabbitMQ / etc.│  ← Swappable implementations
 └─────────────────────────────────────────────┘
 ```
 
@@ -72,62 +72,73 @@ src/
 │   ├── Domain.Core                     ← Entity, ValueObject, IDomainEvent
 │   └── Domain.Application              ← Behaviors, Validation
 │
+├── Sirius.Contracts/                      ← Integration events shared between services
+│   ├── Contracts.Accounts
+│   ├── Contracts.Identity
+│   └── Contracts.Notifications
+│
 ├── Sirius.Services/                       ← Business Microservices
-│   ├── Services.Accounts               ← (Api, Application, Domain, Infrastructure, Contracts)
-│   └── Services.Notifications
+│   ├── Sirius.Services.Accounts        ← Api, Application, Domain, Infrastructure
+│   └── Sirius.Services.Notifications   ← Api, Application, Domain, Infrastructure
 │
 ├── Sirius.Infrastructure/                 ← Shared Infrastructure Services
-│   ├── Infrastructure.Identity         ← IdentityServer, Tenants, Users
+│   ├── Infrastructure.Identity         ← Duende IdentityServer, Tenants, Users
+│   ├── Infrastructure.Bff.BackOffice   ← YARP backend for frontend
 │   └── Infrastructure.AppHost          ← .NET Aspire orchestrator
 │
 └── Sirius.WebApps/                        ← Frontend Applications
-    └── WebApps.BackOffice              ← Blazor BackOffice
+    └── Sirius.BackOfficeApp            ← Blazor + Radzen back office
 
 tests/
-├── Platform.UnitTests                  ← xUnit, Moq, FluentAssertions, EF InMemory
-├── Platform.IntegrationTests           ← xUnit, Testcontainers (SQL Server, Service Bus)
-├── Platform.FunctionalTests            ← Aspire AppHost, xUnit v3, WebApplicationFactory
-├── Platform.TestWebApi                 ← Test Web API host (used by FunctionalTests)
-└── Services.Accounts.FunctionalTests   ← Aspire AppHost, xUnit v3, end-to-end API tests
+├── Platform/
+│   ├── Platform.UnitTests              ← xUnit, Moq, FluentAssertions, EF InMemory
+│   ├── Platform.IntegrationTests       ← xUnit, Testcontainers (SQL Server, Service Bus)
+│   ├── Platform.FunctionalTests        ← Aspire AppHost, xUnit v3
+│   └── Platform.TestWebApi             ← Test Web API host (used by FunctionalTests)
+└── Services/
+    ├── Services.UnitTests              ← Accounts and Notifications unit tests
+    └── Services.FunctionalTests        ← Aspire AppHost, xUnit v3, end-to-end API tests
 ```
 
 ---
 
 ## 🔄 Example: Event Bus Evolution (Non-Breaking)
 
-### Scenario: Switching from RabbitMQ to Azure Service Bus
+### Scenario: Switching from Azure Service Bus to RabbitMQ
 
-**Today (RabbitMQ):**
+**Today (Azure Service Bus, default):**
 ```csharp
-// AppHost configuration
-services.AddRabbitMqEventBus(config);
+// Service registration (Infrastructure/Extensions/Extensions.cs of each service)
+builder.AddServiceBusEventBus("eventbus")
+    .AddSubscription<MyEvent, MyHandler>();
 
-// Service code (unchanged)
+// Handler code
 public class MyHandler : IIntegrationEventHandler<MyEvent>
 {
-    public async Task Handle(MyEvent @event, CancellationToken ct)
+    public async Task Handle(MyEvent @event)
     {
         // Business logic
     }
 }
 ```
 
-**Tomorrow (Azure Service Bus) — Already implemented:**
+**Alternative (RabbitMQ) — Already implemented:**
 ```csharp
-// AppHost configuration - ONLY CHANGE
-services.AddAzureServiceBusEventBus(config);
+// Service registration - ONLY CHANGE (plus the Platform.EventBus.RabbitMQ project reference)
+builder.AddRabbitMqEventBus("eventbus")
+    .AddSubscription<MyEvent, MyHandler>();
 
-// Service code - NO CHANGES NEEDED
+// Handler code - NO CHANGES NEEDED
 public class MyHandler : IIntegrationEventHandler<MyEvent>
 {
-    public async Task Handle(MyEvent @event, CancellationToken ct)
+    public async Task Handle(MyEvent @event)
     {
         // Business logic (identical)
     }
 }
 ```
 
-**Impact:** ✅ **Zero service recompilation** ✅ **Zero code changes in services**
+**Impact:** ✅ **Zero changes in handlers and integration events** — only the transport reference and one registration line per service change (plus the AppHost resource). See [Event Bus](../docs/architecture/07-event-bus.md).
 
 ---
 
@@ -192,6 +203,8 @@ public class RetryEventBusDecorator : IEventBus
 
 ### 4. Feature Flags for Gradual Rollout
 
+*Design goal — the snippet below is illustrative; no such options exist in the code yet.*
+
 ```csharp
 // Allow gradual adoption of new features
 services.AddEventBus(options =>
@@ -202,6 +215,8 @@ services.AddEventBus(options =>
 ```
 
 ### 5. Semantic Versioning for Abstractions
+
+*Design goal — the building blocks are consumed as project references today; this is the versioning policy intended for when they are packaged as NuGets.*
 
 ```
 Platform.Messaging.Abstractions
@@ -265,8 +280,11 @@ The base architecture is successful if:
 ### ADR-002: Namespaces Reflect Architectural Concerns
 **Decision:** 
 - `Sirius.Platform.*` = Technical infrastructure (messaging, persistence, telemetry)
-- `Sirius.Domain.*` = DDD patterns (Entity, ValueObject, Result, Events)
+- `Sirius.Domain.*` = DDD patterns (Entity, ValueObject, IDomainEvent, application behaviors)
 - `Sirius.Services.*` = Business microservices
+- `Sirius.Contracts.*` = Integration events shared between services
+
+`Result` / `Error` live in `Sirius.Platform` (`Platform.Core`), so both Domain and Platform can use them.
 
 **Rationale:**
 - Clear separation of concerns
@@ -324,13 +342,13 @@ public class MyDomainEventHandler : IDomainEventHandler<MyEvent>
     }
 }
 
-// Decorator (automatically applied via DI)
-services.AddDomainEventTelemetryDecorator();
+// Telemetry publisher (registered automatically by AddSiriusMediator)
+services.AddDomainEventTelemetryBehavior();
 ```
 
 **Impact:**
 - ✅ Removed 1 base class (`DomainEventHandler<T>`)
-- ✅ Refactored 3 existing handlers (OrganizationCreated, TestEntityCreated, TestEntityUpdated)
+- ✅ Refactored 3 existing handlers (at the time: OrganizationCreated — now `Company` — TestEntityCreated, TestEntityUpdated)
 - ✅ Created `TelemetryDomainEventBehavior` (custom `INotificationPublisher` replacing MediatR's default publisher)
 - ✅ Updated 4 DI registrations (Accounts, Notifications, Identity, TestWebApi)
 - ✅ Consistent with Integration Events pattern
@@ -416,9 +434,12 @@ public static class DomainEventsDispatcherExtension
 
 // 4. DomainEventProcessorBehavior - INSIDE TransactionBehavior (same transaction)
 //    Dispatches domain events with cascading support (re-checks for new events)
+//    Simplified: telemetry and logging omitted
 public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
 {
     var response = await next(ct);
+    var transactionId = _unitOfWork.GetCurrentTransaction()?.TransactionId ?? _unitOfWork.LastCommittedTransactionId;
+    if (!transactionId.HasValue) return response;
 
     if (_eventCollector is not null)
     {
@@ -438,20 +459,22 @@ public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TRe
 
 // 5. IntegrationEventProcessorBehavior - OUTSIDE TransactionBehavior (after commit)
 //    Publishes outbox events to event bus after transaction is committed
+//    Simplified: telemetry and logging omitted
 public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
 {
     var response = await next(ct);
+    var transactionId = _unitOfWork.GetCurrentTransaction()?.TransactionId ?? _unitOfWork.LastCommittedTransactionId;
 
-    if (_unitOfWork.LastCommittedTransactionId is { } transactionId)
+    if (transactionId.HasValue && _outboxService is not null)
     {
-        await _outboxService.PublishEventsThroughEventBusAsync(transactionId);
+        await _outboxService.PublishEventsThroughEventBusAsync(transactionId.Value);
     }
 
     return response;
 }
 ```
 
-**Pipeline execution order:**
+**Pipeline execution order** (event-related behaviors only; the full chain with Logging, Idempotency and Validation is in [Command pipeline](../docs/architecture/02-command-pipeline.md)):
 ```
 IntegrationEventProcessorBehavior (OUTSIDE)
   └── TransactionBehavior (BEGIN/COMMIT)
@@ -462,10 +485,10 @@ IntegrationEventProcessorBehavior (OUTSIDE)
 **Domain Event Handlers CAN modify aggregates** (they run within the active transaction):
 ```csharp
 // ✅ CORRECT: Modify aggregates within the same transaction
-public async Task Handle(OrganizationCreatedDomainEvent evt, CancellationToken ct)
+public async Task Handle(CompanyCreatedDomainEvent evt, CancellationToken ct)
 {
     // Save integration event to outbox (same transaction)
-    await _outboxService.AddAndSaveEventAsync(new OrganizationCreatedIntegrationEvent(...));
+    await _outboxService.AddAndSaveEventAsync(new CompanyCreatedIntegrationEvent(...));
 }
 ```
 
@@ -490,6 +513,7 @@ public async Task Handle(OrganizationCreatedDomainEvent evt, CancellationToken c
 For detailed patterns implementation, see:
 - [Architecture Documentation](../docs/architecture/README.md) — Messaging layers, pipeline, domain events, idempotency, outbox, telemetry, event bus, CQRS read model
 - [Developer Guide](../docs/developer-guide/README.md) — Service configuration, transactional pipeline, end-to-end flow, testing, known gaps
+- [Sample Feature](../docs/features/README.md) — Customer onboarding & activation workflow, API and back office UI
 - [Backlog](../docs/backlog/README.md) — Future proposals and parked improvements
 
 ---
@@ -511,6 +535,6 @@ For detailed patterns implementation, see:
 
 ---
 
-**Last Updated:** 2025-06-24  
-**Maintained By:** Architecture Team  
-**Review Cycle:** Quarterly or when major architectural decisions are made
+**Last Updated:** 2026-10-13  
+**Maintained By:** Miquel Alcaraz  
+**Review Cycle:** When major architectural decisions are made
