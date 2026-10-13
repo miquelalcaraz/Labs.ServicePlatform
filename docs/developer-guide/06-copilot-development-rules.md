@@ -1,4 +1,4 @@
-# Copilot Development Rules — SiriusS Services
+# Copilot Development Rules — Sirius Services
 
 This document defines the rules and patterns that **must** be followed when implementing features in `Sirius.Services.*` microservices. In this repository the platform (`src/Sirius.Platform`, `src/Sirius.Domain`) is consumed through project references (several projects are also packable as NuGet) — do not modify or recreate platform internals from a service.
 

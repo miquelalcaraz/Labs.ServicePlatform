@@ -1,6 +1,6 @@
 # Developer Guide
 
-Practical guides for developers building services on the SiriusS platform. Each document focuses on **how to** implement features following established patterns, using the Accounts, Identity and Notifications services as real references.
+Practical guides for developers building services on the Sirius platform. Each document focuses on **how to** implement features following established patterns, using the Accounts, Identity and Notifications services as real references.
 
 For architecture decisions and pattern details see [Architecture Documentation](../architecture/README.md).
 

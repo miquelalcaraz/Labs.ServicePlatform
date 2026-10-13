@@ -1,6 +1,6 @@
 # Architecture Documentation
 
-Technical architecture documentation for the SiriusS platform. Each document covers a specific architectural area with implementation details, design decisions, and code references. All documents reflect the current implementation under `src/` and use Mermaid diagrams.
+Technical architecture documentation for the Sirius platform. Each document covers a specific architectural area with implementation details, design decisions, and code references. All documents reflect the current implementation under `src/` and use Mermaid diagrams.
 
 For high-level principles, ADRs, and project context see [PROJECT-CONTEXT.md](../../.github/PROJECT-CONTEXT.md).
 

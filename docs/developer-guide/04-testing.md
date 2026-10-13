@@ -2,7 +2,7 @@
 
 ## Overview
 
-Testing strategy for SiriusS platform components and business services. Tests are split into two top-level groups under `tests/`:
+Testing strategy for Sirius platform components and business services. Tests are split into two top-level groups under `tests/`:
 
 - **`Platform/`** — architecture and infrastructure tests (independent of any business service)
 - **`Services/`** — business service tests (Accounts, Identity, Notifications)
