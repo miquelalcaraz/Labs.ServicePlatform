@@ -19,6 +19,7 @@ namespace Sirius.Platform.Messaging.Behaviors;
 /// <summary>
 /// Pipeline behavior that wraps command execution in a database transaction with retry support.
 /// Only activates for requests implementing <see cref="ICommandRequest"/>; queries and other request types pass through without a transaction.
+/// Commits only when the response is not a failed <see cref="Result"/>; a failed result rolls the transaction back.
 /// </summary>
 public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
@@ -42,6 +43,7 @@ public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         var response = default(TResponse);
         var typeName = request.GetGenericTypeName();
         var entitiesAffected = 0;
+        var rolledBackErrorCode = default(string);
 
         using var activity = BehaviorHelper.StartTransactionActivity(typeName);
 
@@ -67,6 +69,18 @@ public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
 
                     response = await next(cancellationToken);
 
+                    if (response is Result { IsFailure: true } failedResult)
+                    {
+                        rolledBackErrorCode = failedResult.Error.Code;
+
+                        _logger.LogInformation(
+                            "Rollback transaction {TransactionId} for {CommandName} because the command returned a failure ({ErrorCode})",
+                            transaction.TransactionId, typeName, rolledBackErrorCode);
+
+                        await transaction.RollbackAsync(cancellationToken);
+                        return;
+                    }
+
                     entitiesAffected = _dbTransaction.GetPendingChangesCount();
 
                     _logger.LogInformation("Commit transaction {TransactionId} for {CommandName}", transaction.TransactionId, typeName);
@@ -78,7 +92,10 @@ public class TransactionBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
             stopwatch.Stop();
             var elapsedMs = stopwatch.Elapsed.TotalMilliseconds;
 
-            BehaviorHelper.RecordTransactionSuccess(activity, typeName, elapsedMs, entitiesAffected);
+            if (rolledBackErrorCode is not null)
+                BehaviorHelper.RecordTransactionRollback(activity, typeName, elapsedMs, rolledBackErrorCode);
+            else
+                BehaviorHelper.RecordTransactionSuccess(activity, typeName, elapsedMs, entitiesAffected);
 
             return response;
         }

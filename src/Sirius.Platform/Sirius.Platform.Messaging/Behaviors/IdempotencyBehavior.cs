@@ -18,6 +18,7 @@ namespace Sirius.Platform.Messaging.Behaviors;
 /// <summary>
 /// Pipeline behavior that provides automatic idempotency for commands implementing IIdempotentRequest.
 /// Checks if a request has been processed before and returns a cached result for duplicates.
+/// When the command returns a failed <see cref="Result"/>, the idempotency key is discarded so the request can be retried.
 /// </summary>
 public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
@@ -69,6 +70,19 @@ public class IdempotencyBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         try
         {
             var response = await next(cancellationToken);
+
+            if (response is Result { IsFailure: true } failedResult)
+            {
+                await _idempotencyService.DiscardAsync(key);
+
+                _logger.LogInformation(
+                    "Discarded idempotency entry for {CommandName} with RequestId {RequestId} because the command failed ({ErrorCode}). The request can be safely retried.",
+                    commandName,
+                    requestId,
+                    failedResult.Error.Code);
+
+                return response;
+            }
 
             await _idempotencyService.MarkAsCompletedAsync(key);
 

@@ -173,6 +173,31 @@ public static class BehaviorHelper
     }
 
     /// <summary>
+    /// Records a transaction rolled back because the command returned a failed <c>Result</c> (no exception thrown).
+    /// </summary>
+    /// <param name="activity">The activity to update</param>
+    /// <param name="commandName">The command name</param>
+    /// <param name="durationMs">The transaction duration in milliseconds</param>
+    /// <param name="errorCode">The error code of the failed result</param>
+    public static void RecordTransactionRollback(
+        Activity? activity,
+        string commandName,
+        double durationMs,
+        string errorCode)
+    {
+        ApplicationDiagnostics.TransactionDuration.Record(durationMs,
+            new KeyValuePair<string, object?>("command_type", commandName),
+            new KeyValuePair<string, object?>("success", "false"),
+            new KeyValuePair<string, object?>("rollback_reason", "result_failure"));
+
+        activity?.SetTag("transaction.success", false);
+        activity?.SetTag("transaction.rolled_back", true);
+        activity?.SetTag("transaction.rollback_reason", "result_failure");
+        activity?.SetTag("transaction.duration_ms", durationMs);
+        activity?.SetTag("error.code", errorCode);
+    }
+
+    /// <summary>
     /// Starts a command processing activity (for LoggingBehavior).
     /// </summary>
     /// <param name="commandName">The command name</param>

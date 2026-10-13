@@ -2,7 +2,9 @@ using FluentValidation;
 
 using Microsoft.EntityFrameworkCore;
 
+using Platform.TestWebApi.Commands;
 using Platform.TestWebApi.Infrastructure;
+using Platform.TestWebApi.Validators;
 
 using Sirius.Domain.Behaviors;
 using Sirius.Platform.EventBus;
@@ -35,7 +37,7 @@ public static class Extensions
             cfg.WithValidation(typeof(ValidationBehavior<,>));
         });
 
-        //services.AddValidatorsFromAssembly(AssemblyReference.Assembly);
+        services.AddScoped<IValidator<CreateTestEntityCommand>, CreateTestEntityCommandValidator>();
 
         return services;
     }

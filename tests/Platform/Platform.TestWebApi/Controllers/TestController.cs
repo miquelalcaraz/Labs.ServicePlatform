@@ -32,12 +32,12 @@ public class TestController : ControllerBase
 
         var result = await _mediator.Send(command, cancellationToken);
 
-        return result.IsSuccess ? Ok(result) : BadRequest(result);
+        return result.IsSuccess ? Ok(result) : BadRequest(result.Error);
     }
 
-    [HttpPut("{id:int}")]
+    [HttpPut("{id:guid}")]
     public async Task<ActionResult<Result<bool>>> UpdateTestEntity(
-        int id,
+        Guid id,
         [FromBody] UpdateTestEntityRequest request,
         [FromHeader(Name = "x-requestid")] Guid requestId,
         CancellationToken cancellationToken)
@@ -49,7 +49,7 @@ public class TestController : ControllerBase
 
         var result = await _mediator.Send(command, cancellationToken);
 
-        return result.IsSuccess ? Ok(result) : BadRequest(result);
+        return result.IsSuccess ? Ok(result) : BadRequest(result.Error);
     }
 }
 

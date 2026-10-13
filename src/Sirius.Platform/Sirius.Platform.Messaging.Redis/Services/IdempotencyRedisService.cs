@@ -85,6 +85,25 @@ public sealed class IdempotencyRedisService : IIdempotencyService
         }
     }
 
+    public async Task DiscardAsync(IdempotencyKey key)
+    {
+        try
+        {
+            var db = _redis.GetDatabase();
+            var redisKey = GetRedisKey(key);
+            await db.KeyDeleteAsync(redisKey);
+
+            _logger.LogDebug("Discarded {Scope} key {Id} from cache after failure",
+                key.Scope, key.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex,
+                "Failed to discard {Scope} key {Id} from Redis cache",
+                key.Scope, key.Id);
+        }
+    }
+
     private string GetRedisKey(IdempotencyKey key) =>
         string.IsNullOrEmpty(key.Qualifier)
             ? $"{_options.KeyPrefix}{key.Scope.ToString().ToLowerInvariant()}:{key.Id}"

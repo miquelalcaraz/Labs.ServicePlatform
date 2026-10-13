@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 using Microsoft.EntityFrameworkCore;
@@ -73,5 +74,27 @@ public class IdempotencyEfService<TContext> : IIdempotencyService
     {
         if (_inner is not null)
             await _inner.MarkAsCompletedAsync(key);
+    }
+
+    public async Task DiscardAsync(IdempotencyKey key)
+    {
+        if (_inner is not null)
+            await _inner.DiscardAsync(key);
+
+        var qualifier = key.Qualifier ?? string.Empty;
+        var tracked = _context.ChangeTracker.Entries<IdempotencyEntry>()
+            .FirstOrDefault(e =>
+                e.Entity.Id == key.Id &&
+                e.Entity.Scope == key.Scope &&
+                e.Entity.Qualifier == qualifier);
+
+        if (tracked is null)
+            return;
+
+        tracked.State = EntityState.Detached;
+
+        _logger.LogInformation(
+            "Discarded {Scope} key {Id} from change tracker after failure",
+            key.Scope, key.Id);
     }
 }
