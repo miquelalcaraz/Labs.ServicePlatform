@@ -85,19 +85,16 @@
                                       TextAlign="TextAlign.Center" Sortable="false">
                     <Template Context="item">
                         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.25rem" JustifyContent="JustifyContent.Center">
-                            @if (item.Actions.CanOpen)
-                            {
-                                <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Variant="Variant.Text"
-                                              Size="ButtonSize.Small"
-                                              Click="@(() => Nav.NavigateTo($"/activation/{item.ActivationProcessId}"))" />
-                            }
+                            <RadzenButton Icon="visibility" ButtonStyle="ButtonStyle.Info" Variant="Variant.Text"
+                                          Size="ButtonSize.Small"
+                                          Click="@(() => Nav.NavigateTo($"/activation/{item.ActivationProcessId}"))" />
                             @if (item.Actions.CanRetry)
                             {
                                 <RadzenButton Icon="replay" ButtonStyle="ButtonStyle.Warning" Variant="Variant.Text"
                                               Size="ButtonSize.Small"
                                               Click="@(() => RetryAsync(item.ActivationProcessId))" />
                             }
-                            @if (item.Actions.CanResendActivation)
+                            @if (item.Actions.CanResend)
                             {
                                 <RadzenButton Icon="forward_to_inbox" ButtonStyle="ButtonStyle.Secondary" Variant="Variant.Text"
                                               Size="ButtonSize.Small"

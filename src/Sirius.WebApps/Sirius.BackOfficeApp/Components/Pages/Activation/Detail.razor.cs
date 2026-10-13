@@ -84,7 +84,7 @@ namespace Sirius.BackOfficeApp.Components.Pages.Activation
             if (result.IsSuccess)
             {
                 Notification.Notify(NotificationSeverity.Success, "Retry Initiated",
-                    $"Retry #{result.Value!.RetryCount} has been started.");
+                    result.Value is null ? "Retry has been started." : $"Retry #{result.Value.RetryCount} has been started.");
                 await LoadDetailAsync();
                 StartPollingIfNeeded();
             }
@@ -210,6 +210,15 @@ namespace Sirius.BackOfficeApp.Components.Pages.Activation
             "Failed" => ProgressBarStyle.Danger,
             _ => ProgressBarStyle.Primary
         };
+
+        private static bool CanRefresh(ActivationProcessDetailResponse detail)
+            => detail.Status is not ("Completed" or "Failed");
+
+        private static string GetStepStatus(ActivationStepResponse step)
+            => step.IsFailed ? "Failed"
+             : step.IsCurrent ? "Current"
+             : step.IsCompleted ? "Completed"
+             : "Pending";
 
         private static BadgeStyle GetStepBadgeStyle(string stepStatus) => stepStatus switch
         {

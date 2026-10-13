@@ -90,7 +90,10 @@ public class ActivationApiService(HttpClient httpClient, ILogger<ActivationApiSe
 
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<ActivationProcessRetryResponse>(cancellationToken);
+                // The API may answer 202 Accepted without body when the detail cannot be read back
+                var result = response.Content.Headers.ContentLength is 0
+                    ? null
+                    : await response.Content.ReadFromJsonAsync<ActivationProcessRetryResponse>(cancellationToken);
                 return ApiResult<ActivationProcessRetryResponse>.Success(result!);
             }
 
@@ -105,55 +108,32 @@ public class ActivationApiService(HttpClient httpClient, ILogger<ActivationApiSe
         }
     }
 
-    public async Task<ApiResult<ActivationProcessResendResponse>> ResendActivationAsync(
-        Guid activationProcessId, ResendActivationRequest? request = null, CancellationToken cancellationToken = default)
+    public async Task<ApiResult<bool>> ResendActivationAsync(
+        Guid activationProcessId, CancellationToken cancellationToken = default)
     {
         var requestId = Guid.NewGuid();
 
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{BasePath}/{activationProcessId}/resend");
         httpRequest.Headers.Add("x-requestid", requestId.ToString());
-        httpRequest.Content = JsonContent.Create(request ?? new ResendActivationRequest());
 
         try
         {
             var response = await httpClient.SendAsync(httpRequest, cancellationToken);
 
+            // The API answers 202 Accepted with no body
             if (response.IsSuccessStatusCode)
             {
-                var result = await response.Content.ReadFromJsonAsync<ActivationProcessResendResponse>(cancellationToken);
-                return ApiResult<ActivationProcessResendResponse>.Success(result!);
+                return ApiResult<bool>.Success(true);
             }
 
             var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
             logger.LogWarning("ResendActivation failed with {StatusCode}: {Body}", response.StatusCode, errorBody);
-            return ApiResult<ActivationProcessResendResponse>.Failure((int)response.StatusCode, errorBody);
+            return ApiResult<bool>.Failure((int)response.StatusCode, errorBody);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error calling ResendActivation API for {Id}", activationProcessId);
-            return ApiResult<ActivationProcessResendResponse>.Failure(0, ex.Message);
-        }
-    }
-
-    public async Task<ApiResult<ActivationProcessResultResponse>> GetActivationResultAsync(
-        Guid activationProcessId, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var response = await httpClient.GetAsync($"{BasePath}/{activationProcessId}/result", cancellationToken);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var result = await response.Content.ReadFromJsonAsync<ActivationProcessResultResponse>(cancellationToken);
-                return ApiResult<ActivationProcessResultResponse>.Success(result!);
-            }
-
-            return ApiResult<ActivationProcessResultResponse>.Failure((int)response.StatusCode);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error calling GetActivationResult API for {Id}", activationProcessId);
-            return ApiResult<ActivationProcessResultResponse>.Failure(0, ex.Message);
+            return ApiResult<bool>.Failure(0, ex.Message);
         }
     }
 }
