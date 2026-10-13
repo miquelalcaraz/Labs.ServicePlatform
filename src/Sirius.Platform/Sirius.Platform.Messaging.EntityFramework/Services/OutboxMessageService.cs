@@ -20,7 +20,7 @@ namespace Sirius.Platform.Messaging.Services;
 /// <summary>
 /// Database-backed implementation of the transactional outbox pattern.
 /// Stores integration events within the same transaction as business data,
-/// ensuring reliable event publishing with exactly-once delivery semantics.
+/// so events are published at least once; consumers deduplicate them through idempotent handlers.
 /// </summary>
 public class OutboxMessageService<TContext> : IOutboxMessageService
     where TContext : DbContext, ITransactionalUnitOfWork
@@ -274,7 +274,7 @@ public class OutboxMessageService<TContext> : IOutboxMessageService
 
             throw new InvalidOperationException(
                 $"Event type '{message.TypeName}' is not registered. " +
-                $"Add it to IntegrationEventLogOptions.RegisterEventTypes()");
+                $"Add it to OutboxMessageOptions.RegisterEventTypes()");
         }
 
         message.DeserializedEvent = JsonSerializer.Deserialize(message.Payload, eventType, s_caseInsensitiveOptions) as IntegrationEvent;
