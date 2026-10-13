@@ -151,11 +151,13 @@ public class MyHandler : IIntegrationEventHandler<MyEvent>
 | **Domain.Core** | ✅ Stable | Add Specification pattern, more DDD patterns |
 | **Platform.Core** | ✅ Stable | Result pattern, Error types |
 | **Platform.Messaging** | ✅ Functional | Add retries, circuit breaker, dead letter queue |
-| **Platform.EventBus** | ✅ Functional | RabbitMQ + ServiceBus implementations available |
+| **Platform.EventBus** | 🟡 Functional, known gaps | RabbitMQ + ServiceBus implementations available |
 | **Platform.Persistence.EF** | ✅ Functional | Add Cosmos DB support, read replicas |
-| **Idempotency Pattern** | ✅ Complete | Unified IIdempotencyService (DB + Cache) |
-| **Outbox Pattern** | ✅ Complete | Batch processing, parallelization |
-| **Idempotent Consumer** | ✅ Complete | TTL configuration, Redis optimization |
+| **Idempotency Pattern** | 🟡 Functional, known gaps | Unified IIdempotencyService (DB + Cache) |
+| **Outbox Pattern** | 🟡 Functional, known gaps | Batch processing, parallelization |
+| **Idempotent Consumer** | ✅ Functional | TTL configuration, Redis optimization |
+
+Open gaps are tracked in [Known gaps](../developer-guide/05-known-gaps.md).
 
 ---
 
@@ -256,12 +258,12 @@ Before adding/changing base components, ask:
 
 ## 🚀 Success Metrics
 
-The base architecture is successful if:
+Goals the base architecture is measured against (targets, not achieved results):
 
-1. ✅ **Services created 6 months ago require ZERO changes** when we update Platform packages
-2. ✅ **We can switch RabbitMQ → EventHub in 1 day** without touching services
-3. ✅ **New Platform features are opt-in**, not breaking by default
-4. ✅ **Service tests do NOT fail** when upgrading Platform dependencies
+1. **Services created 6 months ago require ZERO changes** when we update Platform packages
+2. **We can switch RabbitMQ → EventHub in 1 day** without touching services
+3. **New Platform features are opt-in**, not breaking by default
+4. **Service tests do NOT fail** when upgrading Platform dependencies
 
 ---
 

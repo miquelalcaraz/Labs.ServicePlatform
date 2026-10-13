@@ -9,7 +9,18 @@ A **reusable base architecture for event-driven .NET services** on **.NET 10** a
 
 The platform is exercised by a [sample B2B domain](docs/features/README.md) (customer onboarding and activation) that proves it works end to end across several services.
 
-**Start here:** [Principle](#-design-principle) · [Isolation & abstractions](#-isolation-and-abstractions) · [Building blocks](#-building-blocks) · [Reference implementation](#-reference-implementation) · [AI-assisted development](#-ai-assisted-development) · [Run locally](#-running-the-project) · [Docs](#-documentation)
+### ✨ Highlights
+
+- **Reliable cross-service messaging** — transactional outbox, idempotent commands and consumers (EF Core as source of truth, Redis fast path), Azure Service Bus or RabbitMQ behind a single `IEventBus`.
+- **Enforced layering** — business code depends only on contracts; switching the event bus transport is one registration line per service, with handlers and events untouched.
+- **DDD and CQRS on one transactional pipeline** — aggregates, process state machines, domain events dispatched inside the transaction and a railway-oriented `Result`.
+- **End-to-end observability** — OpenTelemetry traces and metrics, with trace context propagated through the bus and visible in the Aspire dashboard.
+- **Three test levels** — unit, integration with Testcontainers and functional tests hosted by Aspire.
+- **AI-assisted development with guardrails** — architect and developer skills that enforce the layer rules and verify changes through Aspire traces.
+
+<!-- TODO: add a screenshot, e.g. ![Cross-service trace in the Aspire dashboard](docs/images/aspire-trace.png) -->
+
+**Start here:** [Design principle](#-design-principle) · [Reference implementation](#-reference-implementation) · [Quick start](#-quick-start) · [Documentation](#-documentation)
 
 > [!NOTE]
 > **Continuation of [Labs.Aspire.uSLearn](https://github.com/miquelalcaraz/Labs.Aspire.uSLearn).**
@@ -71,98 +82,15 @@ The building blocks were designed before every technology decision was final (ev
 | **One registration point** | `AddSiriusMediator(...)` wires the whole pipeline in a fixed order, so services cannot get it wrong |
 | **Opt-in evolution** | New capabilities are added as new behaviors, decorators or implementations; existing services keep working unchanged |
 
+> 🗺️ **[Explore the architecture](docs/architecture/README.md)** — isolation diagram, the 16 building blocks, swap points, implementation status and the in-depth documents.
+
 The full rationale, decision framework and ADRs are in [Principles & ADRs](docs/architecture/00-principles-and-adrs.md).
-
----
-
-## 🧩 Isolation and Abstractions
-
-Each project knows as little as possible, and dependencies only point towards more stable, more abstract projects. Business code (aggregates, handlers) only uses level-2 contracts; each service's Infrastructure project references the level-4 implementations just to register them. Services never reference each other — they communicate through integration events published in `Sirius.Contracts.*` projects.
-
-```mermaid
-%%{init: {"themeVariables": {"fontSize": "11px"}, "flowchart": {"nodeSpacing": 12, "rankSpacing": 25, "padding": 4}}}%%
-flowchart BT
-    subgraph F[" "]
-        LF["<b>1. Foundation</b><br/>no project dependencies"]:::lvl
-        DC["Domain.Core"]
-        PC["Platform.Core"]
-        TEL["Platform.Telemetry"]
-    end
-
-    subgraph C[" "]
-        LC["<b>2. Abstractions</b><br/>no EF providers, no transports"]:::lvl
-        ABS["Messaging.Abstractions<br/><i>contracts only</i>"]
-        EB["EventBus<br/><i>IEventBus</i>"]
-        PEF["Persistence.EntityFramework<br/><i>EF abstractions, no provider</i>"]
-    end
-
-    subgraph L[" "]
-        LL["<b>3. Core logic</b><br/>persistence-ignorant"]:::lvl
-        MSG["Messaging<br/><i>behaviors, decorators, POCOs</i>"]
-        DA["Domain.Application<br/><i>logging, validation</i>"]
-    end
-
-    subgraph I[" "]
-        LI["<b>4. Implementations</b><br/>swappable"]:::lvl
-        RED["Messaging.Redis"]
-        MEF["Messaging.EntityFramework<br/><i>generic TContext</i>"]
-        SB["EventBus.ServiceBus"]
-        RMQ["EventBus.RabbitMQ"]
-        REL["Persistence.EF.Relational<br/><i>only project with DB providers</i>"]
-    end
-
-    ABS ==> DC
-    ABS ==> PC
-    PEF ==> TEL
-    MSG ==> ABS
-
-    RED --> MSG
-    MEF --> MSG
-    SB --> EB
-    RMQ --> EB
-    REL --> PEF
-
-    LC ~~~ LF
-    LL ~~~ LC
-    LI ~~~ LL
-
-    classDef lvl fill:none,stroke:none,text-align:left
-```
-
-### Swap points
-
-| Concern | Abstraction | Implementations | What changes in a service when swapping |
-|---|---|---|---|
-| Event bus | `IEventBus`, `IIntegrationEventHandler<T>` | Azure Service Bus, RabbitMQ | One registration line (`AddServiceBusEventBus` → `AddRabbitMqEventBus`) and the project reference — handlers and events are untouched |
-| Idempotency store | `IIdempotencyService` | EF Core (transactional, source of truth) decorating Redis (fast path) | Builder calls only (`AddIdempotencyEntityFramework`, `AddRedisIdempotencyCache`) |
-| Outbox | `IEventBusOutboxService` | EF Core outbox + `OutboxProcessor` | None — domain event handlers call `AddAndSaveEventAsync` |
-| Persistence | `ITransactionalUnitOfWork`, `IRepository<T>` | `SiriusDBContext` / `SiriusReadDbContext` (relational) | The service's `DbContext` base class; a new backend would be a new `Platform.Persistence.*` project |
-| Telemetry | Behaviors, decorators, `INotificationPublisher` | OpenTelemetry | None — registered by `AddSiriusMediator` |
-
-Full dependency rules: [Messaging & persistence layers](docs/architecture/01-messaging-persistence-layers.md).
 
 ---
 
 ## 🧱 Building Blocks
 
-| Project | Responsibility | Docs |
-|---|---|---|
-| `Domain.Core` | DDD seed work: entities, value objects, domain events | [Domain events](docs/architecture/03-domain-events-consistency.md) |
-| `Domain.Application` | Logging and validation behaviors | [Pipeline](docs/architecture/02-command-pipeline.md) |
-| `Platform.Core` | `Result` / `Error` (railway-oriented) | [Pipeline](docs/architecture/02-command-pipeline.md) |
-| `Platform.Messaging.Abstractions` | Command, query, event and service contracts | [Layers](docs/architecture/01-messaging-persistence-layers.md) |
-| `Platform.Messaging` | Idempotency and telemetry behaviors, POCOs | [Idempotency](docs/architecture/04-idempotency.md) |
-| `Platform.Messaging.EntityFramework` | `AddSiriusMediator`, transactions, outbox | [Outbox](docs/architecture/05-transactional-outbox.md) |
-| `Platform.Messaging.Redis` | Redis fast path for idempotency | [Idempotency](docs/architecture/04-idempotency.md) |
-| `Platform.Persistence.EntityFramework` | EF Core abstractions (unit of work) | [Layers](docs/architecture/01-messaging-persistence-layers.md) |
-| `Platform.Persistence.EntityFramework.Relational` | Write/read `DbContext`s, mappings, migrations | [Read model](docs/architecture/08-cqrs-read-model.md) |
-| `Platform.EventBus` | `IEventBus` abstraction | [Event bus](docs/architecture/07-event-bus.md) |
-| `Platform.EventBus.ServiceBus` | Azure Service Bus transport (default) | [Event bus](docs/architecture/07-event-bus.md) |
-| `Platform.EventBus.RabbitMQ` | RabbitMQ transport (alternative) | [Event bus](docs/architecture/07-event-bus.md) |
-| `Platform.Telemetry` | OpenTelemetry sources and meters | [Telemetry](docs/architecture/06-telemetry.md) |
-| `Platform.ServiceDefaults` | Aspire defaults, JWT auth, OpenAPI | [Configuration](docs/developer-guide/01-service-configuration.md) |
-| `Platform.WebApi` | `Result` → HTTP, exception middleware | [Pipeline](docs/architecture/02-command-pipeline.md#http-mapping) |
-| `Platform.Infrastructure` | Current user context (`IUserHttpContext`) | [Configuration](docs/developer-guide/01-service-configuration.md) |
+The platform is split into 16 small projects, each with a single responsibility. The [project list, dependency tiers and swap points](docs/architecture/README.md#isolation-and-abstractions) are in the architecture overview.
 
 ### The command pipeline
 
@@ -235,65 +163,7 @@ Every event is written to the publisher's **transactional outbox** in the same d
 
 ---
 
-## 🤖 AI-Assisted Development
-
-The repository ships with instructions that let AI assistants work within the architecture instead of around it:
-
-| Asset | Purpose |
-|---|---|
-| [`sirius-platform-architect`](.claude/skills/sirius-platform-architect/SKILL.md) | Claude Code skill — **architect** role. Maintains the building blocks: classifies the change (fix, opt-in capability, new implementation, contract change), applies the decision framework, measures the impact on services, enforces layer rules and keeps architecture docs, known gaps and ADRs up to date |
-| [`sirius-feature-developer`](.claude/skills/sirius-feature-developer/SKILL.md) | Claude Code skill — **developer** role. Implements features on top of the blocks: models aggregates, commands and events first, then builds Domain → Contracts → Application → Infrastructure → API → migrations → BackOffice, and flags anything that needs a platform change instead of working around it |
-| [`aspire`](.claude/skills/aspire/SKILL.md), [`aspire-orchestration`](.claude/skills/aspire-orchestration/SKILL.md), [`aspire-monitoring`](.claude/skills/aspire-monitoring/SKILL.md) | Tooling skills — run and observe the AppHost with the Aspire CLI (`aspire start/wait/stop`, `aspire otel traces/spans/logs`), recover from file locks, and verify idempotency, outbox and cross-service events end to end through traces. Adapted from the Microsoft Aspire skills shipped with dotnet/eShop |
-| [`dotnet-inspect`](.claude/skills/dotnet-inspect/SKILL.md) | Tooling skill — query and diff NuGet APIs (`dnx dotnet-inspect`) to find breaking changes before upgrading MediatR, EF Core, Aspire or transport SDKs. From the dotnet/eShop agent skills |
-| [`CLAUDE.md`](CLAUDE.md) | Shared assistant instructions: general rules, code style, common layer violations, idempotency API conventions. GitHub Copilot is pointed here from [`.github/copilot-instructions.md`](.github/copilot-instructions.md) |
-| [Development rules](docs/developer-guide/06-copilot-development-rules.md) | The shared rulebook both skills and Copilot follow when writing service code |
-
-In Claude Code the skills are picked up automatically from `.claude/skills/` when a request matches their scope, or can be invoked explicitly (`/sirius-platform-architect`, `/sirius-feature-developer`, `/aspire`, `/dotnet-inspect`). The role skills call the tooling skills in their verification steps. The Aspire skills need the [Aspire CLI](https://aspire.dev) (`dotnet tool install -g Aspire.Cli`); agents use `aspire start` instead of `dotnet run` on the AppHost.
-
----
-
-## 🏗️ Tech Stack
-
-| Area | Technologies |
-| --- | --- |
-| Runtime | .NET 10, ASP.NET Core minimal APIs, API versioning, OpenAPI + Scalar |
-| Orchestration | Aspire 13.6 (AppHost, service defaults, service discovery, health checks, dashboard) |
-| Domain / application | DDD, CQRS with MediatR, pipeline behaviors, FluentValidation, Result pattern |
-| Persistence | Entity Framework Core 10 + SQL Server, separate read context, Redis |
-| Messaging | Azure Service Bus (emulator in development) or RabbitMQ, transactional outbox, idempotent consumers |
-| Identity | Duende IdentityServer 8 + ASP.NET Core Identity, BFF with YARP |
-| Front end | Blazor Web App + Radzen |
-| Observability | Structured logging, OpenTelemetry traces and metrics (trace context propagated through the bus) |
-| Testing | xUnit, Moq, FluentAssertions, EF InMemory, Testcontainers, Aspire hosting (in-process test fixtures), xUnit v3 for functional tests |
-
----
-
-## 📁 Solution Structure
-
-```
-src/
- ├── Sirius.Domain/            → Domain.Core, Domain.Application (DDD seed work and behaviors)   ┐
- ├── Sirius.Platform/          → Platform.* building blocks                                    ┘ platform
- ├── Sirius.Contracts/         → Integration event contracts shared between services          ┐
- ├── Sirius.Services/                                                                          │
- │    ├── Accounts/            → Api, Application, Domain, Infrastructure                      │
- │    └── Notifications/       → Api, Application, Domain, Infrastructure                      │ reference
- ├── Sirius.Infrastructure/                                                                    │ implementation
- │    ├── AppHost              → Aspire orchestration                                          │
- │    ├── Identity             → Duende IdentityServer                                         │
- │    └── Bff.BackOffice       → YARP backend for frontend                                     │
- └── Sirius.WebApps/                                                                           │
-      └── Sirius.BackOfficeApp → Blazor + Radzen back office                                   ┘
-tests/
- ├── Platform/                 → UnitTests, IntegrationTests, FunctionalTests (+ TestWebApi host)
- └── Services/                 → UnitTests, FunctionalTests
-docs/                          → Architecture, developer guide, sample feature, backlog
-.claude/skills/                → Architect and developer skills, plus Aspire and dotnet-inspect tooling skills
-```
-
----
-
-## 🚀 Running the Project
+## 🚀 Quick Start
 
 ### Requirements
 
@@ -334,7 +204,7 @@ Azure Service Bus (emulator) is the default. To use RabbitMQ:
 2. In the infrastructure projects of Accounts, Notifications and Identity, reference `Platform.EventBus.RabbitMQ` instead of `Platform.EventBus.ServiceBus`.
 3. In their service registration (`Infrastructure/Extensions/Extensions.cs` in Accounts and Notifications, `Extensions/Extensions.cs` in Identity), replace `builder.AddServiceBusEventBus("eventbus")` with `builder.AddRabbitMqEventBus("eventbus")`.
 
-Handlers and integration events do not change. Note the [delivery differences](#️-project-status-and-known-limitations) between both transports.
+Handlers and integration events do not change. Note the [delivery differences](docs/developer-guide/05-known-gaps.md#rabbitmq-transport-robustness) between both transports.
 
 ### Running the tests
 
@@ -376,21 +246,72 @@ Suggested reading path:
 
 ---
 
+## 🤖 AI-Assisted Development
+
+The repository ships with instructions that let AI assistants work within the architecture instead of around it. Two Claude Code skills split the work the way a team would:
+
+| Role | Responsibility |
+|---|---|
+| [`sirius-platform-architect`](.claude/skills/sirius-platform-architect/SKILL.md) | Evolves the building blocks: classifies each change, checks its impact on services against the layer rules and keeps ADRs and known gaps in sync with the code |
+| [`sirius-feature-developer`](.claude/skills/sirius-feature-developer/SKILL.md) | Builds features on top of the contracts, from aggregates and events down to the BackOffice, and flags anything that needs a platform change instead of working around it |
+
+Both roles verify their changes end to end with the tooling skills: [`aspire`](.claude/skills/aspire/SKILL.md), [`aspire-orchestration`](.claude/skills/aspire-orchestration/SKILL.md) and [`aspire-monitoring`](.claude/skills/aspire-monitoring/SKILL.md) run the AppHost and check idempotency, the outbox and cross-service events through traces; [`dotnet-inspect`](.claude/skills/dotnet-inspect/SKILL.md) diffs NuGet APIs before upgrades. The tooling skills are adapted from the dotnet/eShop agent skills. Shared rules live in [`CLAUDE.md`](CLAUDE.md) and the [development rules](docs/developer-guide/06-copilot-development-rules.md); [GitHub Copilot](.github/copilot-instructions.md) is pointed to the same guidance.
+
+---
+
+## 🏗️ Tech Stack & Solution Structure
+
+| Area | Technologies |
+| --- | --- |
+| Runtime | .NET 10, ASP.NET Core minimal APIs, API versioning, OpenAPI + Scalar |
+| Orchestration | Aspire 13.6 (AppHost, service defaults, service discovery, health checks, dashboard) |
+| Domain / application | DDD, CQRS with MediatR, pipeline behaviors, FluentValidation, Result pattern |
+| Persistence | Entity Framework Core 10 + SQL Server, separate read context, Redis |
+| Messaging | Azure Service Bus (emulator in development) or RabbitMQ, transactional outbox, idempotent consumers |
+| Identity | Duende IdentityServer 8 + ASP.NET Core Identity, BFF with YARP |
+| Front end | Blazor Web App + Radzen |
+| Observability | Structured logging, OpenTelemetry traces and metrics (trace context propagated through the bus) |
+| Testing | xUnit, Moq, FluentAssertions, EF InMemory, Testcontainers, Aspire hosting (in-process test fixtures), xUnit v3 for functional tests |
+
+<details>
+<summary><b>Solution structure</b></summary>
+
+```
+src/
+ ├── Sirius.Domain/            → Domain.Core, Domain.Application (DDD seed work and behaviors)   ┐
+ ├── Sirius.Platform/          → Platform.* building blocks                                    ┘ platform
+ ├── Sirius.Contracts/         → Integration event contracts shared between services          ┐
+ ├── Sirius.Services/                                                                          │
+ │    ├── Accounts/            → Api, Application, Domain, Infrastructure                      │
+ │    └── Notifications/       → Api, Application, Domain, Infrastructure                      │ reference
+ ├── Sirius.Infrastructure/                                                                    │ implementation
+ │    ├── AppHost              → Aspire orchestration                                          │
+ │    ├── Identity             → Duende IdentityServer                                         │
+ │    └── Bff.BackOffice       → YARP backend for frontend                                     │
+ └── Sirius.WebApps/                                                                           │
+      └── Sirius.BackOfficeApp → Blazor + Radzen back office                                   ┘
+tests/
+ ├── Platform/                 → UnitTests, IntegrationTests, FunctionalTests (+ TestWebApi host)
+ └── Services/                 → UnitTests, FunctionalTests
+docs/                          → Architecture, developer guide, sample feature, backlog
+.claude/skills/                → Architect and developer skills, plus Aspire and dotnet-inspect tooling skills
+```
+
+</details>
+
+---
+
 ## ⚠️ Project Status and Known Limitations
 
-This is an evolving reference, not a finished product. Known limitations of the current code (full list in [Known gaps](docs/developer-guide/05-known-gaps.md)):
+This is an evolving reference, not a finished product. The main open gaps:
 
-- **Failed results commit** — `TransactionBehavior` only rolls back on exceptions. A command that returns a failed `Result` (including validation errors) still commits, together with its idempotency entry, so a retry with the same `x-requestid` is treated as a duplicate.
-- **Idempotency cache** — the Redis `processing` key is not removed when a command throws; a retry within its TTL (30 s by default) is answered as a duplicate.
-- **Outbox recovery** — the `OutboxProcessor` retries events in `NotPublished` or `FailedToPublish` state at a fixed polling interval. Events left in `InProgress` (for example, if the process stops right after claiming them) are not retried.
-- **RabbitMQ delivery** — the RabbitMQ consumer acknowledges messages even when a handler throws, and no dead-letter exchange is configured, so failed messages are lost. The Azure Service Bus implementation abandons the message, lets the broker retry it and dead-letters it after the maximum delivery count.
-- **Event bus selection** — the transport is chosen in code (AppHost `#define` plus one registration per service), not through configuration.
-- **Not packaged yet** — the building blocks are consumed as project references; the NuGet packaging and semantic versioning described in [Principles & ADRs](docs/architecture/00-principles-and-adrs.md) are design goals.
-- **Audit log** — entities get automatic `CreatedAt`/`UpdatedAt` and an optimistic concurrency `RowVersion`. A full audit log (`AuditLog` entity) is designed but not wired yet; see the [backlog](docs/backlog/audit-log-proposal.md).
-- **Authorization** — there is no generic authorization behavior in the pipeline; endpoints use ASP.NET Core authorization policies.
-- **Delivery guarantees** — the outbox and idempotent consumers protect the implemented paths; they do not provide end-to-end exactly-once delivery.
-- **Sample shortcuts** — emails are only logged and the activation link carries no confirmation token. See [Simplifications in the sample](docs/features/02-onboarding-activation-workflow.md#simplifications-in-the-sample).
-- **Development-only security settings** — IdentityServer clients use hard-coded secrets and `RequirePkce = false`, the Scalar UI clients use the implicit flow, JWT bearer validation runs with `RequireHttpsMetadata = false` and `ValidateAudience = false`, and the BackOffice client also allows a fixed `https://localhost:5001` redirect URI. They keep the local setup simple; a real deployment needs PKCE, secrets from a vault, HTTPS metadata and audience validation.
+- **Failed results commit** — a command that returns a failed `Result` still commits its idempotency entry, so a retry with the same `x-requestid` is answered as a duplicate. ([details](docs/developer-guide/05-known-gaps.md#failed-result-is-committed))
+- **Outbox recovery** — events left `InProgress` by a stopped process are not reclaimed. ([details](docs/developer-guide/05-known-gaps.md#stuck-inprogress-outbox-rows))
+- **RabbitMQ delivery** — failed messages are acknowledged and lost; Azure Service Bus (the default) retries and dead-letters them. ([details](docs/developer-guide/05-known-gaps.md#rabbitmq-transport-robustness))
+- **Development-only security** — hard-coded client secrets, no PKCE and no audience validation keep the local setup simple. ([details](docs/developer-guide/05-known-gaps.md#development-only-security-settings))
+- **Not packaged yet** — the building blocks are consumed as project references, not NuGet packages. ([details](docs/developer-guide/05-known-gaps.md#building-blocks-not-packaged))
+
+The complete list, with severity and planned fixes, is in [Known gaps](docs/developer-guide/05-known-gaps.md).
 
 ---
 
@@ -400,13 +321,19 @@ This is an evolving reference, not a finished product. Known limitations of the 
 - [Labs.Aspire.uSLearn](https://github.com/miquelalcaraz/Labs.Aspire.uSLearn) — the predecessor of this repository.
 - [Aspire](https://learn.microsoft.com/dotnet/aspire/), [Duende IdentityServer](https://duendesoftware.com/products/identityserver), [Radzen Blazor](https://blazor.radzen.com/).
 
+---
+
 ## 📄 License
 
 Distributed under the [MIT](LICENSE) license. Some dependencies — notably **Duende IdentityServer**, **MediatR** and **FluentAssertions** — have their own commercial or dual licenses; see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) before reusing this code.
 
+---
+
 ## 🤝 Contributing
 
 This is a personal, educational reference, but suggestions and improvements are welcome through issues or pull requests. If you use Claude Code, the [architect and developer skills](#-ai-assisted-development) describe the rules a change is expected to follow.
+
+---
 
 ## 👤 Author
 

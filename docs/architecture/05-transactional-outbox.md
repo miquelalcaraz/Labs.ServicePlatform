@@ -290,4 +290,5 @@ Unregistered event types make deserialization throw `InvalidOperationException` 
 | Exhausted retries | Events that reach `MaxRetryCount` stay `FailedToPublish` with no dead-letter table or alert. |
 | No backoff | Retries happen on every polling cycle; there is no exponential backoff. |
 | Deferred publishing for nested commands | Commands triggered by integration events publish through the `OutboxProcessor`, adding up to one polling interval of latency. |
+| Several nested commands *(latent)* | If an integration event handler sends two commands and the first adds outbox rows, the second command's `SaveChangesAsync()` flushes them and they are published before the decorator commits. No handler does this today ([details](../developer-guide/05-known-gaps.md#several-nested-commands-can-publish-before-commit)). |
 | Duplicate save metric | `application.outbox.events_saved` is incremented by both `EventBusOutboxService` and `OutboxMessageService` for the same event. |
