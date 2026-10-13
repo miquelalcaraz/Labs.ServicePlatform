@@ -28,15 +28,25 @@ The guiding principle is **"Platform evolves, services sleep peacefully"**: busi
 ```mermaid
 flowchart LR
     BO[BackOfficeApp<br/>Blazor + Radzen] --> BFF[backoffice-bff<br/>YARP]
-    BFF --> Accounts[Accounts API]
-    BFF --> Identity[Identity<br/>Duende IdentityServer]
-    Notifications[Notifications API]
 
-    Accounts & Notifications --> SQL[(SQL Server<br/>QltSystemDb)]
-    Identity --> IdDb[(SQL Server<br/>IdentityDb)]
-    Accounts & Notifications & Identity --> Redis[(Redis)]
-    Accounts & Notifications & Identity <--> Bus{{Azure Service Bus<br/>topic qlt-event-bus}}
+    subgraph Services
+        Accounts[Accounts API]
+        Identity[Identity<br/>Duende IdentityServer]
+        Notifications[Notifications API]
+    end
+
+    subgraph Infrastructure
+        SQL[("SQL Server<br/>QltSystemDb · IdentityDb")]
+        Redis[(Redis)]
+        Bus{{"Azure Service Bus<br/>topic qlt-event-bus"}}
+    end
+
+    BFF --> Accounts & Identity
+    Services --> SQL & Redis
+    Services <-. integration events .-> Bus
 ```
+
+> Accounts and Notifications share `QltSystemDb` (one schema each); Identity uses `IdentityDb`.
 
 - **Accounts API** — companies, tenants, subscriptions, the customer **onboarding** process and the customer **activation** process (DDD aggregates and process state machines).
 - **Identity** — Duende IdentityServer with ASP.NET Core Identity; provisions tenant admin users and activates them.

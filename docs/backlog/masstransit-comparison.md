@@ -1,10 +1,13 @@
+# MassTransit vs Custom Event Bus
+
+> **Decision**: MassTransit was evaluated and **not adopted**. The platform keeps its own `IEventBus` abstraction with Azure Service Bus and RabbitMQ implementations.
+> **Related**: [07 — Event Bus](../architecture/07-event-bus.md), [05 — Transactional Outbox](../architecture/05-transactional-outbox.md), [04 — Idempotency](../architecture/04-idempotency.md)
+
+MassTransit is the obvious alternative to a hand-written event bus in .NET, so this document records why it was not used and what would make the decision worth revisiting.
+
 ---
 
-## Appendix A — MassTransit Comparison
-
-This section documents the evaluation of MassTransit as a potential replacement for the custom `ServiceBusEventBus` implementation. The analysis was performed at the time of production-readiness review.
-
-### Feature-by-Feature Comparison
+## Feature-by-Feature Comparison
 
 | Capability | Custom Implementation | MassTransit |
 |---|---|---|
@@ -26,15 +29,15 @@ This section documents the evaluation of MassTransit as a potential replacement 
 | **Message envelope** | Lean (Subject + body + ApplicationProperties) | Opaque (MT headers, `__messageType`, etc.) |
 | **Control over wire format** | ✅ Full control | ❌ MT-specific envelope |
 
-### What MassTransit Would Add
+## What MassTransit Would Add
 
 Only **3 features** not currently covered by the custom implementation:
 
 1. **Consumer-level retry policies** — Retry with exponential backoff *before* abandoning to the transport. Current flow: exception → abandon → Service Bus redelivery (immediate). MT adds `UseMessageRetry(r => r.Exponential(5, ...))` at the consumer level.
 2. **Scheduled redelivery** — "Retry this message in 30 seconds." Useful for transient external dependencies. Achievable natively with `ServiceBusMessage.ScheduledEnqueueTime` if needed.
-3. **Sagas / State machines** — Long-running workflows with persistent state. Only relevant for multi-step orchestration (e.g., order → payment → shipping → notification).
+3. **Sagas / State machines** — Long-running workflows with persistent state. The onboarding and activation processes in the Accounts service are modelled as DDD process aggregates instead (see [Onboarding & Activation Workflow](../features/02-onboarding-activation-workflow.md)).
 
-### What Would Be Lost
+## What Would Be Lost
 
 | Concern | Impact |
 |---|---|
@@ -43,19 +46,17 @@ Only **3 features** not currently covered by the custom implementation:
 | **Aspire-native integration** | 🟡 Current setup is fully Aspire-native. MT's Aspire support is less mature. |
 | **Migration cost** | 🔴 All `IIntegrationEventHandler<T>` implementations, outbox, idempotent consumer, telemetry decorators would need rewriting to MT's `IConsumer<T>` model. |
 | **Conceptual overlap** | 🟡 MediatR (CQRS) + MassTransit (messaging) is common but adds two "pipeline" models to reason about. |
-| **Dependency weight** | 🟡 MassTransit pulls ~15+ packages. Current EventBus stack is 2 packages + custom code. |
+| **Dependency weight** | 🟡 MassTransit pulls in a large package graph; the current event bus is the transport SDK plus a small amount of platform code. |
 
-### Decision
+## Rationale
 
-**MassTransit was not adopted.** Rationale:
+- The custom implementation already covers the critical patterns: transactional outbox, idempotent consumers, decorator pipeline, OpenTelemetry tracing, graceful shutdown and error handling.
+- The feature gap is small (consumer-level retry, scheduled redelivery) and both can be added incrementally to the existing decorator pipeline without a framework migration.
+- Adopting MassTransit would sacrifice AOT compatibility, wire-format control and Aspire-native integration, which are architectural priorities for this project.
+- The migration cost (rewriting all handlers and infrastructure) is disproportionate to the incremental value.
 
-- The custom implementation already covers all critical production patterns: transactional outbox, idempotent consumers, decorator pipeline, OTel tracing, graceful shutdown, and production-hardened error handling.
-- The feature gap is small (consumer-level retry, scheduled redelivery) and both can be added incrementally to the existing decorator pipeline without framework migration.
-- Adopting MassTransit would sacrifice AOT compatibility, wire-format control, and Aspire-native integration — all of which are architectural priorities for this project.
-- The migration cost (rewriting all handlers and infrastructure) is disproportionate to the incremental value gained.
+## When to Reconsider
 
-### When to Reconsider
-
-- **Sagas are needed** — If complex multi-step orchestration workflows become a requirement.
-- **Starting a new system** — For greenfield projects without existing infrastructure or AOT requirements.
-- **AOT is no longer required** — If trimming/AOT constraints are relaxed in the future.
+- **Sagas are needed** — if multi-step orchestration across services outgrows process aggregates.
+- **Starting a new system** — for greenfield projects without existing infrastructure or AOT requirements.
+- **AOT is no longer required** — if trimming/AOT constraints are relaxed.
