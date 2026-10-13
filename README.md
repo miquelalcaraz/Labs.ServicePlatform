@@ -82,7 +82,7 @@ The building blocks were designed before every technology decision was final (ev
 | **One registration point** | `AddSiriusMediator(...)` wires the whole pipeline in a fixed order, so services cannot get it wrong |
 | **Opt-in evolution** | New capabilities are added as new behaviors, decorators or implementations; existing services keep working unchanged |
 
-> **[Explore the architecture](docs/architecture/README.md)** — isolation diagram, the 16 building blocks, swap points, implementation status and the in-depth documents.
+> 🗺️ **[Explore the architecture](docs/architecture/README.md)** — isolation diagram, the 16 building blocks, swap points, implementation status and the in-depth documents.
 
 The full rationale, decision framework and ADRs are in [Principles & ADRs](docs/architecture/00-principles-and-adrs.md).
 
