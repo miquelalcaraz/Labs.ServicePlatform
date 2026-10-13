@@ -128,25 +128,48 @@ Telemetry behaviors, the domain event publisher and the integration event decora
 The building blocks are split so that **each project knows as little as possible**. Dependencies only point towards more stable, more abstract projects:
 
 ```mermaid
+%%{init: {"themeVariables": {"fontSize": "12px"}, "flowchart": {"nodeSpacing": 15, "rankSpacing": 35, "padding": 6}}}%%
 flowchart BT
-    subgraph Pure["No project dependencies"]
+    subgraph F["① Foundation · no project dependencies"]
+        direction LR
         DC["Domain.Core"]
         PC["Platform.Core"]
         TEL["Platform.Telemetry"]
     end
 
-    ABS["Messaging.Abstractions<br/><i>contracts only</i>"] --> DC & PC
-    MSG["Messaging<br/><i>no EF</i>"] --> ABS & TEL
-    EB["EventBus<br/><i>IEventBus</i>"] --> ABS & TEL
-    PEF["Persistence.EntityFramework<br/><i>no DB provider</i>"] --> DC & PC & TEL
-    DA["Domain.Application"] --> DC & MSG
+    subgraph C["② Abstractions · no EF providers, no transports"]
+        direction LR
+        ABS["Messaging.Abstractions<br/><i>contracts only</i>"]
+        EB["EventBus<br/><i>IEventBus</i>"]
+        PEF["Persistence.EntityFramework<br/><i>EF abstractions, no provider</i>"]
+    end
 
-    SB["EventBus.ServiceBus"] --> EB
-    RMQ["EventBus.RabbitMQ"] --> EB
-    RED["Messaging.Redis"] --> MSG
-    MEF["Messaging.EntityFramework<br/><i>generic TContext</i>"] --> MSG & EB & PEF
-    REL["Persistence.EF.Relational<br/><i>only project with DB providers</i>"] --> MEF & PEF
+    subgraph L["③ Core logic · persistence-ignorant"]
+        direction LR
+        MSG["Messaging<br/><i>behaviors, decorators, POCOs</i>"]
+        DA["Domain.Application<br/><i>logging, validation</i>"]
+    end
+
+    subgraph I["④ Implementations · swappable"]
+        direction LR
+        SB["EventBus.ServiceBus"]
+        RMQ["EventBus.RabbitMQ"]
+        RED["Messaging.Redis"]
+        MEF["Messaging.EntityFramework<br/><i>generic TContext</i>"]
+        REL["Persistence.EF.Relational<br/><i>only project with DB providers</i>"]
+    end
+
+    C ==> F
+    L ==> C
+
+    SB --> EB
+    RMQ --> EB
+    RED --> MSG
+    MEF --> MSG
+    REL --> PEF
 ```
+
+Thick arrows summarize the project references between levels; thin arrows show which building block each implementation plugs into. `Platform.Telemetry` is used across levels, and `Messaging.EntityFramework` also references `EventBus` and `Persistence.EntityFramework` (it is the glue between messaging and EF). Nothing ever points upwards.
 
 What each layer is **not allowed** to know — enforced by project references, not just by convention:
 
