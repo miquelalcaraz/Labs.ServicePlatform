@@ -3,8 +3,8 @@
     <Authors>Miquel Alcaraz</Authors>
     <Copyright>Copyright (c) 2026 Miquel Alcaraz</Copyright>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <PackageProjectUrl>https://github.com/miquelalcaraz/Labs.CleanArchitecture.BuildingBlocks</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/miquelalcaraz/Labs.CleanArchitecture.BuildingBlocks</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/miquelalcaraz/Labs.ServicePlatform</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/miquelalcaraz/Labs.ServicePlatform</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 
