@@ -101,6 +101,8 @@ dotnet test tests/Services/Services.UnitTests      # services must still pass â€
 
 Integration and functional tests need Docker (`tests/Platform/Platform.IntegrationTests`, `dotnet run --project tests/Platform/Platform.FunctionalTests`, `dotnet run --project tests/Services/Services.FunctionalTests`). Run them when the change touches transactions, outbox, idempotency or the event bus; if you cannot run them, say so explicitly.
 
+For those same changes, also check the cross-service path on the running app with the `aspire` skill ("Verifying the Building Blocks End to End"): `aspire start`, trigger a flow, inspect the spans with `aspire otel spans`, then `aspire stop`. When the change upgrades a dependency, use the `dotnet-inspect` skill (`diff --package Foo@old..new`) during step 3 to list breaking API changes before touching code.
+
 Then walk the layer checklist:
 - [ ] `Platform.Messaging` does not reference EntityFrameworkCore
 - [ ] `Platform.Messaging.EntityFramework` does not reference SQL/Postgres providers
