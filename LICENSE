@@ -2,13 +2,6 @@ MIT License
 
 Copyright (c) 2026 Miquel Alcaraz
 
-Portions of this software are derived from Labs.Aspire.uSLearn
-(https://github.com/miquelalcaraz/Labs.Aspire.uSLearn), Copyright (c) 2026 Miquel Alcaraz,
-and from dotnet/eShop (https://github.com/dotnet/eShop),
-Copyright (c) .NET Foundation and Contributors, both licensed under the MIT License.
-
-Third-party components are distributed under their own licenses. See THIRD-PARTY-NOTICES.md.
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
