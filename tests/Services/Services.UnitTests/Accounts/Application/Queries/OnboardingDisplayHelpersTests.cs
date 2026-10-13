@@ -1,5 +1,5 @@
-using Qlt.Services.Accounts.Application.Queries;
-using Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
+using Miqa.Services.Accounts.Application.Queries;
+using Miqa.Services.Accounts.Domain.Models.OnboardingAggregate;
 
 namespace Services.UnitTests.Accounts.Application.Queries;
 

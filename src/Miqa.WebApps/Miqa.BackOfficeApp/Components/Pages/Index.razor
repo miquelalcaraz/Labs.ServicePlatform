@@ -1,0 +1,63 @@
+@page "/"
+@layout LandingLayout
+@attribute [AllowAnonymous]
+
+<PageTitle>Miqa-BackOffice</PageTitle>
+
+<div style="display: flex; flex-direction: column; height: 100%; max-width: 1200px; margin: 0 auto; padding: 0 1rem;">
+
+    <RadzenRow AlignItems="AlignItems.Center" Style="flex: 1 1 auto;">
+        <RadzenColumn Size="12" SizeMD="7">
+            <RadzenStack Gap="1rem">
+                <RadzenText Text="Miqa-BackOffice" TextStyle="TextStyle.DisplayH3" TagName="TagName.H1" style="font-weight: 700; color: var(--rz-base-900); letter-spacing: -0.02em;" />
+                <RadzenText Text="Your back office management platform. Streamline operations, manage resources and boost productivity — all in one place."
+                            TextStyle="TextStyle.Body1" TagName="TagName.P" Style="font-size: 1.15rem; line-height: 1.7; color: var(--rz-base-500); max-width: 540px;" />
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" class="rz-mt-4">
+                    <RadzenButton Text="Get started" Icon="arrow_forward" ButtonStyle="ButtonStyle.Primary"
+                                  Size="ButtonSize.Large" Click="@OnGetStartedClick" />
+                    <RadzenButton Text="Learn more" ButtonStyle="ButtonStyle.Light"
+                                  Variant="Variant.Outlined" Size="ButtonSize.Large" />
+                </RadzenStack>
+            </RadzenStack>
+        </RadzenColumn>
+        <RadzenColumn Size="12" SizeMD="5" class="rz-display-none rz-display-md-block">
+            <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center">
+                <RadzenImage Path="images/logo.png" style="width: 220px; height: 220px; opacity: 0.85;" AlternateText="Miqa.BackOfficeApp" />
+            </RadzenStack>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <div style="flex: 0 0 auto; padding-bottom: 1.5rem;">
+        <RadzenCard Style="padding: 1.5rem 2rem;">
+            <RadzenRow Gap="1.5rem">
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenStack AlignItems="AlignItems.Center" Gap="0.5rem">
+                        <div style="width: 48px; height: 48px; border-radius: 10px; background: var(--rz-base-100); display: flex; align-items: center; justify-content: center;">
+                            <RadzenIcon Icon="speed" Style="font-size: 24px; color: var(--rz-base-600);" />
+                        </div>
+                        <RadzenText Text="Fast & Reliable" TextStyle="TextStyle.H6" TextAlign="TextAlign.Center" Style="color: var(--rz-base-800);" />
+                        <RadzenText Text="Optimized for speed and designed for reliability in every operation." TextStyle="TextStyle.Body2" TextAlign="TextAlign.Center" Style="color: var(--rz-base-500);" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenStack AlignItems="AlignItems.Center" Gap="0.5rem">
+                        <div style="width: 48px; height: 48px; border-radius: 10px; background: var(--rz-base-100); display: flex; align-items: center; justify-content: center;">
+                            <RadzenIcon Icon="security" Style="font-size: 24px; color: var(--rz-base-600);" />
+                        </div>
+                        <RadzenText Text="Secure by Default" TextStyle="TextStyle.H6" TextAlign="TextAlign.Center" Style="color: var(--rz-base-800);" />
+                        <RadzenText Text="Enterprise-grade security with external identity provider integration." TextStyle="TextStyle.Body2" TextAlign="TextAlign.Center" Style="color: var(--rz-base-500);" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenStack AlignItems="AlignItems.Center" Gap="0.5rem">
+                        <div style="width: 48px; height: 48px; border-radius: 10px; background: var(--rz-base-100); display: flex; align-items: center; justify-content: center;">
+                            <RadzenIcon Icon="devices" Style="font-size: 24px; color: var(--rz-base-600);" />
+                        </div>
+                        <RadzenText Text="Modern Experience" TextStyle="TextStyle.H6" TextAlign="TextAlign.Center" Style="color: var(--rz-base-800);" />
+                        <RadzenText Text="Responsive design that works seamlessly across all your devices." TextStyle="TextStyle.Body2" TextAlign="TextAlign.Center" Style="color: var(--rz-base-500);" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenCard>
+    </div>
+</div>

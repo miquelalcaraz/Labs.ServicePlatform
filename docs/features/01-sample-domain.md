@@ -36,9 +36,9 @@ flowchart LR
 
 | Service | Responsibility in the sample | Persistence |
 |---|---|---|
-| **Accounts** | Owns the customer structure (tenant, company, subscription, membership) and orchestrates onboarding and activation through two process aggregates | `QltSystemDb`, schema `Accounts` |
+| **Accounts** | Owns the customer structure (tenant, company, subscription, membership) and orchestrates onboarding and activation through two process aggregates | `MiqaSystemDb`, schema `Accounts` |
 | **Identity** | Stores users and a local copy of tenants; provisions the customer administrator and confirms its email | `IdentityDb` (`IdentityContext` + `IdentityLogsContext` for idempotency/outbox) |
-| **Notifications** | Records and "sends" emails (the `EmailService` only logs — delivery is simulated) | `QltSystemDb`, schema `Notifications` |
+| **Notifications** | Records and "sends" emails (the `EmailService` only logs — delivery is simulated) | `MiqaSystemDb`, schema `Notifications` |
 
 ---
 

@@ -1,8 +1,8 @@
 using Platform.TestWebApi;
 
-using Qlt.Platform.Builders;
-using Qlt.Platform.Middleware;
-using Qlt.Platform.ServiceDefaults;
+using Miqa.Platform.Builders;
+using Miqa.Platform.Middleware;
+using Miqa.Platform.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
 

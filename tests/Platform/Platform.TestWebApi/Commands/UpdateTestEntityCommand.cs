@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 
 using Platform.TestWebApi.Infrastructure;
 
-using Qlt.Platform;
-using Qlt.Platform.Messaging.Commands;
+using Miqa.Platform;
+using Miqa.Platform.Messaging.Commands;
 
 namespace Platform.TestWebApi.Commands;
 

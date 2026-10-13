@@ -2,7 +2,7 @@
 
 ## Overview
 
-Testing strategy for QltS platform components and business services. Tests are split into two top-level groups under `tests/`:
+Testing strategy for MiqaS platform components and business services. Tests are split into two top-level groups under `tests/`:
 
 - **`Platform/`** — architecture and infrastructure tests (independent of any business service)
 - **`Services/`** — business service tests (Accounts, Identity, Notifications)
@@ -115,9 +115,9 @@ flowchart LR
         ASP["Aspire DistributedApplication<br/>(dashboard disabled)"]
         WAF["WebApplicationFactory#lt;Program#gt;<br/>connection strings injected"]
     end
-    ASP --> SQL[("SQL Server container<br/>QltSystemDb / IdentityDb / testDb")]
+    ASP --> SQL[("SQL Server container<br/>MiqaSystemDb / IdentityDb / testDb")]
     ASP --> RED[("Redis container")]
-    ASP --> SB[("Service Bus emulator<br/>topic qlt-event-bus")]
+    ASP --> SB[("Service Bus emulator<br/>topic miqa-event-bus")]
     WAF --> HOST["API under test"]
     HOST --> SQL & RED & SB
 ```
@@ -125,7 +125,7 @@ flowchart LR
 | Fixture | Usage | Notes |
 |---|---|---|
 | `BuildingBlocksFixture` | `[Collection("BuildingBlocks")]` (`ICollectionFixture`) | Hosts `Platform.TestWebApi`; SQL Server on port 1446, subscription `Platform` |
-| `ServicesFixture` (abstract) → `AccountsFixture`, `IdentityFixture`, `NotificationsFixture` | `IClassFixture<AccountsFixture>` etc. | SQL Server on port 1445 with `QltSystemDb` and `IdentityDb`; adds `AutoAuthorizeMiddleware` through an `IStartupFilter` |
+| `ServicesFixture` (abstract) → `AccountsFixture`, `IdentityFixture`, `NotificationsFixture` | `IClassFixture<AccountsFixture>` etc. | SQL Server on port 1445 with `MiqaSystemDb` and `IdentityDb`; adds `AutoAuthorizeMiddleware` through an `IStartupFilter` |
 
 `AutoAuthorizeMiddleware` authenticates every request with a fixed test identity (`sub = AutoAuthorizeMiddleware.IDENTITY_ID`) so endpoints protected by `RequireAuthorization()` and role policies can be exercised. The role defaults to `PlatformAdmin` and can be overridden per request with the `X-Test-Role` header — authorization tests use it to assert `403 Forbidden` for denied roles.
 

@@ -1,4 +1,4 @@
-using Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
+using Miqa.Services.Accounts.Domain.Models.OnboardingAggregate;
 
 namespace Services.UnitTests.Accounts.Domain;
 

@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Logging;
 
-using Qlt.Contracts.Notifications.IntegrationEvents;
-using Qlt.Domain.SeedWork;
-using Qlt.Platform.Messaging.Services;
-using Qlt.Services.Notifications.Application.Commands;
-using Qlt.Services.Notifications.Domain.Models;
-using Qlt.Services.Notifications.Domain.Repositories;
-using Qlt.Services.Notifications.Domain.Services;
+using Miqa.Contracts.Notifications.IntegrationEvents;
+using Miqa.Domain.SeedWork;
+using Miqa.Platform.Messaging.Services;
+using Miqa.Services.Notifications.Application.Commands;
+using Miqa.Services.Notifications.Domain.Models;
+using Miqa.Services.Notifications.Domain.Repositories;
+using Miqa.Services.Notifications.Domain.Services;
 
 namespace Services.UnitTests.Notifications.Application.Commands;
 
@@ -101,7 +101,7 @@ public class SendActivationEmailCommandHandlerTests
 
         outbox
             .Setup(o => o.AddAndSaveEventAsync(It.IsAny<ActivationDeliveredIntegrationEvent>()))
-            .Callback<Qlt.Platform.Messaging.IntegrationEvents.IntegrationEvent>(e =>
+            .Callback<Miqa.Platform.Messaging.IntegrationEvents.IntegrationEvent>(e =>
                 capturedDeliveredAt = ((ActivationDeliveredIntegrationEvent)e).DeliveredAtUtc)
             .Returns(Task.CompletedTask);
 

@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
 
-using Qlt.Services.Accounts.Application.Commands;
-using Qlt.Services.Accounts.Domain.Events;
-using Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
-using Qlt.Services.Accounts.Domain.Repositories;
+using Miqa.Services.Accounts.Application.Commands;
+using Miqa.Services.Accounts.Domain.Events;
+using Miqa.Services.Accounts.Domain.Models.OnboardingAggregate;
+using Miqa.Services.Accounts.Domain.Repositories;
 
 namespace Services.UnitTests.Accounts.Application.Commands;
 
@@ -200,7 +200,7 @@ public class RetryOnboardingProcessCommandHandlerTests
     private static (Mock<IOnboardingProcessRepository> Repo, Mock<object> _)
         CreateMocks(int saveChangesReturn = 1)
     {
-        var unitOfWork = new Mock<Qlt.Domain.SeedWork.IUnitOfWork>();
+        var unitOfWork = new Mock<Miqa.Domain.SeedWork.IUnitOfWork>();
         unitOfWork.Setup(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(saveChangesReturn);
 

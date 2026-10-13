@@ -1,4 +1,4 @@
-using Qlt.Platform.Messaging.IntegrationEvents;
+using Miqa.Platform.Messaging.IntegrationEvents;
 
 namespace Platform.TestWebApi.IntegrationEvents;
 

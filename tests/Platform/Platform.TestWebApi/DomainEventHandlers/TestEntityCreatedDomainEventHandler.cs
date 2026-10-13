@@ -1,8 +1,8 @@
 using Platform.TestWebApi.Infrastructure;
 using Platform.TestWebApi.IntegrationEvents;
 
-using Qlt.Platform.Messaging.DomainEvents;
-using Qlt.Platform.Messaging.Services;
+using Miqa.Platform.Messaging.DomainEvents;
+using Miqa.Platform.Messaging.Services;
 
 namespace Platform.TestWebApi.DomainEventHandlers;
 

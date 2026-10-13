@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-using Qlt.Platform.Messaging.Models;
-using Qlt.Platform.Messaging.Options;
-using Qlt.Platform.Messaging.Services;
+using Miqa.Platform.Messaging.Models;
+using Miqa.Platform.Messaging.Options;
+using Miqa.Platform.Messaging.Services;
 
 using StackExchange.Redis;
 

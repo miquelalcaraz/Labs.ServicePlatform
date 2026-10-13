@@ -7,8 +7,8 @@ using Asp.Versioning.Http;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 
-using Qlt.Services.Accounts.Application.Commands;
-using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
+using Miqa.Services.Accounts.Application.Commands;
+using Miqa.Services.Accounts.Domain.Models.CompanyAggregate;
 
 namespace Services.FunctionalTests.Accounts;
 

@@ -1,6 +1,6 @@
-using Qlt.Services.Accounts.Domain.Events;
-using Qlt.Services.Accounts.Domain.Exceptions;
-using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
+using Miqa.Services.Accounts.Domain.Events;
+using Miqa.Services.Accounts.Domain.Exceptions;
+using Miqa.Services.Accounts.Domain.Models.CompanyAggregate;
 
 namespace Services.UnitTests.Accounts.Domain;
 

@@ -1,4 +1,4 @@
-﻿using Qlt.Platform.Persistence.Migrations;
+﻿using Miqa.Platform.Persistence.Migrations;
 
 namespace Platform.TestWebApi.Infrastructure
 {

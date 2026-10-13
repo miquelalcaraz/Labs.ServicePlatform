@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 
-using Qlt.Platform.Persistence;
-using Qlt.Platform.Persistence.Options;
+using Miqa.Platform.Persistence;
+using Miqa.Platform.Persistence.Options;
 
 namespace Platform.TestWebApi.Infrastructure;
 
-public class TestReadDbContext : QltReadDbContext
+public class TestReadDbContext : MiqaReadDbContext
 {
     public TestReadDbContext(
         DbContextOptions<TestDbContext> options,
-        QltReadDbContextConfiguration configuration)
+        MiqaReadDbContextConfiguration configuration)
         : base(options, configuration)
     {
     }

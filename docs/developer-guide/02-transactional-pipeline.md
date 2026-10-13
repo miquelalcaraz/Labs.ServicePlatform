@@ -10,10 +10,10 @@ For the internals see [Command Pipeline](../architecture/02-command-pipeline.md)
 
 ## Pipeline Execution Order
 
-Register via `AddQltMediator` — the platform manages all behavior ordering:
+Register via `AddMiqaMediator` — the platform manages all behavior ordering:
 
 ```csharp
-services.AddQltMediator(cfg =>
+services.AddMiqaMediator(cfg =>
 {
     cfg.RegisterServicesFromAssembly(assembly);
     cfg.WithLogging(typeof(LoggingBehavior<,>));

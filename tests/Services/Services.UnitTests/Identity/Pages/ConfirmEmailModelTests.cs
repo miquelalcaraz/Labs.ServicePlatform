@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 
-using Qlt.Contracts.Identity.IntegrationEvents;
-using Qlt.Infrastructure.Identity.Commands;
-using Qlt.Infrastructure.Identity.Models;
-using Qlt.Platform.Messaging.Services;
+using Miqa.Contracts.Identity.IntegrationEvents;
+using Miqa.Infrastructure.Identity.Commands;
+using Miqa.Infrastructure.Identity.Models;
+using Miqa.Platform.Messaging.Services;
 
 namespace Services.UnitTests.Identity.Pages;
 

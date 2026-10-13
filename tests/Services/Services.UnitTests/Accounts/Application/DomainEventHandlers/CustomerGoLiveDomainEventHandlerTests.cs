@@ -1,11 +1,11 @@
 using Microsoft.Extensions.Logging;
 
-using Qlt.Contracts.Accounts.IntegrationEvents;
-using Qlt.Platform.Messaging.Services;
-using Qlt.Services.Accounts.Application.DomainEventHandlers;
-using Qlt.Services.Accounts.Domain.Events;
-using Qlt.Services.Accounts.Domain.Models.CustomerActivationProcessAggregate;
-using Qlt.Services.Accounts.Domain.Repositories;
+using Miqa.Contracts.Accounts.IntegrationEvents;
+using Miqa.Platform.Messaging.Services;
+using Miqa.Services.Accounts.Application.DomainEventHandlers;
+using Miqa.Services.Accounts.Domain.Events;
+using Miqa.Services.Accounts.Domain.Models.CustomerActivationProcessAggregate;
+using Miqa.Services.Accounts.Domain.Repositories;
 
 namespace Services.UnitTests.Accounts.Application.DomainEventHandlers;
 

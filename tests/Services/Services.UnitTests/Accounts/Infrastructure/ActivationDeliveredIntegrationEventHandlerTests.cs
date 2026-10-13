@@ -2,10 +2,10 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Qlt.Contracts.Notifications.IntegrationEvents;
-using Qlt.Platform;
-using Qlt.Services.Accounts.Application.Commands;
-using Qlt.Services.Accounts.Infrastructure.IntegrationEvents.EventHandling;
+using Miqa.Contracts.Notifications.IntegrationEvents;
+using Miqa.Platform;
+using Miqa.Services.Accounts.Application.Commands;
+using Miqa.Services.Accounts.Infrastructure.IntegrationEvents.EventHandling;
 
 namespace Services.UnitTests.Accounts.Infrastructure;
 

@@ -1,4 +1,4 @@
-# Qlt · Building Blocks Reference Architecture
+# Miqa · Building Blocks Reference Architecture
 
 ![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)
 ![Aspire](https://img.shields.io/badge/Aspire-13.6-512BD4)
@@ -17,7 +17,7 @@ The building blocks are applied to a [sample B2B domain](docs/features/README.md
 >
 > **Educational reference** — not intended for direct production use. See [known limitations](#️-project-status-and-known-limitations).
 
-*Qlt is the name of this lab project; it is not a company or a product.*
+*Miqa is the name of this lab project; it is not a company or a product.*
 
 ---
 
@@ -36,9 +36,9 @@ flowchart LR
     end
 
     subgraph Infrastructure
-        SQL[("SQL Server<br/>QltSystemDb · IdentityDb")]
+        SQL[("SQL Server<br/>MiqaSystemDb · IdentityDb")]
         Redis[(Redis)]
-        Bus{{"Azure Service Bus<br/>topic qlt-event-bus"}}
+        Bus{{"Azure Service Bus<br/>topic miqa-event-bus"}}
     end
 
     BFF --> Accounts & Identity
@@ -46,7 +46,7 @@ flowchart LR
     Services <-. integration events .-> Bus
 ```
 
-> Accounts and Notifications share `QltSystemDb` (one schema each); Identity uses `IdentityDb`.
+> Accounts and Notifications share `MiqaSystemDb` (one schema each); Identity uses `IdentityDb`.
 
 - **Accounts API** — companies, tenants, subscriptions, the customer **onboarding** process and the customer **activation** process (DDD aggregates and process state machines).
 - **Identity** — Duende IdentityServer with ASP.NET Core Identity; provisions tenant admin users and activates them.
@@ -80,10 +80,10 @@ Every event is written to the publisher's **transactional outbox** in the same d
 | `Platform.Core` | `Result` / `Result<T>` and `Error` (railway-oriented results) |
 | `Platform.Messaging.Abstractions` | Contracts: `ICommand<T>`, `IQuery<T>`, `IDomainEventHandler<T>`, `IIntegrationEventHandler<T>`, `IIdempotencyService`, `IEventBusOutboxService`, `IntegrationEvent` |
 | `Platform.Messaging` | Persistence-ignorant logic: `IdempotencyBehavior`, telemetry behaviors/decorators, `IdempotentCommand<T>`, outbox/idempotency POCOs |
-| `Platform.Messaging.EntityFramework` | `AddQltMediator`, `TransactionBehavior`, `DomainEventProcessorBehavior`, `IntegrationEventProcessorBehavior`, EF idempotency, outbox services and `OutboxProcessor` |
+| `Platform.Messaging.EntityFramework` | `AddMiqaMediator`, `TransactionBehavior`, `DomainEventProcessorBehavior`, `IntegrationEventProcessorBehavior`, EF idempotency, outbox services and `OutboxProcessor` |
 | `Platform.Messaging.Redis` | Redis fast path for idempotency checks |
 | `Platform.Persistence.EntityFramework` | EF Core abstractions: `ITransactionalUnitOfWork`, `IDomainEntityChangeTracker`, fluent context configuration |
-| `Platform.Persistence.EntityFramework.Relational` | `QltDBContext` (write) and `QltReadDbContext` (read-only), entity configurations, `Repository<T>`, `ResilientTransaction`, migrations |
+| `Platform.Persistence.EntityFramework.Relational` | `MiqaDBContext` (write) and `MiqaReadDbContext` (read-only), entity configurations, `Repository<T>`, `ResilientTransaction`, migrations |
 | `Platform.EventBus` | `IEventBus` abstraction and subscription builder |
 | `Platform.EventBus.ServiceBus` | Azure Service Bus implementation (default) |
 | `Platform.EventBus.RabbitMQ` | RabbitMQ implementation (alternative, see limitations) |
@@ -93,7 +93,7 @@ Every event is written to the publisher's **transactional outbox** in the same d
 Every command flows through the same pipeline, configured with a single call:
 
 ```csharp
-services.AddQltMediator(cfg =>
+services.AddMiqaMediator(cfg =>
 {
     cfg.RegisterServicesFromAssembly(AssemblyReference.Assembly);
     cfg.WithLogging(typeof(LoggingBehavior<,>));
@@ -135,18 +135,18 @@ Telemetry behaviors, the domain event publisher and the integration event decora
 
 ```
 src/
- ├── Qlt.Domain/            → Domain.Core, Domain.Application (DDD seed work and behaviors)
- ├── Qlt.Platform/          → Platform.* building blocks (messaging, persistence, event bus, telemetry, web)
- ├── Qlt.Contracts/         → Integration event contracts shared between services
- ├── Qlt.Services/
+ ├── Miqa.Domain/            → Domain.Core, Domain.Application (DDD seed work and behaviors)
+ ├── Miqa.Platform/          → Platform.* building blocks (messaging, persistence, event bus, telemetry, web)
+ ├── Miqa.Contracts/         → Integration event contracts shared between services
+ ├── Miqa.Services/
  │    ├── Accounts/         → Api, Application, Domain, Infrastructure
  │    └── Notifications/    → Api, Application, Domain, Infrastructure
- ├── Qlt.Infrastructure/
+ ├── Miqa.Infrastructure/
  │    ├── AppHost           → Aspire orchestration
  │    ├── Identity          → Duende IdentityServer
  │    └── Bff.BackOffice    → YARP backend for frontend
- └── Qlt.WebApps/
-      └── Qlt.BackOfficeApp → Blazor + Radzen back office
+ └── Miqa.WebApps/
+      └── Miqa.BackOfficeApp → Blazor + Radzen back office
 tests/
  ├── Platform/              → UnitTests, IntegrationTests, FunctionalTests (+ TestWebApi host)
  └── Services/              → UnitTests, FunctionalTests
@@ -167,8 +167,8 @@ docs/                       → Architecture and developer documentation
 ```bash
 git clone https://github.com/miquelalcaraz/Labs.CleanArchitecture.BuildingBlocks.git
 cd Labs.CleanArchitecture.BuildingBlocks
-dotnet build QltSystem.slnx
-dotnet run --project src/Qlt.Infrastructure/Qlt.Infrastructure.AppHost
+dotnet build MiqaSystem.slnx
+dotnet run --project src/Miqa.Infrastructure/Miqa.Infrastructure.AppHost
 ```
 
 The AppHost starts the containers (SQL Server, Redis, Azure Service Bus emulator), applies the EF Core migrations, seeds demo data and launches `identity`, `accounts`, `notifications`, `backoffice-bff` and `BackOfficeApp`. The **Aspire dashboard** URL is printed in the console; it shows resources, logs, traces and metrics. The SQL Server password is generated by Aspire and stored in the AppHost user secrets.

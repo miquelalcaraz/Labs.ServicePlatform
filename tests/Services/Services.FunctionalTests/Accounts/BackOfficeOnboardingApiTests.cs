@@ -10,11 +10,11 @@ using MediatR;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 
-using Qlt.Contracts.Identity.IntegrationEvents;
-using Qlt.Platform.Messaging.IntegrationEvents;
-using Qlt.Services.Accounts.APIs;
-using Qlt.Services.Accounts.Application.Queries;
-using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
+using Miqa.Contracts.Identity.IntegrationEvents;
+using Miqa.Platform.Messaging.IntegrationEvents;
+using Miqa.Services.Accounts.APIs;
+using Miqa.Services.Accounts.Application.Queries;
+using Miqa.Services.Accounts.Domain.Models.CompanyAggregate;
 
 namespace Services.FunctionalTests.Accounts;
 

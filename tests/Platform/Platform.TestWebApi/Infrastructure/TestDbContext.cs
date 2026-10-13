@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 
-using Qlt.Platform.Persistence;
-using Qlt.Platform.Persistence.Options;
+using Miqa.Platform.Persistence;
+using Miqa.Platform.Persistence.Options;
 
 namespace Platform.TestWebApi.Infrastructure;
 
-public class TestDbContext : QltDBContext
+public class TestDbContext : MiqaDBContext
 {
     public TestDbContext(
         DbContextOptions<TestDbContext> options,
-        QltDbContextConfiguration configuration)
+        MiqaDbContextConfiguration configuration)
         : base(options, configuration)
     {
     }

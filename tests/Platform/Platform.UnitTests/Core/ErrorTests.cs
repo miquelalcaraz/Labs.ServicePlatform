@@ -1,4 +1,4 @@
-using Qlt.Platform;
+using Miqa.Platform;
 
 namespace Platform.UnitTests.Core;
 

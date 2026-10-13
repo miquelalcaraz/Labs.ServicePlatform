@@ -9,7 +9,7 @@ This repository is licensed under the [MIT License](LICENSE). It builds on the w
 
 | Component | Used by | License model | What it means for you |
 |---|---|---|---|
-| [Duende IdentityServer](https://duendesoftware.com/products/identityserver) 8.x | `Qlt.Infrastructure.Identity` | Commercial license; free for development and testing; a free Community Edition exists for qualifying organizations | Running it in production requires a license that fits your organization. See [Duende licensing](https://duendesoftware.com/products/identityserver#pricing). |
+| [Duende IdentityServer](https://duendesoftware.com/products/identityserver) 8.x | `Miqa.Infrastructure.Identity` | Commercial license; free for development and testing; a free Community Edition exists for qualifying organizations | Running it in production requires a license that fits your organization. See [Duende licensing](https://duendesoftware.com/products/identityserver#pricing). |
 | [MediatR](https://github.com/LuckyPennySoftware/MediatR) 13+ | Platform messaging pipeline | Dual license (Reciprocal Public License 1.5 or commercial), license key required for commercial use; free community edition for qualifying organizations | Configure your own license key if your use requires one. See [Lucky Penny Software](https://luckypennysoftware.com). |
 | [FluentAssertions](https://xceed.com/fluent-assertions/) 8.x | Test projects only | Xceed Community License: free for non-commercial use; commercial use requires a paid license | Not shipped with the application. Commercial users should license it or pin to 7.x (Apache-2.0). |
 
@@ -19,13 +19,13 @@ This repository is licensed under the [MIT License](LICENSE). It builds on the w
 |---|---|---|
 | [dotnet/eShop](https://github.com/dotnet/eShop) | MIT | Architecture and several building blocks (event bus, integration event log, `IdentifiedCommand`, transaction behavior, service defaults) follow eShop's patterns. |
 | [Labs.Aspire.uSLearn](https://github.com/miquelalcaraz/Labs.Aspire.uSLearn) | MIT | Predecessor of this repository; the building blocks were first developed there, stage by stage. |
-| Duende IdentityServer UI templates | See [Duende templates](https://github.com/DuendeSoftware/products/tree/main/templates) | The Razor pages under `src/Qlt.Infrastructure/Qlt.Infrastructure.Identity/Pages` started from Duende's UI templates. |
+| Duende IdentityServer UI templates | See [Duende templates](https://github.com/DuendeSoftware/products/tree/main/templates) | The Razor pages under `src/Miqa.Infrastructure/Miqa.Infrastructure.Identity/Pages` started from Duende's UI templates. |
 
 ## Bundled static assets
 
 | Asset | Location | License |
 |---|---|---|
-| Bootstrap | `src/Qlt.Infrastructure/Qlt.Infrastructure.Identity/wwwroot/lib/bootstrap` | MIT — see the `LICENSE` file in that folder |
+| Bootstrap | `src/Miqa.Infrastructure/Miqa.Infrastructure.Identity/wwwroot/lib/bootstrap` | MIT — see the `LICENSE` file in that folder |
 | Bootstrap 4 Glyphicons | `.../wwwroot/lib/bootstrap4-glyphicons` | Apache-2.0 — see the `LICENSE` file in that folder |
 | jQuery | `.../wwwroot/lib/jquery` | MIT — see `LICENSE.txt` in that folder |
 | Duende logo | `.../wwwroot/duende-logo.svg` | Trademark of Duende Software, used to identify the product |
@@ -53,5 +53,5 @@ Restored from NuGet at build time; not redistributed in this repository.
 For the full list, including transitive dependencies, run:
 
 ```bash
-dotnet list QltSystem.slnx package --include-transitive
+dotnet list MiqaSystem.slnx package --include-transitive
 ```

@@ -136,4 +136,4 @@ APIs configure `Audience` but set `ValidateAudience = false` and `RequireHttpsMe
 | Outbox concurrency (duplicate publishing) | Atomic claim pattern with `ExecuteUpdateAsync` + `RowVersion` | ✅ |
 | No query abstractions (CQRS) | `IQuery<T>`, `IQueryHandler<T,R>`, `TelemetryQueryBehavior` implemented in `Platform.Messaging.Abstractions` and `Platform.Messaging` | ✅ |
 | Repository nullable safety | `IRepository<T>.GetAsync` and `Repository<T>.GetAsync` return `Task<T?>` | ✅ |
-| Manual pipeline registration | `AddQltMediator` registers behaviors in a fixed order plus all telemetry | ✅ |
+| Manual pipeline registration | `AddMiqaMediator` registers behaviors in a fixed order plus all telemetry | ✅ |

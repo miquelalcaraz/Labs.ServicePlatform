@@ -129,7 +129,7 @@ public class AuditSaveChangesInterceptor : SaveChangesInterceptor
 **Pro:** Clean separation, testable, follows EF Core conventions.
 **Con:** Requires `IUserHttpContext` injection into the interceptor (needs `IServiceProvider` in DbContext options).
 
-#### Option B: Override in QltDBContext
+#### Option B: Override in MiqaDBContext
 
 Add audit capture directly in `CommitTransactionAsync`:
 
@@ -141,7 +141,7 @@ await base.SaveChangesAsync(cancellationToken);
 ```
 
 **Pro:** Simple, no interceptor plumbing.
-**Con:** Couples audit to `QltDBContext`, requires a second `SaveChangesAsync` call.
+**Con:** Couples audit to `MiqaDBContext`, requires a second `SaveChangesAsync` call.
 
 ### Edge Cases to Consider
 

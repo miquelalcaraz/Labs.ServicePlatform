@@ -1,0 +1,14 @@
+@using Miqa.BackOfficeApp.Components.Pages
+<Router AppAssembly="@typeof(Program).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="@routeData">
+            <NotAuthorized>
+                <RedirectToLogin IsAuthenticated="@context.User.Identity.IsAuthenticated" />
+            </NotAuthorized>
+            <Authorizing></Authorizing>
+        </AuthorizeRouteView>
+    </Found>
+    <NotFound>
+        <NotFound />
+    </NotFound>
+</Router>

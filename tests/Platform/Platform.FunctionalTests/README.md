@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project contains **functional tests** for the Qlt Building Blocks architecture. Unlike unit tests, these tests validate end-to-end behavior against real infrastructure (SQL Server, RabbitMQ) using Aspire.
+This project contains **functional tests** for the Miqa Building Blocks architecture. Unlike unit tests, these tests validate end-to-end behavior against real infrastructure (SQL Server, RabbitMQ) using Aspire.
 
 ## Purpose
 
@@ -21,7 +21,7 @@ These patterns are complex and span multiple layers. Functional tests validate t
 ### TestWebApi
 A minimal ASP.NET Core Web API that uses the Building Blocks:
 
-- **TestDbContext** - Inherits from `QltDBContext` (base for all contexts)
+- **TestDbContext** - Inherits from `MiqaDBContext` (base for all contexts)
 - **TestEntity** - Simple aggregate root with domain events
 - **Commands** - `CreateTestEntityCommand`, `UpdateTestEntityCommand`
 - **Domain Event Handlers** - Transform domain events → integration events

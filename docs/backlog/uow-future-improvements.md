@@ -19,7 +19,7 @@ These improvements were designed, some prototyped, and intentionally removed fol
 // ITransactionalUnitOfWork
 Task<IDbContextTransaction?> BeginTransactionAsync(IsolationLevel isolationLevel);
 
-// QltDBContext
+// MiqaDBContext
 public async Task<IDbContextTransaction?> BeginTransactionAsync(IsolationLevel isolationLevel)
 {
     if (_currentTransaction is not null) return null;
@@ -135,7 +135,7 @@ await scope.CommitAsync();
 // ITransactionalUnitOfWork
 bool HasChanges();
 
-// QltDBContext
+// MiqaDBContext
 public bool HasChanges() => ChangeTracker.HasChanges();
 ```
 

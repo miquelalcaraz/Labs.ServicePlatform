@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
 
-using Qlt.Domain.SeedWork;
-using Qlt.Services.Accounts.Application.Commands;
-using Qlt.Services.Accounts.Domain.Models.CustomerActivationProcessAggregate;
-using Qlt.Services.Accounts.Domain.Repositories;
+using Miqa.Domain.SeedWork;
+using Miqa.Services.Accounts.Application.Commands;
+using Miqa.Services.Accounts.Domain.Models.CustomerActivationProcessAggregate;
+using Miqa.Services.Accounts.Domain.Repositories;
 
 namespace Services.UnitTests.Accounts.Application.Commands;
 

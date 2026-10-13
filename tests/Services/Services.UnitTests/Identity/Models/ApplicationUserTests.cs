@@ -1,4 +1,4 @@
-using Qlt.Infrastructure.Identity.Models;
+using Miqa.Infrastructure.Identity.Models;
 
 namespace Services.UnitTests.Identity.Models;
 

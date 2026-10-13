@@ -1,0 +1,226 @@
+@page "/onboarding/{OnboardingProcessId:guid}/result"
+@attribute [Authorize]
+
+@using Miqa.BackOfficeApp.Services
+@using Miqa.BackOfficeApp.Models
+
+@inject OnboardingApiService Api
+@inject NavigationManager Nav
+
+<PageTitle>Onboarding Result</PageTitle>
+
+@if (isLoading)
+{
+    <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Style="min-height: 300px;">
+        <RadzenProgressBarCircular ShowValue="false" Mode="ProgressBarMode.Indeterminate" />
+        <RadzenText TextStyle="TextStyle.Body1" Text="Loading customer details..." />
+    </RadzenStack>
+}
+else if (result is null)
+{
+    <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
+        <RadzenAlert AlertStyle="@(isNotReady ? AlertStyle.Warning : AlertStyle.Danger)"
+                     Variant="Variant.Flat" Shade="Shade.Lighter">
+            @(errorMessage ?? "Unable to load the onboarding result.")
+        </RadzenAlert>
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+            <RadzenButton Text="Back to Detail" Icon="arrow_back" ButtonStyle="ButtonStyle.Light"
+                          Click="@(() => Nav.NavigateTo($"/onboarding/{OnboardingProcessId}"))" />
+            <RadzenButton Text="Back to List" Icon="list" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                          Click="@(() => Nav.NavigateTo("/onboarding"))" />
+        </RadzenStack>
+    </RadzenStack>
+}
+else
+{
+    <RadzenStack Orientation="Orientation.Vertical" Gap="1.5rem">
+        <RadzenRow JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+            <RadzenColumn>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                    <RadzenText TextStyle="TextStyle.H4" Text="Customer Created Successfully" />
+                    <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="@result.Status" />
+                </RadzenStack>
+            </RadzenColumn>
+            <RadzenColumn>
+                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+                    <RadzenButton Text="Back to Detail" Icon="arrow_back" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                  Click="@(() => Nav.NavigateTo($"/onboarding/{OnboardingProcessId}"))" />
+                    <RadzenButton Text="Back to List" Icon="list" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text"
+                                  Click="@(() => Nav.NavigateTo("/onboarding"))" />
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+
+        @* Subscription *@
+        <RadzenCard>
+            <RadzenStack Gap="0.75rem">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenIcon Icon="card_membership" Style="font-size: 1.5rem; color: var(--rz-primary);" />
+                    <RadzenText TextStyle="TextStyle.H6" Text="Subscription" />
+                </RadzenStack>
+                <RadzenRow>
+                    <RadzenColumn Size="4">
+                        <RadzenStack Gap="0.125rem">
+                            <RadzenText TextStyle="TextStyle.Overline" Text="ID" />
+                            <RadzenText TextStyle="TextStyle.Body2" Text="@result.Subscription.SubscriptionId.ToString()" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="4">
+                        <RadzenStack Gap="0.125rem">
+                            <RadzenText TextStyle="TextStyle.Overline" Text="PLAN CODE" />
+                            <RadzenText TextStyle="TextStyle.Body2" Text="@(result.Subscription.SubscriptionPlanCode ?? "—")" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="4">
+                        <RadzenStack Gap="0.125rem">
+                            <RadzenText TextStyle="TextStyle.Overline" Text="STATUS" />
+                            <RadzenBadge Text="@result.Subscription.Status" BadgeStyle="BadgeStyle.Success" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenStack>
+        </RadzenCard>
+
+        @* Tenant *@
+        <RadzenCard>
+            <RadzenStack Gap="0.75rem">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenIcon Icon="domain" Style="font-size: 1.5rem; color: var(--rz-primary);" />
+                    <RadzenText TextStyle="TextStyle.H6" Text="Tenant" />
+                </RadzenStack>
+                <RadzenRow>
+                    <RadzenColumn Size="4">
+                        <RadzenStack Gap="0.125rem">
+                            <RadzenText TextStyle="TextStyle.Overline" Text="ID" />
+                            <RadzenText TextStyle="TextStyle.Body2" Text="@result.Tenant.TenantId.ToString()" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="4">
+                        <RadzenStack Gap="0.125rem">
+                            <RadzenText TextStyle="TextStyle.Overline" Text="NAME" />
+                            <RadzenText TextStyle="TextStyle.Body2" Text="@result.Tenant.Name" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="4">
+                        <RadzenStack Gap="0.125rem">
+                            <RadzenText TextStyle="TextStyle.Overline" Text="STATUS" />
+                            <RadzenBadge Text="@result.Tenant.Status" BadgeStyle="BadgeStyle.Success" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenStack>
+        </RadzenCard>
+
+        @* Owner Company *@
+        <RadzenCard>
+            <RadzenStack Gap="0.75rem">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                    <RadzenIcon Icon="business" Style="font-size: 1.5rem; color: var(--rz-primary);" />
+                    <RadzenText TextStyle="TextStyle.H6" Text="Owner Company" />
+                </RadzenStack>
+                <RadzenRow>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.125rem">
+                            <RadzenText TextStyle="TextStyle.Overline" Text="ID" />
+                            <RadzenText TextStyle="TextStyle.Body2" Text="@result.OwnerCompany.CompanyId.ToString()" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.125rem">
+                            <RadzenText TextStyle="TextStyle.Overline" Text="LEGAL NAME" />
+                            <RadzenText TextStyle="TextStyle.Body2" Text="@result.OwnerCompany.LegalName" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.125rem">
+                            <RadzenText TextStyle="TextStyle.Overline" Text="TYPE" />
+                            <RadzenText TextStyle="TextStyle.Body2" Text="@result.OwnerCompany.CompanyType" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="3">
+                        <RadzenStack Gap="0.125rem">
+                            <RadzenText TextStyle="TextStyle.Overline" Text="STATUS" />
+                            <RadzenBadge Text="@result.OwnerCompany.Status" BadgeStyle="BadgeStyle.Success" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            </RadzenStack>
+        </RadzenCard>
+
+        @* Admin User *@
+        @if (result.AdminUser is not null)
+        {
+            <RadzenCard>
+                <RadzenStack Gap="0.75rem">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                        <RadzenIcon Icon="person" Style="font-size: 1.5rem; color: var(--rz-primary);" />
+                        <RadzenText TextStyle="TextStyle.H6" Text="Admin User" />
+                    </RadzenStack>
+                    <RadzenRow>
+                        <RadzenColumn Size="3">
+                            <RadzenStack Gap="0.125rem">
+                                <RadzenText TextStyle="TextStyle.Overline" Text="ID" />
+                                <RadzenText TextStyle="TextStyle.Body2" Text="@result.AdminUser.UserId.ToString()" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                        <RadzenColumn Size="3">
+                            <RadzenStack Gap="0.125rem">
+                                <RadzenText TextStyle="TextStyle.Overline" Text="NAME" />
+                                <RadzenText TextStyle="TextStyle.Body2"
+                                            Text="@($"{result.AdminUser.FirstName} {result.AdminUser.LastName}")" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                        <RadzenColumn Size="3">
+                            <RadzenStack Gap="0.125rem">
+                                <RadzenText TextStyle="TextStyle.Overline" Text="EMAIL" />
+                                <RadzenText TextStyle="TextStyle.Body2" Text="@(result.AdminUser.Email ?? "—")" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                        <RadzenColumn Size="3" />
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenCard>
+        }
+
+        @* Admin Membership *@
+        @if (result.AdminMembership is not null)
+        {
+            <RadzenCard>
+                <RadzenStack Gap="0.75rem">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                        <RadzenIcon Icon="badge" Style="font-size: 1.5rem; color: var(--rz-primary);" />
+                        <RadzenText TextStyle="TextStyle.H6" Text="Admin Membership" />
+                    </RadzenStack>
+                    <RadzenRow>
+                        <RadzenColumn Size="3">
+                            <RadzenStack Gap="0.125rem">
+                                <RadzenText TextStyle="TextStyle.Overline" Text="MEMBERSHIP ID" />
+                                <RadzenText TextStyle="TextStyle.Body2" Text="@result.AdminMembership.MembershipId.ToString()" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                        <RadzenColumn Size="3">
+                            <RadzenStack Gap="0.125rem">
+                                <RadzenText TextStyle="TextStyle.Overline" Text="ROLE" />
+                                <RadzenText TextStyle="TextStyle.Body2" Text="@result.AdminMembership.RoleCode" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                        <RadzenColumn Size="3">
+                            <RadzenStack Gap="0.125rem">
+                                <RadzenText TextStyle="TextStyle.Overline" Text="TENANT ID" />
+                                <RadzenText TextStyle="TextStyle.Body2" Text="@result.AdminMembership.TenantId.ToString()" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                        <RadzenColumn Size="3">
+                            <RadzenStack Gap="0.125rem">
+                                <RadzenText TextStyle="TextStyle.Overline" Text="STATUS" />
+                                <RadzenBadge Text="@result.AdminMembership.Status" BadgeStyle="BadgeStyle.Success" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenStack>
+            </RadzenCard>
+        }
+    </RadzenStack>
+}
+
+ 

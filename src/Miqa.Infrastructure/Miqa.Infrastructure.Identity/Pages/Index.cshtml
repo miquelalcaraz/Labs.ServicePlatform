@@ -1,0 +1,33 @@
+@page
+@model Miqa.Infrastructure.Identity.Pages.Index
+
+<div class="identity-page welcome-page">
+    <section class="identity-card identity-card-wide identity-welcome-card">
+        <div class="identity-page-header">
+            <h1 class="identity-title">Miqa Identity</h1>
+            <p class="identity-support-text">Identity and access services for Miqa-System <span class="identity-version">v@Model.Version</span></p>
+        </div>
+
+        <ul class="identity-link-list">
+            <li>
+                Review the <a href="~/.well-known/openid-configuration">discovery document</a> for metadata, endpoints, and key material.
+            </li>
+            <li>
+                Open <a href="~/diagnostics">Diagnostics</a> to inspect the claims in the current session.
+            </li>
+            <li>
+                Open <a href="~/grants">Grants</a> to manage stored grants.
+            </li>
+            <li>
+                Open <a href="~/serversidesessions">Server-side sessions</a> to inspect active sessions.
+            </li>
+            <li>
+                Open <a href="~/ciba/all">Pending CIBA requests</a> to review pending authentication flows.
+            </li>
+            <li>
+                Refer to the <a href="https://github.com/duendesoftware/IdentityServer">IdentityServer source repository</a>
+                and <a href="https://github.com/duendesoftware/samples">samples</a> if needed for implementation details.
+            </li>
+        </ul>
+    </section>
+</div>

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using Platform.TestWebApi.Commands;
 
-using Qlt.Platform;
+using Miqa.Platform;
 
 namespace Platform.TestWebApi.Controllers;
 

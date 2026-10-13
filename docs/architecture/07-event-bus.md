@@ -21,7 +21,7 @@ flowchart TB
     IDN_P["Identity (outbox)"] -- "PublishAsync" --> TOPIC
     NOT_P["Notifications (outbox)"] -- "PublishAsync" --> TOPIC
 
-    TOPIC[["Topic: qlt-event-bus"]]
+    TOPIC[["Topic: miqa-event-bus"]]
 
     TOPIC --> SA["Subscription: Accounts<br/>rules: ExternalUserProvisioned,<br/>ActivationDelivered, UserActivated"]
     TOPIC --> SI["Subscription: Identity<br/>rules: TenantCreated,<br/>CustomerAdminProvisioningRequested"]
@@ -83,7 +83,7 @@ private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)
 
 | Decision | Rationale |
 |---|---|
-| Single topic `qlt-event-bus`, one subscription per service (`SubscriptionClientName`) | Pub/sub fan-out; each service owns its subscription and filters |
+| Single topic `miqa-event-bus`, one subscription per service (`SubscriptionClientName`) | Pub/sub fan-out; each service owns its subscription and filters |
 | `AutoCompleteMessages = false` | Explicit control: complete on success, abandon on failure, dead-letter on unknown types |
 | `IHostedService` lifecycle | Processor starts/stops with the host. A `TaskCompletionSource` gates `PublishAsync` until `StartAsync` finished (30 s timeout) |
 | Normalized event type names | Strips `IntegrationEvent` (e.g., `CompanyCreatedIntegrationEvent` → `CompanyCreated`) for `Subject` and rule names |
@@ -113,7 +113,7 @@ If startup fails, the exception is logged and stored in the `TaskCompletionSourc
 sequenceDiagram
     participant OB as Outbox service
     participant SB as ServiceBusEventBus
-    participant T as Topic qlt-event-bus
+    participant T as Topic miqa-event-bus
 
     OB->>SB: PublishAsync(event)
     SB->>SB: await started (max 30 s)
@@ -155,7 +155,7 @@ Because idempotency is tracked per handler, a redelivered message skips the hand
 
 | Aspect | Behavior |
 |---|---|
-| Topology | Direct exchange `qlt_event_bus`; durable queue named after `SubscriptionClientName`; one binding per subscribed event |
+| Topology | Direct exchange `miqa_event_bus`; durable queue named after `SubscriptionClientName`; one binding per subscribed event |
 | Routing key | Full event type name (e.g. `CompanyCreatedIntegrationEvent`) — no normalization |
 | Publish | New channel per publish, persistent delivery mode, `mandatory: true`, `traceparent`/`tracestate` headers |
 | Publish retry | Polly pipeline for `BrokerUnreachableException` / `SocketException`, exponential delay `2^attempt` s, `RetryCount` (default 10) |
@@ -201,7 +201,7 @@ RabbitMQ's `EventBusOptions` adds `RetryCount` (default `10`).
 var eventbus = builder.AddAzureServiceBus("eventbus")
     .RunAsEmulator(emulator => emulator.WithLifetime(ContainerLifetime.Persistent));
 
-var eventBusTopic = eventbus.AddServiceBusTopic("qlt-event-bus");
+var eventBusTopic = eventbus.AddServiceBusTopic("miqa-event-bus");
 eventBusTopic.AddServiceBusSubscription("accounts-sub", subscriptionName: "Accounts");
 eventBusTopic.AddServiceBusSubscription("notifications-sub", subscriptionName: "Notifications");
 eventBusTopic.AddServiceBusSubscription("identity-sub", subscriptionName: "Identity");
@@ -228,7 +228,7 @@ plus switching the `USE_AZURE_SERVICE_BUS` / `USE_RABBITMQ` symbol in `AppHost.c
 ## Validation Checklist
 
 - [ ] Services depend on `IEventBus`, never on `ServiceBusEventBus` or `RabbitMqEventBus`
-- [ ] Consumed integration event types are registered via `AddSubscription<TEvent, THandler>()` **before** the idempotency builders and `AddQltMediator` (so decorators apply)
+- [ ] Consumed integration event types are registered via `AddSubscription<TEvent, THandler>()` **before** the idempotency builders and `AddMiqaMediator` (so decorators apply)
 - [ ] Published integration event types are registered in the outbox (`OutboxMessageOptions.RegisterEventTypes`)
 - [ ] `SubscriptionClientName` configured per service in `appsettings.json` and matching the AppHost subscription
 - [ ] Idempotent consumers handle potential duplicate deliveries (see [04-idempotency.md](04-idempotency.md))

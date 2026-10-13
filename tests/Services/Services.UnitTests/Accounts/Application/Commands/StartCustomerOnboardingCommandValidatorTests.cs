@@ -1,6 +1,6 @@
-using Qlt.Services.Accounts.Application.Commands;
-using Qlt.Services.Accounts.Application.Validators;
-using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
+using Miqa.Services.Accounts.Application.Commands;
+using Miqa.Services.Accounts.Application.Validators;
+using Miqa.Services.Accounts.Domain.Models.CompanyAggregate;
 
 namespace Services.UnitTests.Accounts.Application.Commands;
 

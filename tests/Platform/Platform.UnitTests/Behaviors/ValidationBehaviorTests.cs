@@ -3,9 +3,9 @@ using FluentValidation.Results;
 
 using MediatR;
 
-using Qlt.Domain.Behaviors;
-using Qlt.Domain.Exceptions;
-using Qlt.Platform;
+using Miqa.Domain.Behaviors;
+using Miqa.Domain.Exceptions;
+using Miqa.Platform;
 
 namespace Platform.UnitTests.Behaviors;
 

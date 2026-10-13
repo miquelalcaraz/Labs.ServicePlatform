@@ -2,7 +2,7 @@
 
 ## Overview
 
-Unified OpenTelemetry strategy for all handler types. Each handler type uses the correct extension point for its execution path, ensuring automatic distributed tracing and metrics with zero risk of bypass. Services get all of it by calling `AddQltMediator` (handlers) and `AddServiceDefaults` (exporters).
+Unified OpenTelemetry strategy for all handler types. Each handler type uses the correct extension point for its execution path, ensuring automatic distributed tracing and metrics with zero risk of bypass. Services get all of it by calling `AddMiqaMediator` (handlers) and `AddServiceDefaults` (exporters).
 
 **Layers**: `Platform.Telemetry` (diagnostics + helpers), `Platform.Messaging` (behaviors, publisher, decorator), `Platform.ServiceDefaults` (OpenTelemetry SDK wiring)  
 **Key types**: `TelemetryCommandBehavior<,>`, `TelemetryQueryBehavior<,>`, `TelemetryDomainEventBehavior`, `TelemetryIntegrationEventHandlerDecorator<T>`, `ApplicationDiagnostics`, `MigrationDiagnostics`
@@ -117,7 +117,7 @@ services.TryDecorate(typeof(IIntegrationEventHandler<>), (inner, serviceProvider
 });
 ```
 
-The decorator creates a `Consumer` activity `Handle {Event}`, tags event id and creation date, and reports the real handler name by unwrapping `IDecoratedHandler<T>` chains. Because `AddQltMediator` runs after the idempotency builders, telemetry is the **outermost** decorator and measures total time including the idempotency check.
+The decorator creates a `Consumer` activity `Handle {Event}`, tags event id and creation date, and reports the real handler name by unwrapping `IDecoratedHandler<T>` chains. Because `AddMiqaMediator` runs after the idempotency builders, telemetry is the **outermost** decorator and measures total time including the idempotency check.
 
 ---
 
@@ -175,7 +175,7 @@ All handler-level implementations record the same categories:
 
 ### Metrics Catalog
 
-Meter `Qlt.Domain.Application` (version `1.0.0`):
+Meter `Miqa.Domain.Application` (version `1.0.0`):
 
 | Area | Instruments | Recorded by |
 |---|---|---|
@@ -189,13 +189,13 @@ Meter `Qlt.Domain.Application` (version `1.0.0`):
 | Idempotency | `application.idempotency.check_duration`, `application.idempotency.duplicate_commands`, `application.idempotency.duplicates_detected` | `IdempotencyBehavior`, idempotency decorators |
 | Outbox | `application.outbox.events_saved`, `application.outbox.state_changes`, `application.outbox.events_failed`, `application.outbox.operation_duration`, `application.outbox.batch_size` | outbox services (see [05-transactional-outbox.md](05-transactional-outbox.md#telemetry)) |
 
-Meter `Qlt.Core.Persistence.Migrations`: `persistence.migrations.executed`, `persistence.migrations.duration` (activities `Migration operation {Context}`, `Migrating {Context}`, `Seeding {Context}`).
+Meter `Miqa.Core.Persistence.Migrations`: `persistence.migrations.executed`, `persistence.migrations.duration` (activities `Migration operation {Context}`, `Migrating {Context}`, `Seeding {Context}`).
 
 ---
 
 ## Registration
 
-`AddQltMediator` registers all four mechanisms automatically. Each extension is idempotent (guarded by a private marker type), so calling them again is harmless:
+`AddMiqaMediator` registers all four mechanisms automatically. Each extension is idempotent (guarded by a private marker type), so calling them again is harmless:
 
 ```csharp
 services.AddIntegrationEventTelemetryDecorator();  // Scrutor — for non-MediatR handlers
@@ -233,9 +233,9 @@ Unlike `IPipelineBehavior` which supports N behaviors chained automatically, `IN
 
 ## Validation Checklist
 
-- [ ] Every service calls `AddQltMediator` (registers all telemetry behaviors, the publisher and the decorator)
+- [ ] Every service calls `AddMiqaMediator` (registers all telemetry behaviors, the publisher and the decorator)
 - [ ] Every service calls `AddServiceDefaults` (OpenTelemetry sources, meters and exporters)
-- [ ] `AddQltMediator` is called after `AddSubscription` and the idempotency builders, so the telemetry decorator is outermost
+- [ ] `AddMiqaMediator` is called after `AddSubscription` and the idempotency builders, so the telemetry decorator is outermost
 - [ ] No Scrutor `TryDecorate` targeting `ICommandHandler<,>` or `IDomainEventHandler<>`
 
 ---

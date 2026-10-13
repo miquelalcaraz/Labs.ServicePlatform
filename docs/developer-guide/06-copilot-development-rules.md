@@ -1,6 +1,6 @@
-# Copilot Development Rules — QltS Services
+# Copilot Development Rules — MiqaS Services
 
-This document defines the rules and patterns that **must** be followed when implementing features in `Qlt.Services.*` microservices. In this repository the platform (`src/Qlt.Platform`, `src/Qlt.Domain`) is consumed through project references (several projects are also packable as NuGet) — do not modify or recreate platform internals from a service.
+This document defines the rules and patterns that **must** be followed when implementing features in `Miqa.Services.*` microservices. In this repository the platform (`src/Miqa.Platform`, `src/Miqa.Domain`) is consumed through project references (several projects are also packable as NuGet) — do not modify or recreate platform internals from a service.
 
 ---
 
@@ -10,7 +10,7 @@ Every service follows a **4-project structure** plus a **shared Contracts projec
 
 ```
 src/
-├── Qlt.Services/Qlt.Services.{ServiceName}/
+├── Miqa.Services/Miqa.Services.{ServiceName}/
 │   ├── Api/                    ← Web host ({ServiceName}.API.csproj), Program.cs
 │   │   ├── APIs/               ← Endpoint classes + {ServiceName}Services class
 │   │   ├── Authorization/      ← Policy names and roles
@@ -38,7 +38,7 @@ src/
 │       ├── Services/           ← Domain service implementations
 │       ├── Extensions/         ← AddInfrastructureServices (DI)
 │       └── AssemblyReference.cs
-└── Qlt.Contracts/Qlt.Contracts.{ServiceName}/ ← Integration events PUBLISHED by the service
+└── Miqa.Contracts/Miqa.Contracts.{ServiceName}/ ← Integration events PUBLISHED by the service
     ├── IntegrationEvents/
     └── AssemblyReference.cs
 ```
@@ -63,7 +63,7 @@ Every project that needs assembly scanning (Application, Infrastructure, Contrac
 ```csharp
 using System.Reflection;
 
-namespace Qlt.Services.{ServiceName}.{Layer};   // Contracts: Qlt.Contracts.{ServiceName}
+namespace Miqa.Services.{ServiceName}.{Layer};   // Contracts: Miqa.Contracts.{ServiceName}
 
 public static class AssemblyReference
 {
@@ -75,7 +75,7 @@ public static class AssemblyReference
 
 ## Contracts Project — Integration Event Sharing
 
-Integration events and their models live in a **separate Contracts project** (`src/Qlt.Contracts/Qlt.Contracts.{ServiceName}`) that is shared between microservices. Existing projects: `Contracts.Accounts`, `Contracts.Identity`, `Contracts.Notifications`.
+Integration events and their models live in a **separate Contracts project** (`src/Miqa.Contracts/Miqa.Contracts.{ServiceName}`) that is shared between microservices. Existing projects: `Contracts.Accounts`, `Contracts.Identity`, `Contracts.Notifications`.
 
 ### Rules
 
@@ -89,10 +89,10 @@ Integration events and their models live in a **separate Contracts project** (`s
 ### Example
 
 ```csharp
-// src/Qlt.Contracts/Qlt.Contracts.Accounts/IntegrationEvents/CompanyCreatedIntegrationEvent.cs
-using Qlt.Platform.Messaging.IntegrationEvents;
+// src/Miqa.Contracts/Miqa.Contracts.Accounts/IntegrationEvents/CompanyCreatedIntegrationEvent.cs
+using Miqa.Platform.Messaging.IntegrationEvents;
 
-namespace Qlt.Contracts.Accounts.IntegrationEvents;
+namespace Miqa.Contracts.Accounts.IntegrationEvents;
 
 public record CompanyCreatedIntegrationEvent(
     Guid TenantId,
@@ -111,10 +111,10 @@ public record CompanyCreatedIntegrationEvent(
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RootNamespace>Qlt.Contracts.{ServiceName}</RootNamespace>
+    <RootNamespace>Miqa.Contracts.{ServiceName}</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Qlt.Platform\Qlt.Platform.Messaging.Abstractions\Platform.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="..\..\Miqa.Platform\Miqa.Platform.Messaging.Abstractions\Platform.Messaging.Abstractions.csproj" />
   </ItemGroup>
 </Project>
 ```
@@ -135,7 +135,7 @@ public static IServiceCollection AddApplicationServices(this IHostApplicationBui
 
     services.AddHttpContextAccessor();
 
-    services.AddQltMediator(cfg =>
+    services.AddMiqaMediator(cfg =>
     {
         cfg.RegisterServicesFromAssembly(AssemblyReference.Assembly);          // Application handlers
         cfg.RegisterServicesFromAssembly(typeof(Infrastructure.AssemblyReference).Assembly); // Query handlers
@@ -155,13 +155,13 @@ public static IServiceCollection AddApplicationServices(this IHostApplicationBui
 public static void AddInfrastructureServices(this IHostApplicationBuilder builder)
 {
     var services = builder.Services;
-    // Services share the QltSystemDb database, each one in its own schema
-    var connectionString = builder.Configuration.GetConnectionString("QltSystemDb");
-    var readConnectionString = builder.Configuration.GetConnectionString("QltSystemDbReadonly")
+    // Services share the MiqaSystemDb database, each one in its own schema
+    var connectionString = builder.Configuration.GetConnectionString("MiqaSystemDb");
+    var readConnectionString = builder.Configuration.GetConnectionString("MiqaSystemDbReadonly")
         ?? connectionString;
 
     // Write context
-    services.AddQltSDBContext<{ServiceName}Context>(
+    services.AddMiqaSDBContext<{ServiceName}Context>(
         conf => conf
             .SetDefaultSchema("{ServiceName}")
             .WithIdempotency()
@@ -173,7 +173,7 @@ public static void AddInfrastructureServices(this IHostApplicationBuilder builde
     );
 
     // Read context
-    services.AddQltReadDbContext<{ServiceName}ReadContext>(
+    services.AddMiqaReadDbContext<{ServiceName}ReadContext>(
         conf => conf
             .SetDefaultSchema("{ServiceName}")
             .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
@@ -202,7 +202,7 @@ public static void AddInfrastructureServices(this IHostApplicationBuilder builde
     // Transactional outbox — register every contracts assembly whose events this service PUBLISHES
     services.AddTransactionalOutbox<{ServiceName}Context>(options =>
     {
-        options.RegisterEventTypes(typeof(Qlt.Contracts.{ServiceName}.AssemblyReference).Assembly);
+        options.RegisterEventTypes(typeof(Miqa.Contracts.{ServiceName}.AssemblyReference).Assembly);
     });
 
     // Repositories
@@ -218,12 +218,12 @@ private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)
 
 ### Critical DI Rules
 
-- **Always use `AddQltMediator`** — never call `AddMediatR` directly
-- **Never manually register telemetry** — `AddQltMediator` handles it automatically
+- **Always use `AddMiqaMediator`** — never call `AddMediatR` directly
+- **Never manually register telemetry** — `AddMiqaMediator` handles it automatically
 - **Register handlers from both assemblies** — Application (commands, domain event handlers) and Infrastructure (query handlers)
 - **Infrastructure calls go in `AddInfrastructureServices`** — database, event bus, idempotency, outbox, repositories
-- **Order matters** — `AddInfrastructureServices` before `AddQltMediator`; inside it: subscriptions → Redis idempotency → EF idempotency → outbox (Scrutor decorates in call order)
-- **Configuration** — `appsettings.json` needs `EventBus:SubscriptionClientName` (matching the AppHost subscription) and the `IdempotencyCache` section; connection names `QltSystemDb`, `eventbus` and `cache` come from Aspire
+- **Order matters** — `AddInfrastructureServices` before `AddMiqaMediator`; inside it: subscriptions → Redis idempotency → EF idempotency → outbox (Scrutor decorates in call order)
+- **Configuration** — `appsettings.json` needs `EventBus:SubscriptionClientName` (matching the AppHost subscription) and the `IdempotencyCache` section; connection names `MiqaSystemDb`, `eventbus` and `cache` come from Aspire
 
 ---
 
@@ -362,7 +362,7 @@ public class Order : Entity, IAggregateRoot
 
 ```csharp
 using MediatR;
-using Qlt.Domain.SeedWork;
+using Miqa.Domain.SeedWork;
 
 public record OrderCreatedDomainEvent(
     Guid OrderId,
@@ -372,7 +372,7 @@ public record OrderCreatedDomainEvent(
 ### Repository Interface (Domain layer)
 
 ```csharp
-using Qlt.Domain.SeedWork;
+using Miqa.Domain.SeedWork;
 
 public interface IOrderRepository : IRepository<Order>
 {
@@ -385,7 +385,7 @@ public interface IOrderRepository : IRepository<Order>
 ### Repository Implementation (Infrastructure layer)
 
 ```csharp
-using Qlt.Platform.Persistence.Repositories;
+using Miqa.Platform.Persistence.Repositories;
 
 public class OrderRepository : Repository<Order>, IOrderRepository
 {
@@ -480,13 +480,13 @@ sequenceDiagram
     IDM-->>BUS: success → message completed
 ```
 
-The write DbContext is the service's `QltDBContext` (`AccountContext`, `NotificationsContext`, or `IdentityLogsContext` in Identity). Outbox rows produced by the nested command are published by the `OutboxProcessor` after this commit.
+The write DbContext is the service's `MiqaDBContext` (`AccountContext`, `NotificationsContext`, or `IdentityLogsContext` in Identity). Outbox rows produced by the nested command are published by the `OutboxProcessor` after this commit.
 
 ### Handler Template (Layered Services)
 
 ```csharp
 using MediatR;
-using Qlt.Platform.Messaging.IntegrationEvents;
+using Miqa.Platform.Messaging.IntegrationEvents;
 
 public class OrderCompletedIntegrationEventHandler
     : IIntegrationEventHandler<OrderCompletedIntegrationEvent>
@@ -528,7 +528,7 @@ public class OrderCompletedIntegrationEventHandler
 Commands triggered by integration events use `ICommand<T>` — **not** `IdempotentCommand<T>` — because idempotency is already handled by the `IdempotencyIntegrationEventEfDecorator`.
 
 ```csharp
-using Qlt.Platform.Messaging.Commands;
+using Miqa.Platform.Messaging.Commands;
 
 public record ProcessCompletedOrderCommand(
     Guid OrderId,
@@ -542,7 +542,7 @@ In layered services (Accounts, Notifications), the command handler benefits from
 
 Identity uses a **monolithic project** with two separate DbContexts:
 - `IdentityContext` (`IdentityDbContext`) — users, tenants, roles
-- `IdentityLogsContext` (`QltDBContext`) — idempotency, outbox
+- `IdentityLogsContext` (`MiqaDBContext`) — idempotency, outbox
 
 These contexts do **not** share a transaction. The approach is:
 1. **Decorator** wraps the handler with a transaction on `IdentityLogsContext` (idempotency + outbox)
@@ -630,7 +630,7 @@ public class ProvisionCustomerAdminCommandHandler
 ```
 
 **Key differences from layered services:**
-- Identity uses `AddQltMediator` with `WithLogging` only (no `WithValidation`). All platform behaviors are present, but `ITransactionalUnitOfWork` is `IdentityLogsContext`, so `TransactionBehavior` / `DomainEventProcessorBehavior` only cover the idempotency + outbox context — not users or tenants
+- Identity uses `AddMiqaMediator` with `WithLogging` only (no `WithValidation`). All platform behaviors are present, but `ITransactionalUnitOfWork` is `IdentityLogsContext`, so `TransactionBehavior` / `DomainEventProcessorBehavior` only cover the idempotency + outbox context — not users or tenants
 - Handler must manage its own `IdentityContext` transaction via `ResilientTransaction`
 - `AddAndSaveEventAsync` works because there is an active transaction on `IdentityLogsContext` — opened by the decorator (event path) or by `TransactionBehavior` (commands sent from Razor pages such as `ConfirmEmailCommand`)
 - Multiple `SaveChangesAsync` calls inside `ResilientTransaction` are safe — they flush within the transaction, commit happens at end
@@ -705,13 +705,13 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
 ### Write Context
 
 ```csharp
-public class OrderContext : QltDBContext
+public class OrderContext : MiqaDBContext
 {
     public DbSet<Order> Orders { get; set; } = null!;
 
     public OrderContext(
         DbContextOptions<OrderContext> options,
-        QltDbContextConfiguration configuration)
+        MiqaDbContextConfiguration configuration)
         : base(options, configuration) { }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -725,21 +725,21 @@ public class OrderContext : QltDBContext
 ### Read Context
 
 ```csharp
-public class OrderReadContext : QltReadDbContext
+public class OrderReadContext : MiqaReadDbContext
 {
     public DbSet<Order> Orders { get; set; } = null!;
 
     public OrderReadContext(
         DbContextOptions<OrderReadContext> options,
-        QltReadDbContextConfiguration configuration)
+        MiqaReadDbContextConfiguration configuration)
         : base(options, configuration) { }
 }
 ```
 
 ### DbContext Rules
 
-- Write context inherits `QltDBContext` — read context inherits `QltReadDbContext`
-- The constructor only needs `DbContextOptions<T>` and `QltDbContextConfiguration` (existing contexts such as `AccountContext` also inject an unused `IMediator` — not required)
+- Write context inherits `MiqaDBContext` — read context inherits `MiqaReadDbContext`
+- The constructor only needs `DbContextOptions<T>` and `MiqaDbContextConfiguration` (existing contexts such as `AccountContext` also inject an unused `IMediator` — not required)
 - Call `base.OnModelCreating(modelBuilder)` in write context — it applies platform configurations
 - Read context does **not** need `OnModelCreating` override
 - Never call `SaveChanges` on the read context (throws `InvalidOperationException`)
@@ -881,13 +881,13 @@ public class Order : Entity, IAggregateRoot
 services.AddMediatR(cfg => { ... });
 
 // ✅ CORRECT
-services.AddQltMediator(cfg => { ... });
+services.AddMiqaMediator(cfg => { ... });
 ```
 
 ### Never register telemetry manually
 
 ```csharp
-// ❌ WRONG — These are implicit in AddQltMediator
+// ❌ WRONG — These are implicit in AddMiqaMediator
 services.AddIntegrationEventTelemetryDecorator();
 services.AddDomainEventTelemetryBehavior();
 services.AddCommandTelemetryBehavior();
@@ -919,7 +919,7 @@ public class GetOrderByIdQueryHandler(OrderReadContext context) { ... }
 
 ```csharp
 // ❌ WRONG — Contracts should only have integration events
-namespace Qlt.Services.Orders.Contracts;
+namespace Miqa.Services.Orders.Contracts;
 public class Order : Entity, IAggregateRoot { ... }
 ```
 

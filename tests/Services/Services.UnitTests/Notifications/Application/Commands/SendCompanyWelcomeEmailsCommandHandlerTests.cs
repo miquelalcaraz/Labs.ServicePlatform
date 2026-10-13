@@ -1,10 +1,10 @@
 using Microsoft.Extensions.Logging;
 
-using Qlt.Domain.SeedWork;
-using Qlt.Services.Notifications.Application.Commands;
-using Qlt.Services.Notifications.Domain.Models;
-using Qlt.Services.Notifications.Domain.Repositories;
-using Qlt.Services.Notifications.Domain.Services;
+using Miqa.Domain.SeedWork;
+using Miqa.Services.Notifications.Application.Commands;
+using Miqa.Services.Notifications.Domain.Models;
+using Miqa.Services.Notifications.Domain.Repositories;
+using Miqa.Services.Notifications.Domain.Services;
 
 namespace Services.UnitTests.Notifications.Application.Commands;
 

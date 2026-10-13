@@ -6,10 +6,10 @@ using System.Text.Json.Serialization;
 using Asp.Versioning;
 using Asp.Versioning.Http;
 
-using Qlt.Services.Accounts.APIs;
-using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
+using Miqa.Services.Accounts.APIs;
+using Miqa.Services.Accounts.Domain.Models.CompanyAggregate;
 
-using static Qlt.Services.Accounts.Authorization.AccountsAuthorizationPolicies;
+using static Miqa.Services.Accounts.Authorization.AccountsAuthorizationPolicies;
 
 namespace Services.FunctionalTests.Accounts;
 

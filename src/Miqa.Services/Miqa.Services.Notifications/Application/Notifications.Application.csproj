@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<RootNamespace>Miqa.Services.Notifications.Application</RootNamespace>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="MediatR" Version="14.2.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\Miqa.Contracts\Miqa.Contracts.Notifications\Contracts.Notifications.csproj" />
+		<ProjectReference Include="..\..\..\Miqa.Domain\Miqa.Domain.Application\Domain.Application.csproj" />
+		<ProjectReference Include="..\..\..\Miqa.Domain\Miqa.Domain.Core\Domain.Core.csproj" />
+		<ProjectReference Include="..\Domain\Notifications.Domain.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Folder Include="DomainEventHandlers\" />
+		<Folder Include="Queries\" />
+		<Folder Include="Validators\" />
+		<Folder Include="Diagnostics\" />
+	</ItemGroup>
+	
+ 
+</Project>

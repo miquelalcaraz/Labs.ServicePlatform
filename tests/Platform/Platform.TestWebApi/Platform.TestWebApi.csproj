@@ -24,18 +24,18 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\..\src\Qlt.Domain\Qlt.Domain.Core\Domain.Core.csproj" />
-		<ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.Core\Platform.Core.csproj" />
-		<ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.Telemetry\Platform.Telemetry.csproj" />
-		<ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.WebApi\Platform.WebApi.csproj" />
-		<ProjectReference Include="..\..\..\src\Qlt.Domain\Qlt.Domain.Application\Domain.Application.csproj" />
-		<ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.Infrastructure\Platform.Infrastructure.csproj" />
-		<ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
-		<ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.ServiceDefaults\Platform.ServiceDefaults.csproj" />
-		<ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.EventBus.ServiceBus\Platform.EventBus.ServiceBus.csproj" />
-		<ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
-		<ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.Messaging.Redis\Platform.Messaging.Redis.csproj" />
-		<ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.Persistence.EntityFramework.Relational\Platform.Persistence.EntityFramework.Relational.csproj" />
+		<ProjectReference Include="..\..\..\src\Miqa.Domain\Miqa.Domain.Core\Domain.Core.csproj" />
+		<ProjectReference Include="..\..\..\src\Miqa.Platform\Miqa.Platform.Core\Platform.Core.csproj" />
+		<ProjectReference Include="..\..\..\src\Miqa.Platform\Miqa.Platform.Telemetry\Platform.Telemetry.csproj" />
+		<ProjectReference Include="..\..\..\src\Miqa.Platform\Miqa.Platform.WebApi\Platform.WebApi.csproj" />
+		<ProjectReference Include="..\..\..\src\Miqa.Domain\Miqa.Domain.Application\Domain.Application.csproj" />
+		<ProjectReference Include="..\..\..\src\Miqa.Platform\Miqa.Platform.Infrastructure\Platform.Infrastructure.csproj" />
+		<ProjectReference Include="..\..\..\src\Miqa.Platform\Miqa.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
+		<ProjectReference Include="..\..\..\src\Miqa.Platform\Miqa.Platform.ServiceDefaults\Platform.ServiceDefaults.csproj" />
+		<ProjectReference Include="..\..\..\src\Miqa.Platform\Miqa.Platform.EventBus.ServiceBus\Platform.EventBus.ServiceBus.csproj" />
+		<ProjectReference Include="..\..\..\src\Miqa.Platform\Miqa.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
+		<ProjectReference Include="..\..\..\src\Miqa.Platform\Miqa.Platform.Messaging.Redis\Platform.Messaging.Redis.csproj" />
+		<ProjectReference Include="..\..\..\src\Miqa.Platform\Miqa.Platform.Persistence.EntityFramework.Relational\Platform.Persistence.EntityFramework.Relational.csproj" />
 	</ItemGroup>
 
 </Project>

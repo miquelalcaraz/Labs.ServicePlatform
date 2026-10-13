@@ -1,11 +1,11 @@
 using Microsoft.Extensions.Logging;
 
-using Qlt.Services.Accounts.Application.Commands;
-using Qlt.Services.Accounts.Domain.Events;
-using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
-using Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
-using Qlt.Services.Accounts.Domain.Models.SubscriptionAggregate;
-using Qlt.Services.Accounts.Domain.Models.TenantAggregate;
+using Miqa.Services.Accounts.Application.Commands;
+using Miqa.Services.Accounts.Domain.Events;
+using Miqa.Services.Accounts.Domain.Models.CompanyAggregate;
+using Miqa.Services.Accounts.Domain.Models.OnboardingAggregate;
+using Miqa.Services.Accounts.Domain.Models.SubscriptionAggregate;
+using Miqa.Services.Accounts.Domain.Models.TenantAggregate;
 
 namespace Services.UnitTests.Accounts.Application.Commands;
 
@@ -98,10 +98,10 @@ public class StartCustomerOnboardingCommandHandlerTests : AccountsTestBase
     }
 
     private static StartCustomerOnboardingCommandHandler CreateHandler(
-        Mock<Qlt.Services.Accounts.Domain.Repositories.ITenantRepository> tenantRepo,
-        Mock<Qlt.Services.Accounts.Domain.Repositories.ISubscriptionRepository> subscriptionRepo,
-        Mock<Qlt.Services.Accounts.Domain.Repositories.ICompanyRepository> companyRepo,
-        Mock<Qlt.Services.Accounts.Domain.Repositories.IOnboardingProcessRepository> onboardingRepo) =>
+        Mock<Miqa.Services.Accounts.Domain.Repositories.ITenantRepository> tenantRepo,
+        Mock<Miqa.Services.Accounts.Domain.Repositories.ISubscriptionRepository> subscriptionRepo,
+        Mock<Miqa.Services.Accounts.Domain.Repositories.ICompanyRepository> companyRepo,
+        Mock<Miqa.Services.Accounts.Domain.Repositories.IOnboardingProcessRepository> onboardingRepo) =>
         new(
             tenantRepo.Object,
             subscriptionRepo.Object,

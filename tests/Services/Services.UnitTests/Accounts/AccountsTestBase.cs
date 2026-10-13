@@ -1,13 +1,13 @@
 ﻿using Microsoft.Extensions.Logging;
 
-using Qlt.Domain.SeedWork;
-using Qlt.Platform.Messaging.Services;
-using Qlt.Services.Accounts.Application.Commands;
-using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
-using Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
-using Qlt.Services.Accounts.Domain.Models.SubscriptionAggregate;
-using Qlt.Services.Accounts.Domain.Models.TenantAggregate;
-using Qlt.Services.Accounts.Domain.Repositories;
+using Miqa.Domain.SeedWork;
+using Miqa.Platform.Messaging.Services;
+using Miqa.Services.Accounts.Application.Commands;
+using Miqa.Services.Accounts.Domain.Models.CompanyAggregate;
+using Miqa.Services.Accounts.Domain.Models.OnboardingAggregate;
+using Miqa.Services.Accounts.Domain.Models.SubscriptionAggregate;
+using Miqa.Services.Accounts.Domain.Models.TenantAggregate;
+using Miqa.Services.Accounts.Domain.Repositories;
 
 namespace Services.UnitTests.Accounts;
 

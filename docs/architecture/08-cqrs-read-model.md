@@ -2,57 +2,57 @@
 
 ## Overview
 
-The read side of CQRS uses a separate `QltReadDbContext` base class, fully isolated from write-side infrastructure. Queries use a dedicated context with no-tracking behavior and no access to `SaveChanges`, transactional outbox, or idempotency tables.
+The read side of CQRS uses a separate `MiqaReadDbContext` base class, fully isolated from write-side infrastructure. Queries use a dedicated context with no-tracking behavior and no access to `SaveChanges`, transactional outbox, or idempotency tables.
 
 **Layer**: `Platform.Persistence.EntityFramework.Relational` (base class + registration), `Platform.Persistence.EntityFramework` (configuration)  
-**Key types**: `QltReadDbContext`, `QltReadDbContextConfiguration`, `AddQltReadDbContext<T>`
+**Key types**: `MiqaReadDbContext`, `MiqaReadDbContextConfiguration`, `AddMiqaReadDbContext<T>`
 
 ```mermaid
 flowchart LR
     API["Minimal API endpoint"] --> MED{{"MediatR"}}
 
     subgraph WRITE["Write side"]
-        CMD["ICommand → ICommandHandler<br/>(Application)"] --> REPO["Repositories"] --> WCTX["AccountContext : QltDBContext"]
+        CMD["ICommand → ICommandHandler<br/>(Application)"] --> REPO["Repositories"] --> WCTX["AccountContext : MiqaDBContext"]
     end
 
     subgraph READ["Read side"]
-        QRY["IQuery → IQueryHandler<br/>(Infrastructure)"] --> RCTX["AccountReadContext : QltReadDbContext"]
+        QRY["IQuery → IQueryHandler<br/>(Infrastructure)"] --> RCTX["AccountReadContext : MiqaReadDbContext"]
     end
 
     MED --> CMD
     MED --> QRY
-    WCTX -- "QltSystemDb" --> DB[("SQL Server")]
-    RCTX -- "QltSystemDbReadonly<br/>(fallback: QltSystemDb)" --> DB
+    WCTX -- "MiqaSystemDb" --> DB[("SQL Server")]
+    RCTX -- "MiqaSystemDbReadonly<br/>(fallback: MiqaSystemDb)" --> DB
 ```
 
 ---
 
 ## Write vs Read Context
 
-| | Write (`QltDBContext`) | Read (`QltReadDbContext`) |
+| | Write (`MiqaDBContext`) | Read (`MiqaReadDbContext`) |
 |---|---|---|
-| Base class | `QltDBContext` | `QltReadDbContext` (abstract) |
+| Base class | `MiqaDBContext` | `MiqaReadDbContext` (abstract) |
 | Tracking | Default (on) | `NoTrackingWithIdentityResolution`, `AutoDetectChangesEnabled = false` |
 | `SaveChanges` | Audit timestamps + unique-constraint translation; commit through `ITransactionalUnitOfWork` | All four overloads `sealed` and throw `InvalidOperationException` |
-| DI roles | Concrete type + `QltDBContext`, `ITransactionalUnitOfWork`, `IDomainEntityChangeTracker` | Only its own type |
+| DI roles | Concrete type + `MiqaDBContext`, `ITransactionalUnitOfWork`, `IDomainEntityChangeTracker` | Only its own type |
 | EF model | Domain entities + `IdempotencyEntry` / `OutboxMessage` (when enabled) | Domain entities only (+ `RowVersion`/`CreatedAt` audit mapping) |
 | Pipeline | Commands (`TransactionBehavior`, domain events, outbox) | Queries (no transaction) |
-| Connection (Accounts) | `QltSystemDb` | `QltSystemDbReadonly` (fallback to `QltSystemDb`) |
+| Connection (Accounts) | `MiqaSystemDb` | `MiqaSystemDbReadonly` (fallback to `MiqaSystemDb`) |
 
 ---
 
 ## Platform Components
 
-### QltReadDbContextConfiguration
+### MiqaReadDbContextConfiguration
 
 Defined in `Platform.Persistence.EntityFramework` (no provider dependency):
 
 - `RegisterModelsFromAssembly(params Assembly[])` — registers entity configuration assemblies
 - `SetDefaultSchema(string)` — sets the default schema for entity mappings
 
-It is a separate type from `QltDbContextConfiguration`, so read contexts never pick up write-side features (idempotency, outbox). It is registered as a **singleton shared by all read contexts** of the process (`GetOrCreateQltReadDbContextConfiguration()`).
+It is a separate type from `MiqaDbContextConfiguration`, so read contexts never pick up write-side features (idempotency, outbox). It is registered as a **singleton shared by all read contexts** of the process (`GetOrCreateMiqaReadDbContextConfiguration()`).
 
-### QltReadDbContext
+### MiqaReadDbContext
 
 Defined in `Platform.Persistence.EntityFramework.Relational` (requires EF Relational for `HasDefaultSchema`):
 
@@ -68,7 +68,7 @@ Defined in `Platform.Persistence.EntityFramework.Relational` (requires EF Relati
 
 ```csharp
 // Accounts.Infrastructure/Persistence/AccountReadContext.cs
-public class AccountReadContext : QltReadDbContext
+public class AccountReadContext : MiqaReadDbContext
 {
     public DbSet<Company> Companies { get; set; } = null!;
     public DbSet<CompanyContact> CompanyContacts { get; set; } = null!;
@@ -80,7 +80,7 @@ public class AccountReadContext : QltReadDbContext
 
     public AccountReadContext(
         DbContextOptions<AccountReadContext> options,
-        QltReadDbContextConfiguration configuration)
+        MiqaReadDbContextConfiguration configuration)
         : base(options, configuration) { }
 }
 ```
@@ -89,11 +89,11 @@ public class AccountReadContext : QltReadDbContext
 
 ```csharp
 // Accounts.Infrastructure/Extensions/Extensions.cs
-var connectionString = builder.Configuration.GetConnectionString("QltSystemDb");
-var readConnectionString = builder.Configuration.GetConnectionString("QltSystemDbReadonly")
+var connectionString = builder.Configuration.GetConnectionString("MiqaSystemDb");
+var readConnectionString = builder.Configuration.GetConnectionString("MiqaSystemDbReadonly")
     ?? connectionString;
 
-services.AddQltReadDbContext<AccountReadContext>(
+services.AddMiqaReadDbContext<AccountReadContext>(
     conf => conf
         .SetDefaultSchema("Accounts")
         .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
@@ -137,10 +137,10 @@ public class GetCompanyByIdQueryHandler(AccountReadContext context)
 For SQL Server AlwaysOn or Azure SQL read replicas:
 
 ```
-ConnectionStrings__QltSystemDbReadonly: Server=...;ApplicationIntent=ReadOnly;...
+ConnectionStrings__MiqaSystemDbReadonly: Server=...;ApplicationIntent=ReadOnly;...
 ```
 
-If `QltSystemDbReadonly` is not configured, the read context transparently falls back to the write connection string. No code changes required — purely infrastructure configuration.
+If `MiqaSystemDbReadonly` is not configured, the read context transparently falls back to the write connection string. No code changes required — purely infrastructure configuration.
 
 ---
 
@@ -148,7 +148,7 @@ If `QltSystemDbReadonly` is not configured, the read context transparently falls
 
 - [ ] Query handlers inject the read context, not the write context or repositories
 - [ ] Read context does not map infrastructure tables (outbox, idempotency, audit log)
-- [ ] `AddQltReadDbContext<T>` used for registration (not `AddQltSDBContext<T>`)
+- [ ] `AddMiqaReadDbContext<T>` used for registration (not `AddMiqaSDBContext<T>`)
 - [ ] No `SaveChanges` calls through read context (enforced by sealed overrides)
 
 ---
@@ -157,5 +157,5 @@ If `QltSystemDbReadonly` is not configured, the read context transparently falls
 
 | Area | Details |
 |---|---|
-| Shared read configuration | `QltReadDbContextConfiguration` is a process-wide singleton: two read contexts in the same host would share schema and assemblies (last `SetDefaultSchema` wins). |
+| Shared read configuration | `MiqaReadDbContextConfiguration` is a process-wide singleton: two read contexts in the same host would share schema and assemblies (last `SetDefaultSchema` wins). |
 | Replica lag | Reading from a replica right after a command may return stale data; no read-your-writes mechanism is provided. |
