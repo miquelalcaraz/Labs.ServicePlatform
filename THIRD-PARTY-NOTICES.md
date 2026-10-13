@@ -46,6 +46,8 @@ Restored from NuGet at build time; not redistributed in this repository.
 | [Asp.Versioning](https://github.com/dotnet/aspnet-api-versioning) | MIT |
 | [Scalar](https://github.com/scalar/scalar) | MIT |
 | [AspNetCore.Diagnostics.HealthChecks](https://github.com/Xabaril/AspNetCore.Diagnostics.HealthChecks) | Apache-2.0 |
+| [RabbitMQ .NET client](https://github.com/rabbitmq/rabbitmq-dotnet-client) (via `Aspire.RabbitMQ.Client`) | Apache-2.0 / MPL-2.0 (dual) |
+| [Polly](https://github.com/App-vNext/Polly) (via `Microsoft.Extensions.Http.Resilience`) | BSD-3-Clause |
 | [Npgsql](https://github.com/npgsql/npgsql) | PostgreSQL License |
 | [Newtonsoft.Json](https://github.com/JamesNK/Newtonsoft.Json) | MIT |
 | Test tooling: [xUnit](https://github.com/xunit/xunit) (Apache-2.0), [Moq](https://github.com/devlooped/moq) (BSD-3-Clause), [Testcontainers](https://github.com/testcontainers/testcontainers-dotnet) (MIT), [coverlet](https://github.com/coverlet-coverage/coverlet) (MIT) | — |

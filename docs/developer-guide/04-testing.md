@@ -2,7 +2,7 @@
 
 ## Overview
 
-Testing strategy for SiriusS platform components and business services. Tests are split into two top-level groups under `tests/`:
+Testing strategy for Sirius platform components and business services. Tests are split into two top-level groups under `tests/`:
 
 - **`Platform/`** — architecture and infrastructure tests (independent of any business service)
 - **`Services/`** — business service tests (Accounts, Identity, Notifications)
@@ -32,7 +32,7 @@ flowchart TB
 | `Platform.IntegrationTests` | `tests/Platform/` | Integration | xUnit 2, FluentAssertions, Testcontainers (`MsSql`, `ServiceBus`) |
 | `Platform.FunctionalTests` | `tests/Platform/` | Functional | xUnit v3 (Microsoft Testing Platform), Aspire hosting (SQL Server, Redis, Service Bus emulator), `WebApplicationFactory` |
 | `Platform.TestWebApi` | `tests/Platform/` | Test host | Web API host used by `Platform.FunctionalTests` (`TestDbContext`, `TestEntity`, commands, domain event handlers) |
-| `Services.FunctionalTests` | `tests/Services/` | Functional | xUnit v3 (Microsoft Testing Platform), Aspire hosting, `WebApplicationFactory` over Accounts.API |
+| `Services.FunctionalTests` | `tests/Services/` | Functional | xUnit v3 (Microsoft Testing Platform), Aspire hosting, `WebApplicationFactory` over Accounts.API and Identity |
 | `Services.UnitTests` | `tests/Services/` | Unit | xUnit 2, Moq, FluentAssertions, EF Core InMemory (Accounts, Identity, Notifications) |
 
 Integration and functional tests need **Docker** running (Testcontainers / Aspire containers).
@@ -147,8 +147,8 @@ dotnet run --project tests/Services/Services.FunctionalTests
 dotnet test tests/Platform/Platform.UnitTests --filter "FullyQualifiedName~IdempotencyEfServiceTests"
 dotnet run --project tests/Services/Services.FunctionalTests -- --filter-class "Services.FunctionalTests.Accounts.AccountsApiTests"
 
-# With coverage (unit tests)
-dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+# With coverage (unit and integration tests, coverlet.collector)
+dotnet test tests/Platform/Platform.UnitTests --collect:"XPlat Code Coverage"
 ```
 
 ---
@@ -216,11 +216,9 @@ tests/Services/
 │   │   ├── IntegrationEvents/
 │   │   ├── Models/
 │   │   └── Pages/
-│   ├── Notifications/
-│   │   ├── Application/Commands/
-│   │   └── IntegrationEvents/
-│   └── Notificatios/
-│       └── NotificatiosTestBase.cs
+│   └── Notifications/
+│       ├── Application/Commands/
+│       └── IntegrationEvents/
 └── Services.FunctionalTests/
     ├── ServicesFixture.cs
     ├── AutoAuthorizeMiddleware.cs
@@ -234,7 +232,7 @@ tests/Services/
     ├── Identity/
     │   ├── IdentityFixture.cs
     │   └── IdentityApiTests.cs
-    └── Notificatios/
+    └── Notifications/
         └── NotificationsFixture.cs
 ```
 

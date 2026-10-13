@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide explains how to configure services in the SiriusS platform following the **two-layer pattern**. The platform provides `AddSiriusMediator` to register the MediatR pipeline with automatic telemetry, eliminating manual behavior ordering and telemetry registration.
+This guide explains how to configure services in the Sirius platform following the **two-layer pattern**. The platform provides `AddSiriusMediator` to register the MediatR pipeline with automatic telemetry, eliminating manual behavior ordering and telemetry registration.
 
 ---
 

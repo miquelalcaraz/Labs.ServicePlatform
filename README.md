@@ -5,15 +5,15 @@
 ![Status](https://img.shields.io/badge/status-in%20progress-yellow)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-A **reference architecture for event-driven microservices** on **.NET 10** and **Aspire**, organized around a set of reusable **building blocks**: CQRS pipeline, domain and integration events, transactional outbox, idempotent commands and consumers, read models and observability.
+A set of **reusable, isolated building blocks** for event-driven microservices on **.NET 10** and **Aspire**: a CQRS command pipeline, domain and integration events, transactional outbox, idempotent commands and consumers, a read model and built-in observability — each one behind its own abstraction, so the technology underneath can change without touching business code.
 
-The building blocks are applied to a [sample B2B domain](docs/features/README.md) — **customer onboarding and activation** — with three services, an IdentityServer, a BFF and a Blazor back office.
+The blocks are exercised by a [sample B2B domain](docs/features/README.md) (customer onboarding and activation) that proves they work end to end across several services.
 
-**Start here:** [Overview](#-overview) · [Building blocks](#-building-blocks) · [Run locally](#-running-the-project) · [Documentation](#-documentation) · [Known limitations](#️-project-status-and-known-limitations)
+**Start here:** [Principle](#-design-principle) · [Building blocks](#-building-blocks) · [Isolation & abstractions](#-isolation-and-abstractions) · [Reference implementation](#-reference-implementation) · [AI-assisted development](#-ai-assisted-development) · [Run locally](#-running-the-project) · [Docs](#-documentation)
 
 > [!NOTE]
 > **Continuation of [Labs.Aspire.uSLearn](https://github.com/miquelalcaraz/Labs.Aspire.uSLearn).**
-> uSLearn rebuilt the patterns of [dotnet/eShop](https://github.com/dotnet/eShop) step by step (domain events, integration events, idempotency, resilient transactions, telemetry). This repository takes the next step: it **extracts those patterns into layered, reusable building blocks** and adds the stages uSLearn had planned — identity with Duende IdentityServer and a Blazor + Radzen front end.
+> uSLearn rebuilt the patterns of [dotnet/eShop](https://github.com/dotnet/eShop) step by step. This repository takes the next step: it **extracts those patterns into layered, reusable building blocks** with explicit dependency rules, and validates them with a multi-service sample, identity (Duende IdentityServer) and a Blazor + Radzen back office.
 >
 > **Educational reference** — not intended for direct production use. See [known limitations](#️-project-status-and-known-limitations).
 
@@ -21,53 +21,59 @@ The building blocks are applied to a [sample B2B domain](docs/features/README.md
 
 ---
 
-## 🧭 Overview
-
-The guiding principle is **"Platform evolves, services sleep peacefully"**: business services depend on abstractions, so infrastructure (event bus, persistence, caching, telemetry) can change underneath them with minimal impact.
+## 🧭 Design Principle
 
 ```mermaid
+%%{init: {"themeVariables": {"fontSize": "12px"}, "flowchart": {"nodeSpacing": 15, "rankSpacing": 30, "padding": 6}}}%%
 flowchart LR
-    BO[BackOfficeApp<br/>Blazor + Radzen] --> BFF[backoffice-bff<br/>YARP]
-
-    subgraph Services
-        Accounts[Accounts API]
-        Identity[Identity<br/>Duende IdentityServer]
-        Notifications[Notifications API]
+    subgraph S["Business services · what teams write"]
+        direction TB
+        H["Aggregates · Commands · Queries<br/>Domain & integration event handlers"]
     end
 
-    subgraph Infrastructure
-        SQL[("SQL Server<br/>SiriusDb · IdentityDb")]
-        Redis[(Redis)]
-        Bus{{"Azure Service Bus<br/>topic sirius-event-bus"}}
+    subgraph A["Contracts · stable abstractions"]
+        direction TB
+        A1["ICommand / IQuery<br/>Result · Error"]
+        A2["IDomainEventHandler<br/>IIntegrationEventHandler"]
+        A3["IRepository · IUnitOfWork<br/>IEventBusOutboxService"]
     end
 
-    BFF --> Accounts & Identity
-    Services --> SQL & Redis
-    Services <-. integration events .-> Bus
+    subgraph P["Platform logic · applied automatically"]
+        direction TB
+        P1["Pipeline<br/>logging · validation · transaction"]
+        P2["Idempotency<br/>commands & consumers"]
+        P3["Outbox &<br/>domain event dispatch"]
+        P4["Telemetry"]
+    end
+
+    subgraph T["Technology adapters · swappable"]
+        direction TB
+        T1["Azure Service Bus / RabbitMQ"]
+        T2["EF Core + SQL Server"]
+        T3["Redis"]
+        T4["OpenTelemetry"]
+    end
+
+    S -- "depends only on" --> A
+    A <-. "implements & decorates" .- P
+    P -- "uses" --> T
 ```
 
-> Accounts and Notifications share `SiriusDb` (one schema each); Identity uses `IdentityDb`.
+Business code talks only to contracts. The platform implements and decorates those contracts — pipeline, idempotency, outbox, telemetry — and is the only layer that touches concrete technology, which can be swapped underneath.
 
-- **Accounts API** — companies, tenants, subscriptions, the customer **onboarding** process and the customer **activation** process (DDD aggregates and process state machines).
-- **Identity** — Duende IdentityServer with ASP.NET Core Identity; provisions tenant admin users and activates them.
-- **Notifications API** — welcome and activation emails, driven by integration events.
-- **backoffice-bff** — YARP reverse proxy; the single public entry point for the browser, including IdentityServer routes.
-- **BackOfficeApp** — Blazor Web App with Radzen components for the back-office operators.
+> **"Platform evolves, services sleep peacefully."**
 
-### Integration events between services
+The building blocks were designed before every technology decision was final (event bus transport, persistence backend, caching). Instead of betting on one, each concern sits behind an abstraction, and business services depend **only** on those abstractions:
 
-| Publisher | Integration event | Consumer |
-|---|---|---|
-| Accounts | `CompanyCreated` | Notifications |
-| Accounts | `TenantCreated` | Identity |
-| Accounts | `CustomerAdminProvisioningRequested` | Identity |
-| Accounts | `ActivationEmailRequested` | Notifications |
-| Accounts | `CustomerGoLive`, `CustomerActivationCompleted` | — *(published for future consumers)* |
-| Identity | `ExternalUserProvisioned` | Accounts |
-| Identity | `UserActivated` | Accounts |
-| Notifications | `ActivationDelivered` | Accounts |
+| Strategy | How it shows up in the code |
+|---|---|
+| **Dependency inversion** | Handlers implement `ICommandHandler<,>`, `IDomainEventHandler<>`, `IIntegrationEventHandler<>`; they never see `DbContext` transactions, the bus client or Redis |
+| **Layered contracts** | `*.Abstractions` projects hold contracts only; implementations live in separate projects that can be swapped |
+| **Composition over inheritance** | Idempotency, telemetry and transactions are pipeline behaviors and decorators applied automatically, not base classes to inherit from |
+| **One registration point** | `AddSiriusMediator(...)` wires the whole pipeline in a fixed order, so services cannot get it wrong |
+| **Opt-in evolution** | New capabilities are added as new behaviors, decorators or implementations; existing services keep working unchanged |
 
-Every event is written to the publisher's **transactional outbox** in the same database transaction as the business change, published after commit, and processed by **idempotent consumers**.
+The full rationale, decision framework and ADRs are in [Principles & ADRs](docs/architecture/00-principles-and-adrs.md).
 
 ---
 
@@ -80,8 +86,8 @@ Every event is written to the publisher's **transactional outbox** in the same d
 | `Platform.Core` | `Result` / `Result<T>` and `Error` (railway-oriented results) |
 | `Platform.Messaging.Abstractions` | Contracts: `ICommand<T>`, `IQuery<T>`, `IDomainEventHandler<T>`, `IIntegrationEventHandler<T>`, `IIdempotencyService`, `IEventBusOutboxService`, `IntegrationEvent` |
 | `Platform.Messaging` | Persistence-ignorant logic: `IdempotencyBehavior`, telemetry behaviors/decorators, `IdempotentCommand<T>`, outbox/idempotency POCOs |
-| `Platform.Messaging.EntityFramework` | `AddSiriusMediator`, `TransactionBehavior`, `DomainEventProcessorBehavior`, `IntegrationEventProcessorBehavior`, EF idempotency, outbox services and `OutboxProcessor` |
-| `Platform.Messaging.Redis` | Redis fast path for idempotency checks |
+| `Platform.Messaging.EntityFramework` | `AddSiriusMediator`, `TransactionBehavior`, `DomainEventProcessorBehavior`, `IntegrationEventProcessorBehavior`, EF idempotency, outbox services and `OutboxProcessor` — generic over any `DbContext` |
+| `Platform.Messaging.Redis` | Redis fast path for idempotency checks; the EF idempotency service decorates it and remains the source of truth |
 | `Platform.Persistence.EntityFramework` | EF Core abstractions: `ITransactionalUnitOfWork`, `IDomainEntityChangeTracker`, fluent context configuration |
 | `Platform.Persistence.EntityFramework.Relational` | `SiriusDBContext` (write) and `SiriusReadDbContext` (read-only), entity configurations, `Repository<T>`, `ResilientTransaction`, migrations |
 | `Platform.EventBus` | `IEventBus` abstraction and subscription builder |
@@ -89,6 +95,8 @@ Every event is written to the publisher's **transactional outbox** in the same d
 | `Platform.EventBus.RabbitMQ` | RabbitMQ implementation (alternative, see limitations) |
 | `Platform.Telemetry` | OpenTelemetry activity sources, meters and helpers |
 | `Platform.ServiceDefaults` / `Platform.WebApi` / `Platform.Infrastructure` | Aspire service defaults, JWT authentication, OpenAPI + Scalar, `Result` → HTTP mapping, exception middleware, `IUserHttpContext` |
+
+### The command pipeline
 
 Every command flows through the same pipeline, configured with a single call:
 
@@ -111,7 +119,163 @@ flowchart LR
     D --> H[[Handler]]
 ```
 
-Telemetry behaviors, the domain event publisher and the integration event decorators are registered by the same call. See [Command pipeline](docs/architecture/02-command-pipeline.md) for the details.
+Telemetry behaviors, the domain event publisher and the integration event decorators are registered by the same call. Consumers of integration events get the equivalent guarantees through decorators: telemetry → idempotency (inbox) + transaction → handler. See [Command pipeline](docs/architecture/02-command-pipeline.md) and [Idempotency](docs/architecture/04-idempotency.md).
+
+---
+
+## 🧩 Isolation and Abstractions
+
+The building blocks are split so that **each project knows as little as possible**. Dependencies only point towards more stable, more abstract projects:
+
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "11px"}, "flowchart": {"nodeSpacing": 12, "rankSpacing": 25, "padding": 4}}}%%
+flowchart BT
+    subgraph F[" "]
+        LF["<b>1. Foundation</b><br/>no project dependencies"]:::lvl
+        DC["Domain.Core"]
+        PC["Platform.Core"]
+        TEL["Platform.Telemetry"]
+    end
+
+    subgraph C[" "]
+        LC["<b>2. Abstractions</b><br/>no EF providers, no transports"]:::lvl
+        ABS["Messaging.Abstractions<br/><i>contracts only</i>"]
+        EB["EventBus<br/><i>IEventBus</i>"]
+        PEF["Persistence.EntityFramework<br/><i>EF abstractions, no provider</i>"]
+    end
+
+    subgraph L[" "]
+        LL["<b>3. Core logic</b><br/>persistence-ignorant"]:::lvl
+        MSG["Messaging<br/><i>behaviors, decorators, POCOs</i>"]
+        DA["Domain.Application<br/><i>logging, validation</i>"]
+    end
+
+    subgraph I[" "]
+        LI["<b>4. Implementations</b><br/>swappable"]:::lvl
+        RED["Messaging.Redis"]
+        MEF["Messaging.EntityFramework<br/><i>generic TContext</i>"]
+        SB["EventBus.ServiceBus"]
+        RMQ["EventBus.RabbitMQ"]
+        REL["Persistence.EF.Relational<br/><i>only project with DB providers</i>"]
+    end
+
+    ABS ==> DC
+    ABS ==> PC
+    PEF ==> TEL
+    MSG ==> ABS
+
+    RED --> MSG
+    MEF --> MSG
+    SB --> EB
+    RMQ --> EB
+    REL --> PEF
+
+    LC ~~~ LF
+    LL ~~~ LC
+    LI ~~~ LL
+
+    classDef lvl fill:none,stroke:none,text-align:left
+```
+
+Thick arrows show the main references between levels; thin arrows show which building block each implementation plugs into. Not every reference is drawn: `Platform.Telemetry` is used across levels, `Persistence.EntityFramework` also uses `Domain.Core` / `Platform.Core`, and `Messaging.EntityFramework` also references `EventBus` and `Persistence.EntityFramework` (it is the glue between messaging and EF). Nothing ever points upwards.
+
+What each layer is **not allowed** to know — enforced by project references, not just by convention:
+
+| Project | Does not know about |
+|---|---|
+| `Domain.Core` | Platform, MediatR pipeline, EF, any infrastructure |
+| `Platform.Messaging.Abstractions` / `Platform.Messaging` | Entity Framework, database providers, transports |
+| `Platform.Messaging.EntityFramework` | SQL Server / PostgreSQL providers, table names, entity configurations — works with any `DbContext` |
+| `Platform.Persistence.EntityFramework` | Database providers |
+| `Platform.EventBus.*` transports | Each other — every transport depends only on `Platform.EventBus` |
+| `Platform.Persistence.EntityFramework.Relational` | — it is the **only** place for relational specifics (configurations, migrations, providers) |
+
+### Swap points
+
+| Concern | Abstraction | Implementations | What changes in a service when swapping |
+|---|---|---|---|
+| Event bus | `IEventBus`, `IIntegrationEventHandler<T>` | Azure Service Bus, RabbitMQ | One registration line (`AddServiceBusEventBus` → `AddRabbitMqEventBus`) and the project reference — handlers and events are untouched |
+| Idempotency store | `IIdempotencyService` | EF Core (transactional, source of truth) decorating Redis (fast path) | Builder calls only (`AddIdempotencyEntityFramework`, `AddRedisIdempotencyCache`) |
+| Outbox | `IEventBusOutboxService` | EF Core outbox + `OutboxProcessor` | None — domain event handlers call `AddAndSaveEventAsync` |
+| Persistence | `ITransactionalUnitOfWork`, `IRepository<T>` | `SiriusDBContext` / `SiriusReadDbContext` (relational) | The service's `DbContext` base class; a new backend would be a new `Platform.Persistence.*` project |
+| Telemetry | Behaviors, decorators, `INotificationPublisher` | OpenTelemetry | None — registered by `AddSiriusMediator` |
+
+### Isolation between services
+
+Services never reference each other. They communicate only through **integration events** published in `Sirius.Contracts.{Service}` projects, which depend on nothing but `Platform.Messaging.Abstractions`. A producing service writes events to its outbox; consumers subscribe through the event bus and process them idempotently.
+
+What a service actually writes, with no infrastructure in sight:
+
+```csharp
+// Domain event handler (Application layer) — runs inside the command's transaction
+public async Task Handle(CompanyCreatedDomainEvent notification, CancellationToken ct)
+    => await _outboxService.AddAndSaveEventAsync(new CompanyCreatedIntegrationEvent(...));
+
+// Integration event handler (Infrastructure layer) — thin translator, idempotency and telemetry applied by decorators
+public async Task Handle(CompanyCreatedIntegrationEvent @event)
+    => await _mediator.Send(new SendCompanyWelcomeEmailsCommand(...));
+```
+
+Details: [Messaging & persistence layers](docs/architecture/01-messaging-persistence-layers.md) · [Event bus](docs/architecture/07-event-bus.md) · [CQRS read model](docs/architecture/08-cqrs-read-model.md).
+
+---
+
+## 🧪 Reference Implementation
+
+The building blocks are validated by a sample B2B workflow — **customer onboarding and activation** — that spans three services and crosses the event bus several times. It is intentionally realistic enough to exercise process state machines, retries, idempotent consumers and read models, but it is a *proof* of the building blocks, not the goal of the repository.
+
+```mermaid
+flowchart LR
+    BO[BackOfficeApp<br/>Blazor + Radzen] --> BFF[backoffice-bff<br/>YARP]
+
+    subgraph Services
+        Accounts[Accounts API]
+        Identity[Identity<br/>Duende IdentityServer]
+        Notifications[Notifications API]
+    end
+
+    subgraph Infrastructure
+        SQL[("SQL Server<br/>SiriusDb · IdentityDb")]
+        Redis[(Redis)]
+        Bus{{"Azure Service Bus<br/>topic sirius-event-bus"}}
+    end
+
+    BFF --> Accounts & Identity
+    Services --> SQL & Redis
+    Services <-. integration events .-> Bus
+```
+
+- **Accounts API** — companies, tenants, subscriptions and the **onboarding** and **activation** processes (DDD aggregates and process state machines).
+- **Identity** — Duende IdentityServer with ASP.NET Core Identity; provisions and activates tenant admin users. It also shows how the blocks adapt to a service with two `DbContext`s.
+- **Notifications API** — welcome and activation emails, driven by integration events.
+- **backoffice-bff** — YARP reverse proxy; the single public entry point for the browser.
+- **BackOfficeApp** — Blazor Web App for back-office operators to start and follow the processes.
+
+| Publisher | Integration event | Consumer |
+|---|---|---|
+| Accounts | `CompanyCreated` | Notifications |
+| Accounts | `TenantCreated`, `CustomerAdminProvisioningRequested` | Identity |
+| Accounts | `ActivationEmailRequested` | Notifications |
+| Accounts | `CustomerGoLive`, `CustomerActivationCompleted` | — *(published for future consumers)* |
+| Identity | `ExternalUserProvisioned`, `UserActivated` | Accounts |
+| Notifications | `ActivationDelivered` | Accounts |
+
+Every event is written to the publisher's **transactional outbox** in the same database transaction as the business change, published after commit, and processed by **idempotent consumers**. Walkthrough: [Sample domain](docs/features/01-sample-domain.md) · [Onboarding & activation workflow](docs/features/02-onboarding-activation-workflow.md) · [BackOffice API & UI](docs/features/03-backoffice-api-ui.md).
+
+---
+
+## 🤖 AI-Assisted Development
+
+The repository ships with instructions that let AI assistants work within the architecture instead of around it:
+
+| Asset | Purpose |
+|---|---|
+| [`sirius-platform-architect`](.claude/skills/sirius-platform-architect/SKILL.md) | Claude Code skill — **architect** role. Maintains the building blocks: classifies the change (fix, opt-in capability, new implementation, contract change), applies the decision framework, measures the impact on services, enforces layer rules and keeps architecture docs, known gaps and ADRs up to date |
+| [`sirius-feature-developer`](.claude/skills/sirius-feature-developer/SKILL.md) | Claude Code skill — **developer** role. Implements features on top of the blocks: models aggregates, commands and events first, then builds Domain → Contracts → Application → Infrastructure → API → migrations → BackOffice, and flags anything that needs a platform change instead of working around it |
+| [`CLAUDE.md`](CLAUDE.md) | Shared assistant instructions: general rules, code style, common layer violations, idempotency API conventions. GitHub Copilot is pointed here from [`.github/copilot-instructions.md`](.github/copilot-instructions.md) |
+| [Development rules](docs/developer-guide/06-copilot-development-rules.md) | The shared rulebook both skills and Copilot follow when writing service code |
+
+In Claude Code the skills are picked up automatically from `.claude/skills/` when a request matches their scope, or can be invoked explicitly (`/sirius-platform-architect`, `/sirius-feature-developer`).
 
 ---
 
@@ -131,26 +295,27 @@ Telemetry behaviors, the domain event publisher and the integration event decora
 
 ---
 
-## 🧩 Solution Structure
+## 📁 Solution Structure
 
 ```
 src/
- ├── Sirius.Domain/            → Domain.Core, Domain.Application (DDD seed work and behaviors)
- ├── Sirius.Platform/          → Platform.* building blocks (messaging, persistence, event bus, telemetry, web)
- ├── Sirius.Contracts/         → Integration event contracts shared between services
- ├── Sirius.Services/
- │    ├── Accounts/         → Api, Application, Domain, Infrastructure
- │    └── Notifications/    → Api, Application, Domain, Infrastructure
- ├── Sirius.Infrastructure/
- │    ├── AppHost           → Aspire orchestration
- │    ├── Identity          → Duende IdentityServer
- │    └── Bff.BackOffice    → YARP backend for frontend
- └── Sirius.WebApps/
-      └── Sirius.BackOfficeApp → Blazor + Radzen back office
+ ├── Sirius.Domain/            → Domain.Core, Domain.Application (DDD seed work and behaviors)   ┐
+ ├── Sirius.Platform/          → Platform.* building blocks                                    ┘ building blocks
+ ├── Sirius.Contracts/         → Integration event contracts shared between services          ┐
+ ├── Sirius.Services/                                                                          │
+ │    ├── Accounts/            → Api, Application, Domain, Infrastructure                      │
+ │    └── Notifications/       → Api, Application, Domain, Infrastructure                      │ reference
+ ├── Sirius.Infrastructure/                                                                    │ implementation
+ │    ├── AppHost              → Aspire orchestration                                          │
+ │    ├── Identity             → Duende IdentityServer                                         │
+ │    └── Bff.BackOffice       → YARP backend for frontend                                     │
+ └── Sirius.WebApps/                                                                           │
+      └── Sirius.BackOfficeApp → Blazor + Radzen back office                                   ┘
 tests/
- ├── Platform/              → UnitTests, IntegrationTests, FunctionalTests (+ TestWebApi host)
- └── Services/              → UnitTests, FunctionalTests
-docs/                       → Architecture and developer documentation
+ ├── Platform/                 → UnitTests, IntegrationTests, FunctionalTests (+ TestWebApi host)
+ └── Services/                 → UnitTests, FunctionalTests
+docs/                          → Architecture, developer guide, sample feature, backlog
+.claude/skills/                → Architect and developer skills for Claude Code
 ```
 
 ---
@@ -218,8 +383,8 @@ The documentation is organized in four sections; each has an index:
 | Section | What you will find |
 |---|---|
 | [Architecture](docs/architecture/README.md) | How each building block works internally: layers, pipeline, domain events, idempotency, outbox, telemetry, event bus, read model, BFF |
-| [Developer guide](docs/developer-guide/README.md) | How to build a service on top of them: configuration, transactional pipeline, an end-to-end walkthrough, testing, known gaps, AI-assisted development rules |
-| [Sample feature](docs/features/README.md) | The example domain (customer onboarding & activation) and its cross-service workflow, API and UI |
+| [Developer guide](docs/developer-guide/README.md) | How to build a service on top of them: configuration, transactional pipeline, an end-to-end walkthrough, testing, known gaps, development rules |
+| [Sample feature](docs/features/README.md) | The reference implementation (customer onboarding & activation): domain, cross-service workflow, API and UI |
 | [Backlog](docs/backlog/README.md) | Designed but deliberately deferred improvements |
 
 Suggested reading path:
@@ -243,10 +408,12 @@ This is an evolving reference, not a finished product. Known limitations of the 
 - **Outbox recovery** — the `OutboxProcessor` retries events in `NotPublished` or `FailedToPublish` state at a fixed polling interval. Events left in `InProgress` (for example, if the process stops right after claiming them) are not retried.
 - **RabbitMQ delivery** — the RabbitMQ consumer acknowledges messages even when a handler throws, and no dead-letter exchange is configured, so failed messages are lost. The Azure Service Bus implementation abandons the message, lets the broker retry it and dead-letters it after the maximum delivery count.
 - **Event bus selection** — the transport is chosen in code (AppHost `#define` plus one registration per service), not through configuration.
+- **Not packaged yet** — the building blocks are consumed as project references; the NuGet packaging and semantic versioning described in [Principles & ADRs](docs/architecture/00-principles-and-adrs.md) are design goals.
 - **Audit log** — entities get automatic `CreatedAt`/`UpdatedAt` and an optimistic concurrency `RowVersion`. A full audit log (`AuditLog` entity) is designed but not wired yet; see the [backlog](docs/backlog/audit-log-proposal.md).
 - **Authorization** — there is no generic authorization behavior in the pipeline; endpoints use ASP.NET Core authorization policies.
 - **Delivery guarantees** — the outbox and idempotent consumers protect the implemented paths; they do not provide end-to-end exactly-once delivery.
 - **Sample shortcuts** — emails are only logged, the activation link carries no confirmation token, and APIs disable audience validation. See [Simplifications in the sample](docs/features/02-onboarding-activation-workflow.md#simplifications-in-the-sample).
+- **Development-only security settings** — IdentityServer clients use hard-coded secrets and `RequirePkce = false`, the Scalar UI clients use the implicit flow, JWT bearer validation runs with `RequireHttpsMetadata = false`, and the BackOffice client also allows a fixed `https://localhost:5001` redirect URI. They keep the local setup simple; a real deployment needs PKCE, secrets from a vault and HTTPS metadata.
 
 ---
 
@@ -262,7 +429,7 @@ Distributed under the [MIT](LICENSE) license. Some dependencies — notably **Du
 
 ## 🤝 Contributing
 
-This is a personal, educational reference, but suggestions and improvements are welcome through issues or pull requests.
+This is a personal, educational reference, but suggestions and improvements are welcome through issues or pull requests. If you use Claude Code, the [architect and developer skills](#-ai-assisted-development) describe the rules a change is expected to follow.
 
 ## 👤 Author
 

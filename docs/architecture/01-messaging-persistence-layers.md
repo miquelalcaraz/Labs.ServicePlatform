@@ -217,7 +217,7 @@ public class IdempotencyEfService<TContext> : IIdempotencyService
 
 ### Fluent DbContext Configuration
 
-Real registration from the Accounts service (`Accounts.Infrastructure/Extensions/Extensions.cs`):
+Registration from the Accounts service (`Accounts.Infrastructure/Extensions/Extensions.cs`; read context, health checks and event bus omitted):
 
 ```csharp
 services.AddSiriusSDBContext<AccountContext>(
@@ -232,6 +232,10 @@ services.AddSiriusSDBContext<AccountContext>(
 );
 
 services.AddMigration<AccountContext, SiriusDBContextSeed>();
+
+services.AddRedisIdempotencyCache(builder.Configuration)   // optional cache, decorated by the EF service
+    .ForApiRequests()
+    .ForIntegrationEventHandlers();
 
 services.AddIdempotencyEntityFramework<AccountContext>()   // also calls WithIdempotency()
     .ForApiRequests()
