@@ -2,7 +2,7 @@
 
 Technical architecture documentation for the Sirius platform. Each document covers a specific architectural area with implementation details, design decisions, and code references. All documents reflect the current implementation under `src/` and use Mermaid diagrams.
 
-For high-level principles, ADRs, and project context see [PROJECT-CONTEXT.md](../../.github/PROJECT-CONTEXT.md).
+For high-level principles, ADRs, and project context see [Principles & ADRs](00-principles-and-adrs.md).
 
 ---
 
@@ -45,6 +45,7 @@ flowchart LR
 
 | Document | Description |
 |----------|-------------|
+| [Principles & ADRs](00-principles-and-adrs.md) | Mission, decision framework, non-breaking evolution strategies, success metrics, ADRs |
 | [Messaging & Persistence Layers](01-messaging-persistence-layers.md) | 5-layer architecture, responsibilities, project dependencies |
 | [Command Pipeline](02-command-pipeline.md) | Result Pattern, CQRS, `AddSiriusMediator`, pipeline order, Unit of Work |
 | [Domain Events & Consistency](03-domain-events-consistency.md) | Domain events, single-transaction model, cross-service event flows |
@@ -68,4 +69,6 @@ flowchart LR
 | Nested command publishing | 🟡 By design | Commands triggered by integration events publish via `OutboxProcessor` (polling latency) ([03](03-domain-events-consistency.md#integration-event--command-nested-transaction)) |
 | RabbitMQ transport | 🟡 Minor | Always acks failed messages; publish retry ineffective for async failures ([07](07-event-bus.md#known-gaps)) |
 | Audience validation | 🟡 Minor | APIs disable audience validation ([09](09-identity-bff-url-configuration.md#known-gaps)) |
+| SQL retry-on-failure | 🟡 Minor | Services do not enable `EnableRetryOnFailure()`, so transient SQL errors are not retried ([known gaps](../developer-guide/05-known-gaps.md#no-sql-retry-on-failure)) |
+| Audit log | 🟡 Planned | `AuditLog` designed but not wired ([backlog](../backlog/audit-log-proposal.md)) |
 | Repository nullable safety | ✅ Resolved | `IRepository<T>.GetAsync` / `Repository<T>.GetAsync` return `T?` |

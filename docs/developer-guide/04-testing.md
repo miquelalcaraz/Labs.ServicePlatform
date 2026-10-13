@@ -32,7 +32,7 @@ flowchart TB
 | `Platform.IntegrationTests` | `tests/Platform/` | Integration | xUnit 2, FluentAssertions, Testcontainers (`MsSql`, `ServiceBus`) |
 | `Platform.FunctionalTests` | `tests/Platform/` | Functional | xUnit v3 (Microsoft Testing Platform), Aspire hosting (SQL Server, Redis, Service Bus emulator), `WebApplicationFactory` |
 | `Platform.TestWebApi` | `tests/Platform/` | Test host | Web API host used by `Platform.FunctionalTests` (`TestDbContext`, `TestEntity`, commands, domain event handlers) |
-| `Services.FunctionalTests` | `tests/Services/` | Functional | xUnit v3 (Microsoft Testing Platform), Aspire hosting, `WebApplicationFactory` over Accounts.API |
+| `Services.FunctionalTests` | `tests/Services/` | Functional | xUnit v3 (Microsoft Testing Platform), Aspire hosting, `WebApplicationFactory` over Accounts.API and Identity |
 | `Services.UnitTests` | `tests/Services/` | Unit | xUnit 2, Moq, FluentAssertions, EF Core InMemory (Accounts, Identity, Notifications) |
 
 Integration and functional tests need **Docker** running (Testcontainers / Aspire containers).

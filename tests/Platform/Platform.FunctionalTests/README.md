@@ -1,108 +1,75 @@
-# BuildingBlocks Functional Tests
+# Platform Functional Tests
 
 ## Overview
 
-This project contains **functional tests** for the Sirius Building Blocks architecture. Unlike unit tests, these tests validate end-to-end behavior against real infrastructure (SQL Server, RabbitMQ) using Aspire.
+End-to-end tests for the Sirius building blocks, run against real infrastructure provisioned with Aspire. They validate the platform patterns independently of any business service (Accounts, Identity, Notifications):
 
-## Purpose
+- **Idempotency** — duplicate requests (same `x-requestid`) are detected and do not create side effects
+- **Domain events** — dispatched inside the command transaction
+- **Transactional outbox** — integration events are stored in `OutboxMessage` in the same transaction as the business change
 
-The Building Blocks (Shared and Core projects) implement critical architectural patterns:
-- **Idempotency** - Duplicate request detection
-- **Outbox Pattern** - Transactional event publishing
-- **Inbox Pattern** - Idempotent event consumers
-- **Domain Events** - In-process event handling
-- **Transactional Behavior** - Unit of Work with rollback
-- **Eventual Consistency** - Cross-service coordination
-
-These patterns are complex and span multiple layers. Functional tests validate their **integration** without depending on specific services (Accounts, Identity, etc.).
+For the overall testing strategy see [Developer Guide: Testing](../../../docs/developer-guide/04-testing.md).
 
 ## Architecture
 
-### TestWebApi
-A minimal ASP.NET Core Web API that uses the Building Blocks:
+### Platform.TestWebApi
 
-- **TestDbContext** - Inherits from `SiriusDBContext` (base for all contexts)
-- **TestEntity** - Simple aggregate root with domain events
-- **Commands** - `CreateTestEntityCommand`, `UpdateTestEntityCommand`
-- **Domain Event Handlers** - Transform domain events → integration events
-- **Controllers** - HTTP endpoints for triggering commands
+A minimal ASP.NET Core Web API (`tests/Platform/Platform.TestWebApi`) wired with the building blocks:
+
+- **`TestDbContext`** — inherits from `SiriusDBContext` (write side); **`TestReadDbContext`** inherits from `SiriusReadDbContext`
+- **`TestEntity`** — aggregate root that raises domain events
+- **Commands** — `CreateTestEntityCommand`, `UpdateTestEntityCommand`, plus `CreateTestEntityCommandValidator`
+- **Domain event handler** — `TestEntityCreatedDomainEventHandler` writes `TestEntityCreatedIntegrationEvent` to the outbox
+- **`TestController`** — `POST api/test` and `PUT api/test/{id}`
 
 ### BuildingBlocksFixture
-Aspire-based test fixture that provisions:
-- SQL Server (persistent container on port 1446)
-- RabbitMQ (ephemeral container)
-- TestWebApi configured with these resources
 
-### Test Categories
+`WebApplicationFactory<Program>` that starts an Aspire distributed application and points the TestWebApi at it. It is shared by all test classes through the `BuildingBlocks` collection (`BuildingBlocksCollection`). Resources:
 
-#### 1. IdempotencyTests
-Validates that duplicate requests (same `x-requestid` header) return the same result without side effects.
+- SQL Server (persistent container, port 1446, database `testDb`)
+- Redis (persistent container, `cache`)
+- Azure Service Bus emulator (persistent, topic `sirius-event-bus`, subscription `Platform`)
 
-**Pattern tested:**
-- `IdempotencyBehavior<TRequest, TResponse>` in pipeline
-- `RequestIdempotency` table with unique constraint
-- `IRequestIdempotencyService<TContext>`
+### Tests
 
-#### 2. OutboxPatternTests
-Validates that domain events generate integration events stored in the outbox table.
-
-**Pattern tested:**
-- Domain events dispatched after `SaveChangesAsync()`
-- Integration events stored in `OutboxMessage` table
-- Events remain in `NotPublished` state until background service processes them
-
-#### 3. DomainEventsTests
-Validates the complete flow: Command → Domain Event → Integration Event.
-
-**Pattern tested:**
-- Domain events added to aggregate root
-- Dispatcher extension (`DomainEventsDispatcherExtension`)
-- Domain event handlers (`IDomainEventHandler<T>`)
-- Transactional consistency (events saved in same transaction)
+| Class | Tests | Validates |
+|---|---|---|
+| `IdempotencyTests` | `DuplicateRequest_ShouldReturnSuccess_WithoutCreatingDuplicateEntity`, `DifferentRequests_ShouldCreateDifferentEntities` | `IdempotencyBehavior` returns `200 OK` for a duplicate without creating a second entity |
+| `DomainEventsTests` | `CreateEntity_ShouldDispatchDomainEvent_AndGenerateIntegrationEvent` | Command → domain event → integration event in the outbox |
+| `OutboxPatternTests` | `CreateEntity_ShouldStoreIntegrationEventInOutbox` | `TestEntityCreatedIntegrationEvent` is persisted in `OutboxMessage` |
 
 ## Running Tests
 
 ### Prerequisites
-- Docker Desktop running (for SQL Server + RabbitMQ containers)
+
+- Docker running (SQL Server, Redis and Service Bus emulator containers)
 - .NET 10 SDK
 
 ### Commands
 
+The project uses xUnit v3 on Microsoft Testing Platform, so it runs as an executable:
+
 ```bash
-# Run all tests
-dotnet test
+dotnet run --project tests/Platform/Platform.FunctionalTests
 
-# Run specific category
-dotnet test --filter "FullyQualifiedName~IdempotencyTests"
-dotnet test --filter "FullyQualifiedName~OutboxPatternTests"
-dotnet test --filter "FullyQualifiedName~DomainEventsTests"
-
-# Run with verbose output
-dotnet test --logger "console;verbosity=detailed"
+# Run a single class
+dotnet run --project tests/Platform/Platform.FunctionalTests -- --filter-class "Platform.FunctionalTests.Tests.IdempotencyTests"
 ```
 
 ### Aspire Dashboard
-By default, the Aspire dashboard is **disabled** (`DisableDashboard = true`) to speed up test execution.
 
-To enable it for debugging:
-1. Open `BuildingBlocksFixture.cs`
-2. Set `DisableDashboard = false`
-3. Run tests
-4. Open `https://localhost:15888` to see resource status
+The dashboard is disabled (`DisableDashboard = true` in `BuildingBlocksFixture`) to speed up test execution. Set it to `false` while debugging to inspect resource status.
 
 ## Adding New Tests
 
-### For new Building Block features:
-
-1. **Add test entity/command** (if needed) in `TestWebApi/`
-2. **Create test class** in `Tests/` folder
-3. **Use BuildingBlocksFixture** as `IClassFixture<BuildingBlocksFixture>`
-4. **Access TestDbContext** via DI to verify database state
-
-### Example:
+1. Add the entity, command or handler you need to `Platform.TestWebApi`.
+2. Create the test class in `Tests/` and mark it with `[Collection("BuildingBlocks")]`.
+3. Receive `BuildingBlocksFixture` in the constructor and use it as the `WebApplicationFactory<Program>`.
+4. Resolve `TestDbContext` from a scope to verify database state.
 
 ```csharp
-public sealed class NewFeatureTests : IClassFixture<BuildingBlocksFixture>
+[Collection("BuildingBlocks")]
+public sealed class NewFeatureTests
 {
     private readonly WebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
@@ -114,53 +81,26 @@ public sealed class NewFeatureTests : IClassFixture<BuildingBlocksFixture>
     }
 
     [Fact]
-    public async Task TestNewFeature()
+    public async Task NewFeature_ShouldPersistExpectedState()
     {
-        // Arrange
-        var requestId = Guid.NewGuid();
-        
-        // Act
-        var response = await _client.PostAsync("api/test", content);
-        
-        // Assert
+        var response = await _client.PostAsync("api/test", content, TestContext.Current.CancellationToken);
+
         using var scope = _factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<TestDbContext>();
-        // Verify database state...
     }
 }
 ```
 
-## Key Differences from Service Tests (Accounts.FunctionalTests)
+## Differences from Services.FunctionalTests
 
-| Aspect | Platform.FunctionalTests | Accounts.FunctionalTests |
-|--------|-------------------------------|--------------------------|
-| **Purpose** | Test architectural patterns | Test service endpoints |
-| **Scope** | Building Blocks only | Full service (Accounts + Identity) |
-| **Dependencies** | SQL Server + RabbitMQ | SQL Server + RabbitMQ + Identity API |
-| **Test Entity** | Minimal `TestEntity` | Real domain (Organization, Account) |
-| **Focus** | Infrastructure concerns | Business logic |
+| Aspect | Platform.FunctionalTests | Services.FunctionalTests |
+|---|---|---|
+| **Purpose** | Platform patterns | Service endpoints and authorization |
+| **Host** | `Platform.TestWebApi` | `Accounts.API` and Identity |
+| **Domain** | Minimal `TestEntity` | Real domain (companies, onboarding, activation) |
+| **Focus** | Infrastructure concerns | Business behavior |
 
 ## Troubleshooting
 
-### Tests fail with "Connection refused"
-- Ensure Docker Desktop is running
-- Check port 1446 is available (SQL Server)
-- Check RabbitMQ port (5672) is available
-
-### Idempotency tests fail
-- Verify `RequestIdempotency` table exists
-- Check unique constraint on `RequestId` column
-- Review migrations in `TestDbContext`
-
-### Outbox messages not found
-- Verify `OutboxMessage` table exists
-- Check domain event handler registered in DI
-- Ensure `EnableDomainEventsDispatch = true` in configuration
-
-## Future Test Coverage
-
-Planned tests for upcoming features:
-- **InboxPatternTests** - Idempotent consumer behavior
-- **TransactionBehaviorTests** - Rollback scenarios
-- **EventualConsistencyTests** - Cross-service saga patterns
-- **AuditLogsTests** - Audit trail validation
+- **Connection refused** — make sure Docker is running and port 1446 (SQL Server) is free.
+- **Outbox messages not found** — check that the domain event handler is registered and that the transactional outbox registers the TestWebApi assembly's event types.

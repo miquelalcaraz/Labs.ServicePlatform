@@ -15,7 +15,7 @@ In scope:
 - `src/Sirius.Domain/*` — `Domain.Core` (Entity, ValueObject, IAggregateRoot, IRepository, IUnitOfWork, IDomainEvent) and `Domain.Application` (LoggingBehavior, ValidationBehavior)
 - `src/Sirius.Platform/*` — Core, Messaging(.Abstractions/.EntityFramework/.Redis), Persistence.EntityFramework(.Relational), EventBus(.ServiceBus/.RabbitMQ), Telemetry, ServiceDefaults, WebApi, Infrastructure
 - Platform-level tests in `tests/Platform/*`
-- Architecture docs: `docs/architecture/*`, `docs/developer-guide/05-known-gaps.md`, `docs/backlog/*`, ADRs in `.github/PROJECT-CONTEXT.md`
+- Architecture docs: `docs/architecture/*`, `docs/developer-guide/05-known-gaps.md`, `docs/backlog/*`, ADRs in `docs/architecture/00-principles-and-adrs.md`
 
 Out of scope: business features in `src/Sirius.Services/*`, `src/Sirius.Contracts/*` and the BackOffice UI. If a platform change requires service changes, say so explicitly and describe them as follow-up work for the feature developer instead of silently rewriting services.
 
@@ -25,9 +25,9 @@ Do not rely on memory for layer rules or class names; the repo documents them. R
 
 | Topic | Read |
 |---|---|
-| Mission, ADRs, decision framework | `.github/PROJECT-CONTEXT.md` |
-| Layer responsibilities, allowed dependencies, common violations | `.github/copilot-instructions.md` (section "Architecture - Messaging & Persistence Layers") |
-| Layers in depth | `docs/architecture/01-messaging-persistence-layers.md` |
+| Mission, ADRs, decision framework, non-breaking evolution strategies | `docs/architecture/00-principles-and-adrs.md` |
+| Layer responsibilities, allowed dependencies | `docs/architecture/01-messaging-persistence-layers.md` |
+| Common layer violations, code style, general repo rules | `CLAUDE.md` |
 | Pipeline order, Result pattern, CQRS | `docs/architecture/02-command-pipeline.md` |
 | Domain events & consistency | `docs/architecture/03-domain-events-consistency.md` |
 | Idempotency (API + consumers, Redis + EF) | `docs/architecture/04-idempotency.md` |
@@ -64,7 +64,7 @@ Before touching code, state in one or two lines what kind of change it is, becau
 
 ### 2. Run the decision framework
 
-Answer briefly (from `PROJECT-CONTEXT.md`):
+Answer briefly (from `docs/architecture/00-principles-and-adrs.md`):
 - **Compatibility** — does it break existing services? Is it optional? Does it change behaviour silently?
 - **Extensibility** — can it be a decorator/behavior instead of modifying a base type? Are defaults backward-compatible?
 - **Abstraction** — is the interface technology-agnostic? Does it belong in Domain or Platform?
@@ -88,7 +88,7 @@ Look at the three services (Accounts, Notifications, Identity — Identity is sp
 - Registration helpers must stay idempotent (the existing marker-type pattern in `ServiceCollectionExtensions`).
 - Pipeline order is defined in one place (`AddSiriusMediator` in `Platform.Messaging.EntityFramework/Builders`). If you change it, update `02-command-pipeline.md` and the README diagram.
 - Telemetry is automatic: if you add a behavior/decorator, wire its activity/meter through `Platform.Telemetry` helpers so services get it for free.
-- Code style (from copilot-instructions): English everywhere, XML `<summary>` on public APIs, no explanatory inline comments unless the logic is genuinely non-obvious, self-explanatory names.
+- Code style (from `CLAUDE.md`): English everywhere, XML `<summary>` on public APIs, no explanatory inline comments unless the logic is genuinely non-obvious, self-explanatory names.
 - Do not add new commercial or dual-licensed dependencies without flagging it (`THIRD-PARTY-NOTICES.md`).
 
 ### 5. Verify
@@ -115,10 +115,10 @@ Docs are part of the deliverable in this repo — readers use it as a guide. In 
 - Update the relevant `docs/architecture/*.md` (mechanics, diagrams, class names).
 - If you closed a gap: move it from "Active Gaps" to "Resolved Items" in `05-known-gaps.md` and remove it from the README "Known limitations" if listed there.
 - If you introduced a limitation or deferred something: add it to `05-known-gaps.md` or `docs/backlog/`.
-- For contract changes or significant design decisions: add an ADR to `.github/PROJECT-CONTEXT.md` (Decision / Context / Rationale / Impact / Date) and bump "Last Updated".
+- For contract changes or significant design decisions: add an ADR to `docs/architecture/00-principles-and-adrs.md` (Decision / Context / Rationale / Impact / Date) and bump "Last Updated".
 - If service-facing usage changed: update `docs/developer-guide/06-copilot-development-rules.md` and `01-service-configuration.md` so the feature developer gets the new rules.
 
-The repo's Copilot instructions ask for confirmation before generating or modifying `.md` files — propose the doc changes and confirm with the user unless they already asked for them.
+`CLAUDE.md` asks for confirmation before generating or modifying `.md` files — propose the doc changes and confirm with the user unless they already asked for them.
 
 ## Answer format
 

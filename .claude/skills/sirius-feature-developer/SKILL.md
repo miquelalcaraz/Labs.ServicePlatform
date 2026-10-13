@@ -1,6 +1,6 @@
 ---
 name: sirius-feature-developer
-description: Developer role for this repo — implements business features in the Sirius microservices (Accounts, Notifications, Identity) and the BackOffice on top of the existing building blocks, following the repo's DDD/CQRS/outbox/idempotency rules. Use this skill whenever the user asks to add or change an entity, aggregate, command, query, endpoint, validator, domain event, integration event, consumer, migration, back office page, or a whole new service or workflow step under src/Sirius.Services, src/Sirius.Contracts, src/Sirius.Infrastructure.Identity or src/Sirius.WebApps — even if they only describe the business need ("customers should be able to suspend a subscription"). Do NOT use it to change Platform.* or Domain.* internals (that is sirius-platform-architect).
+description: Developer role for this repo — implements business features in the Sirius microservices (Accounts, Notifications, Identity) and the BackOffice on top of the existing building blocks, following the repo's DDD/CQRS/outbox/idempotency rules. Use this skill whenever the user asks to add or change an entity, aggregate, command, query, endpoint, validator, domain event, integration event, consumer, migration, back office page, or a whole new service or workflow step under src/Sirius.Services, src/Sirius.Contracts, src/Sirius.Infrastructure/Sirius.Infrastructure.Identity or src/Sirius.WebApps — even if they only describe the business need ("customers should be able to suspend a subscription"). Do NOT use it to change Platform.* or Domain.* internals (that is sirius-platform-architect).
 ---
 
 # Sirius Feature Developer
@@ -100,7 +100,7 @@ If you could not run something, say so — don't imply it passed.
 
 ### 6. Document the feature
 
-Update `docs/features/*` (domain description, workflow diagram, API table, BackOffice pages table) and the README integration-event table if a new event crosses services. The repo's Copilot instructions ask for confirmation before generating or modifying `.md` files — propose the changes and confirm unless the user already asked for them.
+Update `docs/features/*` (domain description, workflow diagram, API table, BackOffice pages table) and the README integration-event table if a new event crosses services. `CLAUDE.md` asks for confirmation before generating or modifying `.md` files — propose the changes and confirm unless the user already asked for them.
 
 ## Answer format
 

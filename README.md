@@ -73,7 +73,7 @@ The building blocks were designed before every technology decision was final (ev
 | **One registration point** | `AddSiriusMediator(...)` wires the whole pipeline in a fixed order, so services cannot get it wrong |
 | **Opt-in evolution** | New capabilities are added as new behaviors, decorators or implementations; existing services keep working unchanged |
 
-The full rationale, decision framework and ADRs are in [PROJECT-CONTEXT.md](.github/PROJECT-CONTEXT.md).
+The full rationale, decision framework and ADRs are in [Principles & ADRs](docs/architecture/00-principles-and-adrs.md).
 
 ---
 
@@ -272,7 +272,7 @@ The repository ships with instructions that let AI assistants work within the ar
 |---|---|
 | [`sirius-platform-architect`](.claude/skills/sirius-platform-architect/SKILL.md) | Claude Code skill — **architect** role. Maintains the building blocks: classifies the change (fix, opt-in capability, new implementation, contract change), applies the decision framework, measures the impact on services, enforces layer rules and keeps architecture docs, known gaps and ADRs up to date |
 | [`sirius-feature-developer`](.claude/skills/sirius-feature-developer/SKILL.md) | Claude Code skill — **developer** role. Implements features on top of the blocks: models aggregates, commands and events first, then builds Domain → Contracts → Application → Infrastructure → API → migrations → BackOffice, and flags anything that needs a platform change instead of working around it |
-| [`.github/copilot-instructions.md`](.github/copilot-instructions.md) | GitHub Copilot instructions: layer responsibilities, forbidden dependencies, code style, idempotency API conventions |
+| [`CLAUDE.md`](CLAUDE.md) | Shared assistant instructions: general rules, code style, common layer violations, idempotency API conventions. GitHub Copilot is pointed here from [`.github/copilot-instructions.md`](.github/copilot-instructions.md) |
 | [Development rules](docs/developer-guide/06-copilot-development-rules.md) | The shared rulebook both skills and Copilot follow when writing service code |
 
 In Claude Code the skills are picked up automatically from `.claude/skills/` when a request matches their scope, or can be invoked explicitly (`/sirius-platform-architect`, `/sirius-feature-developer`).
@@ -408,7 +408,7 @@ This is an evolving reference, not a finished product. Known limitations of the 
 - **Outbox recovery** — the `OutboxProcessor` retries events in `NotPublished` or `FailedToPublish` state at a fixed polling interval. Events left in `InProgress` (for example, if the process stops right after claiming them) are not retried.
 - **RabbitMQ delivery** — the RabbitMQ consumer acknowledges messages even when a handler throws, and no dead-letter exchange is configured, so failed messages are lost. The Azure Service Bus implementation abandons the message, lets the broker retry it and dead-letters it after the maximum delivery count.
 - **Event bus selection** — the transport is chosen in code (AppHost `#define` plus one registration per service), not through configuration.
-- **Not packaged yet** — the building blocks are consumed as project references; the NuGet packaging and semantic versioning described in [PROJECT-CONTEXT.md](.github/PROJECT-CONTEXT.md) are design goals.
+- **Not packaged yet** — the building blocks are consumed as project references; the NuGet packaging and semantic versioning described in [Principles & ADRs](docs/architecture/00-principles-and-adrs.md) are design goals.
 - **Audit log** — entities get automatic `CreatedAt`/`UpdatedAt` and an optimistic concurrency `RowVersion`. A full audit log (`AuditLog` entity) is designed but not wired yet; see the [backlog](docs/backlog/audit-log-proposal.md).
 - **Authorization** — there is no generic authorization behavior in the pipeline; endpoints use ASP.NET Core authorization policies.
 - **Delivery guarantees** — the outbox and idempotent consumers protect the implemented paths; they do not provide end-to-end exactly-once delivery.

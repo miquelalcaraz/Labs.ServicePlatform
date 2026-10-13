@@ -58,7 +58,7 @@ Notifications is not exposed through the BFF.
 | `BackOfficeApp` | `CallBackUrl` | BackOfficeApp endpoint | OIDC redirect / post-logout URIs |
 | `IdentityServer` | `IssuerUri` | `bffEndpoint` | Tokens must carry the BFF as the public issuer (`iss`) |
 | `IdentityServer` | `AccountApiClient`, `NotificationsApiClient`, `BackOfficeClient` | Each app endpoint | Client redirect URIs seeded in the configuration store |
-| `AccountsAPI` | `Identity:Url` | `identityEndpoint` | Server-to-server — no need to route through BFF |
+| `Accounts` | `Identity:Url` | `identityEndpoint` | Server-to-server — no need to route through BFF |
 | `Notifications` | `Identity:Url` | `identityEndpoint` | Server-to-server — no need to route through BFF |
 
 > **Rule of thumb:** anything that runs in (or redirects) the browser uses `bffEndpoint`. Anything server-to-server uses `identityEndpoint` directly.
