@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 using Platform.TestWebApi.Commands;
 
-using Qlt.Platform;
+using Sirius.Platform;
 
 namespace Platform.TestWebApi.Controllers;
 

@@ -1,6 +1,6 @@
 # Architecture Documentation
 
-Technical architecture documentation for the QltS platform. Each document covers a specific architectural area with implementation details, design decisions, and code references. All documents reflect the current implementation under `src/` and use Mermaid diagrams.
+Technical architecture documentation for the SiriusS platform. Each document covers a specific architectural area with implementation details, design decisions, and code references. All documents reflect the current implementation under `src/` and use Mermaid diagrams.
 
 For high-level principles, ADRs, and project context see [PROJECT-CONTEXT.md](../../.github/PROJECT-CONTEXT.md).
 
@@ -11,12 +11,12 @@ For high-level principles, ADRs, and project context see [PROJECT-CONTEXT.md](..
 ```mermaid
 flowchart LR
     subgraph SVC["Service (e.g. Accounts)"]
-        API["Minimal API"] --> PIPE["AddQltMediator pipeline<br/>Logging → Idempotency → Outbox publish →<br/>Transaction → Validation → Domain events → Handler"]
+        API["Minimal API"] --> PIPE["AddSiriusMediator pipeline<br/>Logging → Idempotency → Outbox publish →<br/>Transaction → Validation → Domain events → Handler"]
         PIPE --> WDB[("Write DbContext<br/>business data + IdempotencyEntry + OutboxMessage")]
         API --> QRY["Queries"] --> RDB[("Read DbContext<br/>no tracking")]
         OP["OutboxProcessor"] --> WDB
     end
-    PIPE -- "after commit" --> BUS[["Event bus<br/>Service Bus topic qlt-event-bus"]]
+    PIPE -- "after commit" --> BUS[["Event bus<br/>Service Bus topic sirius-event-bus"]]
     OP -- "retries" --> BUS
     BUS --> CONS["Other services<br/>telemetry → idempotency → handler → command"]
 ```
@@ -28,7 +28,7 @@ flowchart LR
 | Pattern | Health | Notes |
 |---------|--------|-------|
 | Single-Transaction Pipeline | ✅ Excellent | Command + domain events + idempotency entry + outbox in one atomic transaction |
-| Pipeline Behavior Chain | ✅ Excellent | Order centralized in `AddQltMediator`; independent behaviors with SRP |
+| Pipeline Behavior Chain | ✅ Excellent | Order centralized in `AddSiriusMediator`; independent behaviors with SRP |
 | Transactional Outbox | ✅ Solid | Inline publishing + background processor with atomic claim; no recovery of stuck `InProgress` rows |
 | Domain Events (within transaction) | ✅ Solid | Cascading support, handlers can modify aggregates |
 | Idempotency (Command) | 🟡 Solid with gaps | Redis fast-path + EF source of truth; failed `Result` and Redis `processing` key can mark retries as duplicates |
@@ -46,7 +46,7 @@ flowchart LR
 | Document | Description |
 |----------|-------------|
 | [Messaging & Persistence Layers](01-messaging-persistence-layers.md) | 5-layer architecture, responsibilities, project dependencies |
-| [Command Pipeline](02-command-pipeline.md) | Result Pattern, CQRS, `AddQltMediator`, pipeline order, Unit of Work |
+| [Command Pipeline](02-command-pipeline.md) | Result Pattern, CQRS, `AddSiriusMediator`, pipeline order, Unit of Work |
 | [Domain Events & Consistency](03-domain-events-consistency.md) | Domain events, single-transaction model, cross-service event flows |
 | [Idempotency](04-idempotency.md) | Command deduplication, idempotent consumer, Redis hybrid |
 | [Transactional Outbox](05-transactional-outbox.md) | Outbox pattern, atomic claim, `OutboxProcessor` |

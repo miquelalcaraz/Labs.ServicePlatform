@@ -1,11 +1,11 @@
 using Microsoft.Extensions.Logging;
 
-using Qlt.Services.Accounts.Application.Commands;
-using Qlt.Services.Accounts.Domain.Events;
-using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
-using Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
-using Qlt.Services.Accounts.Domain.Models.SubscriptionAggregate;
-using Qlt.Services.Accounts.Domain.Models.TenantAggregate;
+using Sirius.Services.Accounts.Application.Commands;
+using Sirius.Services.Accounts.Domain.Events;
+using Sirius.Services.Accounts.Domain.Models.CompanyAggregate;
+using Sirius.Services.Accounts.Domain.Models.OnboardingAggregate;
+using Sirius.Services.Accounts.Domain.Models.SubscriptionAggregate;
+using Sirius.Services.Accounts.Domain.Models.TenantAggregate;
 
 namespace Services.UnitTests.Accounts.Application.Commands;
 
@@ -98,10 +98,10 @@ public class StartCustomerOnboardingCommandHandlerTests : AccountsTestBase
     }
 
     private static StartCustomerOnboardingCommandHandler CreateHandler(
-        Mock<Qlt.Services.Accounts.Domain.Repositories.ITenantRepository> tenantRepo,
-        Mock<Qlt.Services.Accounts.Domain.Repositories.ISubscriptionRepository> subscriptionRepo,
-        Mock<Qlt.Services.Accounts.Domain.Repositories.ICompanyRepository> companyRepo,
-        Mock<Qlt.Services.Accounts.Domain.Repositories.IOnboardingProcessRepository> onboardingRepo) =>
+        Mock<Sirius.Services.Accounts.Domain.Repositories.ITenantRepository> tenantRepo,
+        Mock<Sirius.Services.Accounts.Domain.Repositories.ISubscriptionRepository> subscriptionRepo,
+        Mock<Sirius.Services.Accounts.Domain.Repositories.ICompanyRepository> companyRepo,
+        Mock<Sirius.Services.Accounts.Domain.Repositories.IOnboardingProcessRepository> onboardingRepo) =>
         new(
             tenantRepo.Object,
             subscriptionRepo.Object,

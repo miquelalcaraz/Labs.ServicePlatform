@@ -1,6 +1,6 @@
-using Qlt.Domain.SeedWork;
-using Qlt.Platform.Persistence;
-using Qlt.Platform.Persistence.Options;
+using Sirius.Domain.SeedWork;
+using Sirius.Platform.Persistence;
+using Sirius.Platform.Persistence.Options;
 
 using Testcontainers.MsSql;
 
@@ -22,7 +22,7 @@ public class EntityAuditIntegrationTests : IAsyncLifetime
     {
         await _container.StartAsync();
 
-        var config = new QltDbContextConfiguration();
+        var config = new SiriusDbContextConfiguration();
         config.SetDefaultSchema("audit_test");
 
         var options = new DbContextOptionsBuilder<AuditTestDbContext>()
@@ -152,7 +152,7 @@ public class EntityAuditIntegrationTests : IAsyncLifetime
         await _context.SaveChangesAsync();
         _context.ChangeTracker.Clear();
 
-        var config = new QltDbContextConfiguration();
+        var config = new SiriusDbContextConfiguration();
         config.SetDefaultSchema("audit_test");
 
         var options2 = new DbContextOptionsBuilder<AuditTestDbContext>()
@@ -191,13 +191,13 @@ public class EntityAuditIntegrationTests : IAsyncLifetime
         public void SetValue(int newValue) => Value = newValue;
     }
 
-    public class AuditTestDbContext : QltDBContext
+    public class AuditTestDbContext : SiriusDBContext
     {
         public DbSet<AuditTestEntity> TestEntities => Set<AuditTestEntity>();
 
         public AuditTestDbContext(
             DbContextOptions<AuditTestDbContext> options,
-            QltDbContextConfiguration configuration)
+            SiriusDbContextConfiguration configuration)
             : base(options, configuration) { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -56,7 +56,7 @@ namespace Platform.TestWebApi.Infrastructure.Migrations
                     b.ToTable("TestEntities", "test");
                 });
 
-            modelBuilder.Entity("Qlt.Platform.Messaging.Models.IdempotencyEntry", b =>
+            modelBuilder.Entity("Sirius.Platform.Messaging.Models.IdempotencyEntry", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
@@ -87,7 +87,7 @@ namespace Platform.TestWebApi.Infrastructure.Migrations
                     b.ToTable("IdempotencyEntry", "test");
                 });
 
-            modelBuilder.Entity("Qlt.Platform.Messaging.Models.OutboxMessage", b =>
+            modelBuilder.Entity("Sirius.Platform.Messaging.Models.OutboxMessage", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()

@@ -2,10 +2,10 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Qlt.Contracts.Accounts.IntegrationEvents;
-using Qlt.Platform;
-using Qlt.Services.Notifications.Application.Commands;
-using Qlt.Services.Notifications.Infrastructure.IntegrationEvents.EventHandling;
+using Sirius.Contracts.Accounts.IntegrationEvents;
+using Sirius.Platform;
+using Sirius.Services.Notifications.Application.Commands;
+using Sirius.Services.Notifications.Infrastructure.IntegrationEvents.EventHandling;
 
 namespace Services.UnitTests.Notifications.IntegrationEvents;
 

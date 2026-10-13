@@ -1,4 +1,4 @@
-using Qlt.Platform;
+using Sirius.Platform;
 
 namespace Platform.UnitTests.Core;
 

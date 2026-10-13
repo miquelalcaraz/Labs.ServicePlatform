@@ -27,7 +27,7 @@ flowchart TB
 
 ### 1. Platform.Messaging.Abstractions
 
-Pure contracts without infrastructure dependencies. Root namespace: `Qlt.Platform.Messaging`.
+Pure contracts without infrastructure dependencies. Root namespace: `Sirius.Platform.Messaging`.
 
 **Owns:**
 - **Commands**: `ICommandRequest` (non-generic marker), `ICommand`, `ICommand<TResponse>`, `ICommandHandler<TCommand>`, `ICommandHandler<TCommand, TResponse>`
@@ -72,7 +72,7 @@ EF Core abstractions without database-specific knowledge and without messaging k
 - `ITransactionalUnitOfWork` — extends `IUnitOfWork` with `BeginTransactionAsync`, `UseTransaction`, `CreateExecutionStrategy`, `GetCurrentTransaction`, `CommitTransactionAsync`, `RollbackTransaction`, `HasActiveTransaction`, `LastCommittedTransactionId`, `GetPendingChangesCount`
 - `IDomainEntityChangeTracker` — exposes tracked entities for domain event dispatch
 - `MigrationReadySignal` — singleton that signals when migrations have completed (awaited by the `OutboxProcessor`)
-- `QltDbContextConfiguration`, `QltReadDbContextConfiguration` — fluent feature/model configuration
+- `SiriusDbContextConfiguration`, `SiriusReadDbContextConfiguration` — fluent feature/model configuration
 - `UniqueConstraintViolationException`
 
 **Dependencies:** Microsoft.EntityFrameworkCore, Microsoft.Extensions.Hosting.Abstractions, MediatR, Domain.Core, Platform.Core, Platform.Telemetry
@@ -90,7 +90,7 @@ Messaging services that use EF Core through generic constraints — works with a
 - **Background service**: `OutboxProcessor` (hosted service that retries unpublished/failed outbox events)
 - **Decorator**: `IdempotencyIntegrationEventEfDecorator<T>` (transactional idempotent consumer)
 - **Pipeline behaviors**: `TransactionBehavior<,>`, `DomainEventProcessorBehavior<,>`, `IntegrationEventProcessorBehavior<,>`
-- **Builders**: `AddQltMediator` + `QltMediatorConfiguration`, `AddIdempotencyEntityFramework<TContext>` + `EfIdempotencyBuilder<TContext>`, `AddTransactionalOutbox<TContext>`
+- **Builders**: `AddSiriusMediator` + `SiriusMediatorConfiguration`, `AddIdempotencyEntityFramework<TContext>` + `EfIdempotencyBuilder<TContext>`, `AddTransactionalOutbox<TContext>`
 - **Options**: `OutboxMessageOptions` (event type registry), `OutboxProcessorOptions`
 
 **Dependencies:** Platform.Messaging, Platform.Persistence.EntityFramework, Platform.EventBus, Platform.Telemetry
@@ -103,16 +103,16 @@ Services use `TContext where TContext : DbContext, ITransactionalUnitOfWork` (or
 
 ### 5. Platform.Persistence.EntityFramework.Relational
 
-SQL Server and PostgreSQL specifics. This is the **only** layer that knows about relational databases. Root namespace: `Qlt.Platform.Persistence`.
+SQL Server and PostgreSQL specifics. This is the **only** layer that knows about relational databases. Root namespace: `Sirius.Platform.Persistence`.
 
 **Owns:**
-- `QltDBContext` — write-side base context; implements `ITransactionalUnitOfWork` and `IDomainEntityChangeTracker`, applies audit timestamps and translates unique-constraint violations (SQL Server 2627/2601, PostgreSQL 23505, generic message fallback) into `UniqueConstraintViolationException`
-- `QltReadDbContext` — read-side abstract base context (see [08-cqrs-read-model.md](08-cqrs-read-model.md))
+- `SiriusDBContext` — write-side base context; implements `ITransactionalUnitOfWork` and `IDomainEntityChangeTracker`, applies audit timestamps and translates unique-constraint violations (SQL Server 2627/2601, PostgreSQL 23505, generic message fallback) into `UniqueConstraintViolationException`
+- `SiriusReadDbContext` — read-side abstract base context (see [08-cqrs-read-model.md](08-cqrs-read-model.md))
 - **Entity configurations**: `IdempotencyEntryConfiguration` (internal), `OutboxMessageConfiguration` (public), `EntityAuditConfiguration` (internal — `RowVersion` + `CreatedAt` for every `Entity`), `AuditLogConfiguration` (internal, not applied yet — `AuditLog` is a placeholder)
 - `ResilientTransaction` — runs an action inside a transaction under the EF execution strategy
 - `Repository<T>` — abstract generic repository for aggregate roots
 - `MigrateDbContextExtensions` — `AddMigration<TContext>()` / `AddMigration<TContext, TSeeder>()` hosted service + `IDbSeeder<TContext>`; signals `MigrationReadySignal` when done
-- Registration: `AddQltSDBContext<TContext>()`, `AddQltReadDbContext<TContext>()`
+- Registration: `AddSiriusSDBContext<TContext>()`, `AddSiriusReadDbContext<TContext>()`
 
 **Dependencies:** Platform.Persistence.EntityFramework, Platform.Messaging.EntityFramework, Platform.ServiceDefaults, Microsoft.EntityFrameworkCore.Relational, Microsoft.Data.SqlClient, Npgsql
 
@@ -186,7 +186,7 @@ public static void Configure(this EntityTypeBuilder<IdempotencyEntry> entity)
 }
 ```
 
-`QltDBContext.OnModelCreating` applies the infrastructure mappings only when the corresponding feature is enabled:
+`SiriusDBContext.OnModelCreating` applies the infrastructure mappings only when the corresponding feature is enabled:
 
 ```mermaid
 flowchart LR
@@ -220,7 +220,7 @@ public class IdempotencyEfService<TContext> : IIdempotencyService
 Real registration from the Accounts service (`Accounts.Infrastructure/Extensions/Extensions.cs`):
 
 ```csharp
-services.AddQltSDBContext<AccountContext>(
+services.AddSiriusSDBContext<AccountContext>(
     conf => conf
         .SetDefaultSchema("Accounts")
         .WithIdempotency()
@@ -231,7 +231,7 @@ services.AddQltSDBContext<AccountContext>(
     })
 );
 
-services.AddMigration<AccountContext, QltDBContextSeed>();
+services.AddMigration<AccountContext, SiriusDBContextSeed>();
 
 services.AddIdempotencyEntityFramework<AccountContext>()   // also calls WithIdempotency()
     .ForApiRequests()
@@ -240,15 +240,15 @@ services.AddIdempotencyEntityFramework<AccountContext>()   // also calls WithIde
 services.AddTransactionalOutbox<AccountContext>(options =>   // also calls WithTransactionalOutbox()
 {
     options.RegisterEventTypes(
-        typeof(Qlt.Contracts.Accounts.AssemblyReference).Assembly,
-        typeof(Qlt.Contracts.Identity.AssemblyReference).Assembly,
-        typeof(Qlt.Contracts.Notifications.AssemblyReference).Assembly);
+        typeof(Sirius.Contracts.Accounts.AssemblyReference).Assembly,
+        typeof(Sirius.Contracts.Identity.AssemblyReference).Assembly,
+        typeof(Sirius.Contracts.Notifications.AssemblyReference).Assembly);
 });
 ```
 
-`AddQltSDBContext<TContext>` registers the concrete context and forwards `QltDBContext`, `ITransactionalUnitOfWork` and `IDomainEntityChangeTracker` (all scoped) to the same instance.
+`AddSiriusSDBContext<TContext>` registers the concrete context and forwards `SiriusDBContext`, `ITransactionalUnitOfWork` and `IDomainEntityChangeTracker` (all scoped) to the same instance.
 
-> `QltDbContextConfiguration` is a **process-wide singleton** obtained through `GetOrCreateQltDbContextConfiguration()`. Every builder (`AddQltSDBContext`, `AddIdempotencyEntityFramework`, `AddTransactionalOutbox`) mutates the same instance, so all `QltDBContext` types registered in one host share schema, assemblies and feature toggles.
+> `SiriusDbContextConfiguration` is a **process-wide singleton** obtained through `GetOrCreateSiriusDbContextConfiguration()`. Every builder (`AddSiriusSDBContext`, `AddIdempotencyEntityFramework`, `AddTransactionalOutbox`) mutates the same instance, so all `SiriusDBContext` types registered in one host share schema, assemblies and feature toggles.
 
 ---
 

@@ -1,0 +1,44 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+using Sirius.Platform.Messaging.Models;
+
+namespace Sirius.Platform.Persistence.Configurations;
+
+
+public static class OutboxMessageConfiguration
+{
+    public static void ConfigureTransactionalOutbox(this ModelBuilder builder)
+    {
+        builder.Entity<OutboxMessage>().Configure();
+    }
+
+    public static void Configure(this EntityTypeBuilder<OutboxMessage> entity)
+    {
+        entity.ToTable("OutboxMessage");
+
+        entity.HasKey(e => e.Id);
+
+        entity.Property(e => e.TypeName)
+            .IsRequired();
+
+        entity.Property(e => e.Payload)
+            .IsRequired();
+
+        entity.Property(e => e.CreatedAt)
+            .IsRequired();
+
+        entity.Property(e => e.TransactionId)
+            .IsRequired();
+
+        entity.Property(e => e.RowVersion)
+            .IsRowVersion()
+            .IsRequired();
+
+        entity.HasIndex(e => e.TransactionId);
+
+        entity.HasIndex(e => new { e.Status, e.CreatedAt });
+
+        entity.Ignore(e => e.DeserializedEvent);
+    }
+}

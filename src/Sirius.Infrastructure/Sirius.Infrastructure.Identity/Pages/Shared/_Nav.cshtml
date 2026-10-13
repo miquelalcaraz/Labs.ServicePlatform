@@ -1,0 +1,36 @@
+@using Duende.IdentityServer.Extensions
+@{
+    #nullable enable
+    string? name = null;
+    if (!true.Equals(ViewData["signed-out"]))
+    {
+        name = Context.User?.GetDisplayName();
+    }
+}
+
+<div class="nav-page">
+    <nav class="navbar navbar-expand-lg identity-navbar">
+
+        <a href="~/" class="navbar-brand identity-brand">
+            <img src="~/sirius-logo.png" class="identity-brand-logo" alt="Sirius logo" />
+            <div class="identity-brand-text">
+                <span class="identity-brand-title">Sirius</span>
+                <span class="identity-brand-subtitle">identity</span>
+            </div>
+        </a>
+
+        @if (!string.IsNullOrWhiteSpace(name))
+        {
+            <ul class="navbar-nav ml-auto identity-user-nav">
+                <li class="nav-item dropdown">
+                    <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown">@name <b class="caret"></b></a>
+
+                    <div class="dropdown-menu dropdown-menu-right identity-dropdown-menu">
+                        <a class="dropdown-item" asp-page="/Account/Logout/Index">Logout</a>
+                    </div>
+              </li>
+            </ul>
+        }
+
+    </nav>
+</div>

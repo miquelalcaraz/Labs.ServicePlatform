@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore.Storage;
 
-using Qlt.Platform.Messaging.Models;
-using Qlt.Platform.Messaging.Options;
-using Qlt.Platform.Messaging.Services;
-using Qlt.Platform.Persistence;
-using Qlt.Platform.Persistence.Configurations;
+using Sirius.Platform.Messaging.Models;
+using Sirius.Platform.Messaging.Options;
+using Sirius.Platform.Messaging.Services;
+using Sirius.Platform.Persistence;
+using Sirius.Platform.Persistence.Configurations;
 
 using Testcontainers.MsSql;
 

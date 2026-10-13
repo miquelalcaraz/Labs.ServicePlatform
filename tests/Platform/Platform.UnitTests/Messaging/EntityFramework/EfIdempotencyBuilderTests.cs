@@ -3,11 +3,11 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-using Qlt.Platform.Messaging.Builders;
-using Qlt.Platform.Messaging.IntegrationEvents;
-using Qlt.Platform.Messaging.Models;
-using Qlt.Platform.Messaging.Services;
-using Qlt.Platform.Persistence;
+using Sirius.Platform.Messaging.Builders;
+using Sirius.Platform.Messaging.IntegrationEvents;
+using Sirius.Platform.Messaging.Models;
+using Sirius.Platform.Messaging.Services;
+using Sirius.Platform.Persistence;
 
 using StackExchange.Redis;
 
@@ -156,5 +156,5 @@ public class BuilderTestDbContext : DbContext, ITransactionalUnitOfWork
     public void RollbackTransaction() => Database.CurrentTransaction?.Rollback();
     public Task RollbackTransactionAsync() => Database.CurrentTransaction?.RollbackAsync() ?? Task.CompletedTask;
     public int GetPendingChangesCount() => ChangeTracker.Entries().Count(e => e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted);
-    public IReadOnlyList<Qlt.Domain.SeedWork.Entity> GetEntitiesWithPendingEvents() => new List<Qlt.Domain.SeedWork.Entity>();
+    public IReadOnlyList<Sirius.Domain.SeedWork.Entity> GetEntitiesWithPendingEvents() => new List<Sirius.Domain.SeedWork.Entity>();
 }

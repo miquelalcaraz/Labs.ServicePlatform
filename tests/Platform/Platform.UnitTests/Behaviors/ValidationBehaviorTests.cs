@@ -3,9 +3,9 @@ using FluentValidation.Results;
 
 using MediatR;
 
-using Qlt.Domain.Behaviors;
-using Qlt.Domain.Exceptions;
-using Qlt.Platform;
+using Sirius.Domain.Behaviors;
+using Sirius.Domain.Exceptions;
+using Sirius.Platform;
 
 namespace Platform.UnitTests.Behaviors;
 

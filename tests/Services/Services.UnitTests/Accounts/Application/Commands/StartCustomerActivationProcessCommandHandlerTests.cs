@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
 
-using Qlt.Domain.SeedWork;
-using Qlt.Services.Accounts.Application.Commands;
-using Qlt.Services.Accounts.Domain.Models.CustomerActivationProcessAggregate;
-using Qlt.Services.Accounts.Domain.Repositories;
+using Sirius.Domain.SeedWork;
+using Sirius.Services.Accounts.Application.Commands;
+using Sirius.Services.Accounts.Domain.Models.CustomerActivationProcessAggregate;
+using Sirius.Services.Accounts.Domain.Repositories;
 
 namespace Services.UnitTests.Accounts.Application.Commands;
 

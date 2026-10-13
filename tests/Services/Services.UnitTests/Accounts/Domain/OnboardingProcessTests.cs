@@ -1,5 +1,5 @@
-using Qlt.Services.Accounts.Domain.Exceptions;
-using Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
+using Sirius.Services.Accounts.Domain.Exceptions;
+using Sirius.Services.Accounts.Domain.Models.OnboardingAggregate;
 
 namespace Services.UnitTests.Accounts.Domain;
 

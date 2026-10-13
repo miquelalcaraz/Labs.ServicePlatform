@@ -1,0 +1,11 @@
+@using Sirius.BackOfficeApp.Components.Pages
+<Router AppAssembly="@typeof(Program).Assembly" NotFoundPage="typeof(NotFound)">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="@routeData">
+            <NotAuthorized>
+                <RedirectToLogin IsAuthenticated="@context.User.Identity.IsAuthenticated" />
+            </NotAuthorized>
+            <Authorizing></Authorizing>
+        </AuthorizeRouteView>
+    </Found>
+</Router>

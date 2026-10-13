@@ -26,9 +26,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.EventBus.ServiceBus\Platform.EventBus.ServiceBus.csproj" />
-    <ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
-    <ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.Persistence.EntityFramework.Relational\Platform.Persistence.EntityFramework.Relational.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Platform\Sirius.Platform.EventBus.ServiceBus\Platform.EventBus.ServiceBus.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Platform\Sirius.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Platform\Sirius.Platform.Persistence.EntityFramework.Relational\Platform.Persistence.EntityFramework.Relational.csproj" />
   </ItemGroup>
 
   <ItemGroup>

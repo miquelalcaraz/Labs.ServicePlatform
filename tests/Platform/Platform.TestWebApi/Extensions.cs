@@ -4,12 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 using Platform.TestWebApi.Infrastructure;
 
-using Qlt.Domain.Behaviors;
-using Qlt.Platform.EventBus;
-using Qlt.Platform.EventBus.Builders;
-using Qlt.Platform.Messaging.Builders;
-using Qlt.Platform.Persistence.Builders;
-using Qlt.Platform.Persistence.Migrations;
+using Sirius.Domain.Behaviors;
+using Sirius.Platform.EventBus;
+using Sirius.Platform.EventBus.Builders;
+using Sirius.Platform.Messaging.Builders;
+using Sirius.Platform.Persistence.Builders;
+using Sirius.Platform.Persistence.Migrations;
 
 using System.Diagnostics.Contracts;
 using System.Reflection;
@@ -27,7 +27,7 @@ public static class Extensions
 
         services.AddHttpContextAccessor();
 
-        services.AddQltMediator(cfg =>
+        services.AddSiriusMediator(cfg =>
         {
             cfg.RegisterServicesFromAssembly(AssemblyReference.Assembly);
             cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly);
@@ -49,7 +49,7 @@ public static class Extensions
         var readConnectionString = builder.Configuration.GetConnectionString("TestDbReadonly")
             ?? connectionString;
 
-        services.AddQltSDBContext<TestDbContext>(
+        services.AddSiriusSDBContext<TestDbContext>(
             conf => conf
                 .SetDefaultSchema("test")
                 .RegisterModelsFromAssembly(Assembly.GetExecutingAssembly()),
@@ -59,7 +59,7 @@ public static class Extensions
             })
         );
 
-        services.AddQltReadDbContext<TestReadDbContext>(
+        services.AddSiriusReadDbContext<TestReadDbContext>(
                 conf => conf
                     .SetDefaultSchema("test")
                     .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),

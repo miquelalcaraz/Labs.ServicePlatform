@@ -2,9 +2,9 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Qlt.Infrastructure.Identity.Commands;
-using Qlt.Infrastructure.Identity.IntegrationEvents.EventHandling;
-using Qlt.Platform;
+using Sirius.Infrastructure.Identity.Commands;
+using Sirius.Infrastructure.Identity.IntegrationEvents.EventHandling;
+using Sirius.Platform;
 
 namespace Services.UnitTests.Identity.IntegrationEvents;
 

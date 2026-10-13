@@ -1,8 +1,8 @@
 using Platform.IntegrationTests.Infrastructure;
 
-using Qlt.Platform.Messaging.Models;
-using Qlt.Platform.Messaging.Options;
-using Qlt.Platform.Messaging.Services;
+using Sirius.Platform.Messaging.Models;
+using Sirius.Platform.Messaging.Options;
+using Sirius.Platform.Messaging.Services;
 
 namespace Platform.IntegrationTests.Messaging;
 

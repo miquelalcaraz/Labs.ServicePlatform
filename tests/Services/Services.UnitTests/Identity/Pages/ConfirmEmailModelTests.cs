@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 
-using Qlt.Contracts.Identity.IntegrationEvents;
-using Qlt.Infrastructure.Identity.Commands;
-using Qlt.Infrastructure.Identity.Models;
-using Qlt.Platform.Messaging.Services;
+using Sirius.Contracts.Identity.IntegrationEvents;
+using Sirius.Infrastructure.Identity.Commands;
+using Sirius.Infrastructure.Identity.Models;
+using Sirius.Platform.Messaging.Services;
 
 namespace Services.UnitTests.Identity.Pages;
 

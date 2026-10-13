@@ -1,5 +1,5 @@
-using Qlt.Services.Accounts.Application.Queries;
-using Qlt.Services.Accounts.Domain.Models.OnboardingAggregate;
+using Sirius.Services.Accounts.Application.Queries;
+using Sirius.Services.Accounts.Domain.Models.OnboardingAggregate;
 
 namespace Services.UnitTests.Accounts.Application.Queries;
 

@@ -1,8 +1,8 @@
-# QltS - Project Context & Architectural Principles
+# SiriusS - Project Context & Architectural Principles
 
 ## 🎯 Project Mission
 
-This repository contains the **foundational architecture** for the QltS system. The primary objective is to develop **stable base components** that:
+This repository contains the **foundational architecture** for the SiriusS system. The primary objective is to develop **stable base components** that:
 
 - ✅ **Minimize breaking changes** when business services are built on top
 - ✅ **Allow platform evolution** without drastically impacting existing services
@@ -35,16 +35,16 @@ We are building the architectural foundation **before** knowing all final techno
 
 ```
 ┌─────────────────────────────────────────────┐
-│  Qlt.Services.* (Business Logic)            │  ← Services built by teams
+│  Sirius.Services.* (Business Logic)            │  ← Services built by teams
 │       ↓ (Depends only on abstractions)      │
 ├─────────────────────────────────────────────┤
-│  Qlt.Platform.*.Abstractions                │  ← Stable contracts (NuGet)
+│  Sirius.Platform.*.Abstractions                │  ← Stable contracts (NuGet)
 │       ↓                                      │
 ├─────────────────────────────────────────────┤
-│  Qlt.Platform.* (Core Logic)                │  ← Can evolve
+│  Sirius.Platform.* (Core Logic)                │  ← Can evolve
 │       ↓                                      │
 ├─────────────────────────────────────────────┤
-│  Qlt.Platform.*.RabbitMQ / EventHub / etc.  │  ← Swappable implementations
+│  Sirius.Platform.*.RabbitMQ / EventHub / etc.  │  ← Swappable implementations
 └─────────────────────────────────────────────┘
 ```
 
@@ -52,7 +52,7 @@ We are building the architectural foundation **before** knowing all final techno
 
 ```
 src/
-├── Qlt.Platform/                       ← Infrastructure Components
+├── Sirius.Platform/                       ← Infrastructure Components
 │   ├── Platform.Core                   ← Result, Error, ValidationError
 │   ├── Platform.Telemetry              ← OpenTelemetry, ActivitySource, Meters
 │   ├── Platform.Messaging.Abstractions ← Stable contracts
@@ -68,19 +68,19 @@ src/
 │   ├── Platform.Infrastructure         ← Cross-cutting infrastructure
 │   └── Platform.ServiceDefaults        ← .NET Aspire service defaults
 │
-├── Qlt.Domain/                         ← DDD Building Blocks
+├── Sirius.Domain/                         ← DDD Building Blocks
 │   ├── Domain.Core                     ← Entity, ValueObject, IDomainEvent
 │   └── Domain.Application              ← Behaviors, Validation
 │
-├── Qlt.Services/                       ← Business Microservices
+├── Sirius.Services/                       ← Business Microservices
 │   ├── Services.Accounts               ← (Api, Application, Domain, Infrastructure, Contracts)
 │   └── Services.Notifications
 │
-├── Qlt.Infrastructure/                 ← Shared Infrastructure Services
+├── Sirius.Infrastructure/                 ← Shared Infrastructure Services
 │   ├── Infrastructure.Identity         ← IdentityServer, Tenants, Users
 │   └── Infrastructure.AppHost          ← .NET Aspire orchestrator
 │
-└── Qlt.WebApps/                        ← Frontend Applications
+└── Sirius.WebApps/                        ← Frontend Applications
     └── WebApps.BackOffice              ← Blazor BackOffice
 
 tests/
@@ -264,9 +264,9 @@ The base architecture is successful if:
 
 ### ADR-002: Namespaces Reflect Architectural Concerns
 **Decision:** 
-- `Qlt.Platform.*` = Technical infrastructure (messaging, persistence, telemetry)
-- `Qlt.Domain.*` = DDD patterns (Entity, ValueObject, Result, Events)
-- `Qlt.Services.*` = Business microservices
+- `Sirius.Platform.*` = Technical infrastructure (messaging, persistence, telemetry)
+- `Sirius.Domain.*` = DDD patterns (Entity, ValueObject, Result, Events)
+- `Sirius.Services.*` = Business microservices
 
 **Rationale:**
 - Clear separation of concerns
@@ -344,7 +344,7 @@ services.AddDomainEventTelemetryDecorator();
 **Decision:** Domain Events and Integration Events are dispatched by two separate pipeline behaviors. Domain events are dispatched by `DomainEventProcessorBehavior` WITHIN the active transaction (after `SaveChangesAsync`, before `CommitAsync`). Integration events are published by `IntegrationEventProcessorBehavior` AFTER transaction commit.
 
 **Context:**
-- Previously: Domain Events dispatched in `QltDBContext.SaveEntitiesAsync()` mixed with persistence logic
+- Previously: Domain Events dispatched in `SiriusDBContext.SaveEntitiesAsync()` mixed with persistence logic
 - Problem: Handler failures caused full transaction rollback of already-saved data, and single behavior mixed two concerns
 - Risk: Data inconsistency if dispatch and publishing were coupled
 
@@ -380,8 +380,8 @@ public interface IDomainEntityChangeTracker
     IReadOnlyList<Entity> GetEntitiesWithChanges();
 }
 
-// 2. QltDBContext - Implements IDomainEntityChangeTracker, reads directly from ChangeTracker
-public class QltDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityChangeTracker
+// 2. SiriusDBContext - Implements IDomainEntityChangeTracker, reads directly from ChangeTracker
+public class SiriusDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityChangeTracker
 {
     public IReadOnlyList<Entity> GetEntitiesWithChanges()
     {
@@ -474,7 +474,7 @@ public async Task Handle(OrganizationCreatedDomainEvent evt, CancellationToken c
 - ✅ **MOVED** `DomainEventsDispatcherExtension` to `Platform.Messaging`
 - ✅ **DELETED** `DomainEventsDispatcherExtension` from `Platform.Persistence.EntityFramework`
 - ✅ **SPLIT** `MessagingBehavior` into `DomainEventProcessorBehavior` + `IntegrationEventProcessorBehavior`
-- ✅ **REFACTORED** `QltDBContext` - Implements `IDomainEntityChangeTracker`, reads directly from ChangeTracker
+- ✅ **REFACTORED** `SiriusDBContext` - Implements `IDomainEntityChangeTracker`, reads directly from ChangeTracker
 - ✅ **CLEANED** `ITransactionalUnitOfWork` - Removed `GetPendingDomainEvents()`
 - ✅ Separation of Responsibilities: `ITransactionalUnitOfWork` = transactions, `IDomainEntityChangeTracker` = entity tracking
 - ✅ Layer Separation: Dispatch extension in `Platform.Messaging`, behaviors in `Platform.Messaging.EntityFramework`

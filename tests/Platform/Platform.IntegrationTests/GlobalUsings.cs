@@ -8,8 +8,8 @@ global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Options;
 
-global using Qlt.Platform.EventBus;
-global using Qlt.Platform.EventBus.Options;
-global using Qlt.Platform.Messaging.IntegrationEvents;
+global using Sirius.Platform.EventBus;
+global using Sirius.Platform.EventBus.Options;
+global using Sirius.Platform.Messaging.IntegrationEvents;
 
 global using Xunit;

@@ -7,8 +7,8 @@ using Asp.Versioning.Http;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 
-using Qlt.Services.Accounts.APIs;
-using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
+using Sirius.Services.Accounts.APIs;
+using Sirius.Services.Accounts.Domain.Models.CompanyAggregate;
 
 namespace Services.FunctionalTests.Identity;
 

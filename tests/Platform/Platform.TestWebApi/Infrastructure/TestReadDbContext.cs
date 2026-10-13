@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 
-using Qlt.Platform.Persistence;
-using Qlt.Platform.Persistence.Options;
+using Sirius.Platform.Persistence;
+using Sirius.Platform.Persistence.Options;
 
 namespace Platform.TestWebApi.Infrastructure;
 
-public class TestReadDbContext : QltReadDbContext
+public class TestReadDbContext : SiriusReadDbContext
 {
     public TestReadDbContext(
         DbContextOptions<TestDbContext> options,
-        QltReadDbContextConfiguration configuration)
+        SiriusReadDbContextConfiguration configuration)
         : base(options, configuration)
     {
     }

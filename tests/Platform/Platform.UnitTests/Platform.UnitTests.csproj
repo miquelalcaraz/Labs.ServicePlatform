@@ -31,11 +31,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.Core\Platform.Core.csproj" />
-    <ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.Messaging.Redis\Platform.Messaging.Redis.csproj" />
-    <ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
-    <ProjectReference Include="..\..\..\src\Qlt.Platform\Qlt.Platform.Persistence.EntityFramework.Relational\Platform.Persistence.EntityFramework.Relational.csproj" />
-    <ProjectReference Include="..\..\..\src\Qlt.Domain\Qlt.Domain.Application\Domain.Application.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Platform\Sirius.Platform.Core\Platform.Core.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Platform\Sirius.Platform.Messaging.Redis\Platform.Messaging.Redis.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Platform\Sirius.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Platform\Sirius.Platform.Persistence.EntityFramework.Relational\Platform.Persistence.EntityFramework.Relational.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Domain\Sirius.Domain.Application\Domain.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

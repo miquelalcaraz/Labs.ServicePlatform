@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<RootNamespace>Sirius.Platform.Messaging</RootNamespace>
+		<IsAotCompatible>true</IsAotCompatible>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\Sirius.Platform.EventBus\Platform.EventBus.csproj" />
+	  <ProjectReference Include="..\Sirius.Platform.Messaging\Platform.Messaging.csproj" />
+	  <ProjectReference Include="..\Sirius.Platform.Persistence.EntityFramework\Platform.Persistence.EntityFramework.csproj" />
+	  <ProjectReference Include="..\Sirius.Platform.Telemetry\Platform.Telemetry.csproj" />
+	</ItemGroup>
+ 
+</Project>

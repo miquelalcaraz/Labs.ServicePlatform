@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
 
-using Qlt.Platform.Messaging.IntegrationEvents;
-using Qlt.Platform.Messaging.Models;
-using Qlt.Platform.Messaging.Services;
+using Sirius.Platform.Messaging.IntegrationEvents;
+using Sirius.Platform.Messaging.Models;
+using Sirius.Platform.Messaging.Services;
 
 namespace Platform.UnitTests.Messaging;
 

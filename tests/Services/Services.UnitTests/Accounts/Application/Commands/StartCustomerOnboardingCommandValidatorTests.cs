@@ -1,6 +1,6 @@
-using Qlt.Services.Accounts.Application.Commands;
-using Qlt.Services.Accounts.Application.Validators;
-using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
+using Sirius.Services.Accounts.Application.Commands;
+using Sirius.Services.Accounts.Application.Validators;
+using Sirius.Services.Accounts.Domain.Models.CompanyAggregate;
 
 namespace Services.UnitTests.Accounts.Application.Commands;
 

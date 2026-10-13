@@ -25,11 +25,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Application\Accounts.Application.csproj" />
-    <ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Accounts\Infrastructure\Accounts.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\..\src\Qlt.Infrastructure\Qlt.Infrastructure.Identity\Infrastructure.Identity.csproj" />
-    <ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Notifications\Application\Notifications.Application.csproj" />
-    <ProjectReference Include="..\..\..\src\Qlt.Services\Qlt.Services.Notifications\Infrastructure\Notifications.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Services\Sirius.Services.Accounts\Application\Accounts.Application.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Services\Sirius.Services.Accounts\Infrastructure\Accounts.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Infrastructure\Sirius.Infrastructure.Identity\Infrastructure.Identity.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Services\Sirius.Services.Notifications\Application\Notifications.Application.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Services\Sirius.Services.Notifications\Infrastructure\Notifications.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

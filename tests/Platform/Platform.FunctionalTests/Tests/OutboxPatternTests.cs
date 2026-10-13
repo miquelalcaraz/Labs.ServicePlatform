@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Platform.TestWebApi.Controllers;
 using Platform.TestWebApi.Infrastructure;
 
-using Qlt.Platform.Messaging.Models;
+using Sirius.Platform.Messaging.Models;
 
 namespace Platform.FunctionalTests.Tests;
 

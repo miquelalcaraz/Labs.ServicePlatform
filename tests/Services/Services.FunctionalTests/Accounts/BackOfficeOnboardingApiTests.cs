@@ -10,11 +10,11 @@ using MediatR;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 
-using Qlt.Contracts.Identity.IntegrationEvents;
-using Qlt.Platform.Messaging.IntegrationEvents;
-using Qlt.Services.Accounts.APIs;
-using Qlt.Services.Accounts.Application.Queries;
-using Qlt.Services.Accounts.Domain.Models.CompanyAggregate;
+using Sirius.Contracts.Identity.IntegrationEvents;
+using Sirius.Platform.Messaging.IntegrationEvents;
+using Sirius.Services.Accounts.APIs;
+using Sirius.Services.Accounts.Application.Queries;
+using Sirius.Services.Accounts.Domain.Models.CompanyAggregate;
 
 namespace Services.FunctionalTests.Accounts;
 

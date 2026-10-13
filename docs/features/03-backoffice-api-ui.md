@@ -79,7 +79,7 @@ Detail responses are designed for the UI, so the display logic lives in the quer
 | `Steps` | Timeline of all steps with their state (completed, current, pending, failed) |
 | `Summary`, `References` | Snapshot data (company, plan, admin email) and related ids (subscription, tenant, company, admin user, membership) |
 | `LastError` | Error code, message, failed step and timestamp |
-| `Actions` | Flags the UI uses to enable buttons: onboarding `CanRetry` / `CanRefresh` / `CanOpenCustomer`; activation `CanRetry` / `CanResendActivation` |
+| `Actions` | Flags the UI uses to enable buttons: onboarding `CanRetry` / `CanRefresh` / `CanOpenCustomer`; activation `CanRetry` / `CanResend` / `IsCompleted` |
 
 Errors use the common `ApiErrorResponse` contract (`code`, `message`, `traceId`, optional `errors` per field).
 
@@ -111,7 +111,7 @@ The matrix is covered by positive and negative functional tests (`BackOfficeOnbo
 | `/onboarding/{id}` | Onboarding detail | Status, progress, step timeline, last error; **Retry** when `CanRetry` |
 | `/onboarding/{id}/result` | Onboarding result | Created subscription, tenant, owner company, admin user and membership |
 | `/activation` | Activation list | Paged, filterable grid of activation processes |
-| `/activation/{id}` | Activation detail | Status, progress, step timeline; **Retry** / **Resend** according to `Actions` |
+| `/activation/{id}` | Activation detail | Status, progress, step timeline; **Retry** / **Resend** according to `Actions`, **Refresh** while not `Completed` / `Failed` |
 | `/dashboard`, `/profile` | Shell pages | Template pages (placeholder dashboard cards, profile form); not part of the sample flow |
 
 All pages require an authenticated user (`[Authorize]`); the API enforces the role policies.

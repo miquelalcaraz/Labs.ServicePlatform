@@ -3,11 +3,11 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-using Qlt.Platform.Messaging.IntegrationEvents;
-using Qlt.Platform.Messaging.Models;
-using Qlt.Platform.Messaging.Options;
-using Qlt.Platform.Messaging.Services;
-using Qlt.Platform.Persistence;
+using Sirius.Platform.Messaging.IntegrationEvents;
+using Sirius.Platform.Messaging.Models;
+using Sirius.Platform.Messaging.Options;
+using Sirius.Platform.Messaging.Services;
+using Sirius.Platform.Persistence;
 
 namespace Platform.UnitTests.Messaging.EntityFramework;
 

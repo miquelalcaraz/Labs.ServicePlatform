@@ -1,6 +1,6 @@
-using Qlt.Services.Accounts.Domain.Events;
-using Qlt.Services.Accounts.Domain.Exceptions;
-using Qlt.Services.Accounts.Domain.Models.CustomerActivationProcessAggregate;
+using Sirius.Services.Accounts.Domain.Events;
+using Sirius.Services.Accounts.Domain.Exceptions;
+using Sirius.Services.Accounts.Domain.Models.CustomerActivationProcessAggregate;
 
 namespace Services.UnitTests.Accounts.Domain;
 

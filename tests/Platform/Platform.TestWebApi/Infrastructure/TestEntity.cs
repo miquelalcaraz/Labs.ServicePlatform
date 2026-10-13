@@ -1,6 +1,6 @@
 using MediatR;
 
-using Qlt.Domain.SeedWork;
+using Sirius.Domain.SeedWork;
 
 namespace Platform.TestWebApi.Infrastructure;
 

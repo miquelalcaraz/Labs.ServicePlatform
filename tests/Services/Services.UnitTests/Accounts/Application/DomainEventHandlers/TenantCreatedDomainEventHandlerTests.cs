@@ -1,11 +1,11 @@
 using Microsoft.Extensions.Logging;
 
-using Qlt.Contracts.Accounts.IntegrationEvents;
-using Qlt.Platform.Messaging.Services;
-using Qlt.Services.Accounts.Application.DomainEventHandlers;
-using Qlt.Services.Accounts.Domain.Events;
-using Qlt.Services.Accounts.Domain.Models.TenantAggregate;
-using Qlt.Services.Accounts.Domain.Repositories;
+using Sirius.Contracts.Accounts.IntegrationEvents;
+using Sirius.Platform.Messaging.Services;
+using Sirius.Services.Accounts.Application.DomainEventHandlers;
+using Sirius.Services.Accounts.Domain.Events;
+using Sirius.Services.Accounts.Domain.Models.TenantAggregate;
+using Sirius.Services.Accounts.Domain.Repositories;
 
 namespace Services.UnitTests.Accounts.Application.DomainEventHandlers;
 

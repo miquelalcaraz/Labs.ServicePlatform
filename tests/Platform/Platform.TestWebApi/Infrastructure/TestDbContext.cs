@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 
-using Qlt.Platform.Persistence;
-using Qlt.Platform.Persistence.Options;
+using Sirius.Platform.Persistence;
+using Sirius.Platform.Persistence.Options;
 
 namespace Platform.TestWebApi.Infrastructure;
 
-public class TestDbContext : QltDBContext
+public class TestDbContext : SiriusDBContext
 {
     public TestDbContext(
         DbContextOptions<TestDbContext> options,
-        QltDbContextConfiguration configuration)
+        SiriusDbContextConfiguration configuration)
         : base(options, configuration)
     {
     }

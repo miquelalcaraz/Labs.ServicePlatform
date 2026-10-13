@@ -45,7 +45,7 @@ public sealed class BuildingBlocksFixture : WebApplicationFactory<Program>, IAsy
                     .RunAsEmulator(emulator => emulator
                     .WithLifetime(ContainerLifetime.Persistent));
 
-        var eventBusTopic = AzureServiceBus.AddServiceBusTopic("qlt-event-bus");
+        var eventBusTopic = AzureServiceBus.AddServiceBusTopic("sirius-event-bus");
         eventBusTopic.AddServiceBusSubscription("platform-sub", subscriptionName: "Platform");
 
         _app = appBuilder.Build();

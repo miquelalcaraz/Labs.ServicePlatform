@@ -144,12 +144,12 @@ When both are registered, the EF builder **unwraps** the Redis decorator and rep
 ```mermaid
 flowchart LR
     BUS["Event bus<br/>(resolves IIntegrationEventHandler#lt;T#gt;)"] --> TEL
-    TEL["TelemetryIntegrationEventHandlerDecorator<br/><i>outermost — added by AddQltMediator</i>"] --> IDEM
+    TEL["TelemetryIntegrationEventHandlerDecorator<br/><i>outermost — added by AddSiriusMediator</i>"] --> IDEM
     IDEM["IdempotencyIntegrationEventEfDecorator<br/><i>added by AddIdempotencyEntityFramework</i>"] --> H
     H["Concrete handler<br/><i>registered by AddSubscription</i>"]
 ```
 
-Scrutor decorates existing registrations in call order (last decorator = outermost). Services therefore call `AddSubscription` first, then the idempotency builders, then `AddQltMediator`.
+Scrutor decorates existing registrations in call order (last decorator = outermost). Services therefore call `AddSubscription` first, then the idempotency builders, then `AddSiriusMediator`.
 
 ### EF Decorator Flow
 
@@ -218,7 +218,7 @@ services.AddIdempotencyEntityFramework<AccountContext>()   // decorates it with 
     .ForIntegrationEventHandlers();
 ```
 
-`EfIdempotencyBuilder` checks whether an `IIdempotencyService` is already registered: if so it **decorates** it (`IdempotencyEfService(context, inner, logger)`), otherwise it registers a database-only `IdempotencyEfService`. It also enables `WithIdempotency()` on the shared `QltDbContextConfiguration`.
+`EfIdempotencyBuilder` checks whether an `IIdempotencyService` is already registered: if so it **decorates** it (`IdempotencyEfService(context, inner, logger)`), otherwise it registers a database-only `IdempotencyEfService`. It also enables `WithIdempotency()` on the shared `SiriusDbContextConfiguration`.
 
 `IdempotencyRedisService` needs an `IConnectionMultiplexer`; services get it from Aspire with `builder.AddRedisClient("cache")` (or use the `AddRedisIdempotencyCache(configuration, redisConnectionString)` overload).
 
@@ -255,7 +255,7 @@ Key format: `{KeyPrefix}{scope}:{id}` for requests and `{KeyPrefix}{scope}:{id}:
 
 ### Resilience
 
-Redis failures are non-fatal: every Redis call catches exceptions, logs a warning and falls back (`ExistsAsync` returns `false`). The database is the source of truth, and `QltDBContext` translates primary-key violations on `IdempotencyEntry` into `UniqueConstraintViolationException` as a final safety net.
+Redis failures are non-fatal: every Redis call catches exceptions, logs a warning and falls back (`ExistsAsync` returns `false`). The database is the source of truth, and `SiriusDBContext` translates primary-key violations on `IdempotencyEntry` into `UniqueConstraintViolationException` as a final safety net.
 
 ---
 

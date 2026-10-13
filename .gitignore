@@ -164,7 +164,7 @@ AutoTest.Net/
 .sass-cache/
 
 # Radzen.Blazor - compiled CSS from SCSS (build artifacts, canonical CSS lives in wwwroot/css/)
-src/Qlt.WebApps/Radzen.Blazor/themes/*.css
+src/Sirius.WebApps/Radzen.Blazor/themes/*.css
 
 # Installshield output folder
 [Ee]xpress/

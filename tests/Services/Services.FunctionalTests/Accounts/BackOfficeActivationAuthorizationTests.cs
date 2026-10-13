@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 using Asp.Versioning;
 using Asp.Versioning.Http;
 
-using static Qlt.Services.Accounts.Authorization.AccountsAuthorizationPolicies;
+using static Sirius.Services.Accounts.Authorization.AccountsAuthorizationPolicies;
 
 namespace Services.FunctionalTests.Accounts;
 

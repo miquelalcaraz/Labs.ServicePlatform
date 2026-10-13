@@ -1,8 +1,8 @@
 using Platform.TestWebApi;
 
-using Qlt.Platform.Builders;
-using Qlt.Platform.Middleware;
-using Qlt.Platform.ServiceDefaults;
+using Sirius.Platform.Builders;
+using Sirius.Platform.Middleware;
+using Sirius.Platform.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
 

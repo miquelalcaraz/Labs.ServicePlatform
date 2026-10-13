@@ -1,7 +1,7 @@
 using Platform.TestWebApi.Infrastructure;
 
-using Qlt.Platform;
-using Qlt.Platform.Messaging.Commands;
+using Sirius.Platform;
+using Sirius.Platform.Messaging.Commands;
 
 namespace Platform.TestWebApi.Commands;
 

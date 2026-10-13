@@ -1,8 +1,8 @@
 using Platform.TestWebApi.Infrastructure;
 using Platform.TestWebApi.IntegrationEvents;
 
-using Qlt.Platform.Messaging.DomainEvents;
-using Qlt.Platform.Messaging.Services;
+using Sirius.Platform.Messaging.DomainEvents;
+using Sirius.Platform.Messaging.Services;
 
 namespace Platform.TestWebApi.DomainEventHandlers;
 
