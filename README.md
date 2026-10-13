@@ -9,7 +9,7 @@ A **reusable base architecture for event-driven .NET services** on **.NET 10** a
 
 The platform is exercised by a [sample B2B domain](docs/features/README.md) (customer onboarding and activation) that proves it works end to end across several services.
 
-**Start here:** [Principle](#-design-principle) · [Isolation & abstractions](#-isolation-and-abstractions) · [Building blocks](#-building-blocks) · [Reference implementation](#-reference-implementation) · [AI-assisted development](#-ai-assisted-development) · [Run locally](#-running-the-project) · [Docs](#-documentation)
+**Start here:** [Principle](#-design-principle) · [Isolation & abstractions](docs/architecture/README.md#isolation-and-abstractions) · [Building blocks](#-building-blocks) · [Reference implementation](#-reference-implementation) · [AI-assisted development](#-ai-assisted-development) · [Run locally](#-running-the-project) · [Docs](#-documentation)
 
 > [!NOTE]
 > **Continuation of [Labs.Aspire.uSLearn](https://github.com/miquelalcaraz/Labs.Aspire.uSLearn).**
@@ -71,98 +71,13 @@ The building blocks were designed before every technology decision was final (ev
 | **One registration point** | `AddSiriusMediator(...)` wires the whole pipeline in a fixed order, so services cannot get it wrong |
 | **Opt-in evolution** | New capabilities are added as new behaviors, decorators or implementations; existing services keep working unchanged |
 
-The full rationale, decision framework and ADRs are in [Principles & ADRs](docs/architecture/00-principles-and-adrs.md).
-
----
-
-## 🧩 Isolation and Abstractions
-
-Each project knows as little as possible, and dependencies only point towards more stable, more abstract projects. Business code (aggregates, handlers) only uses level-2 contracts; each service's Infrastructure project references the level-4 implementations just to register them. Services never reference each other — they communicate through integration events published in `Sirius.Contracts.*` projects.
-
-```mermaid
-%%{init: {"themeVariables": {"fontSize": "11px"}, "flowchart": {"nodeSpacing": 12, "rankSpacing": 25, "padding": 4}}}%%
-flowchart BT
-    subgraph F[" "]
-        LF["<b>1. Foundation</b><br/>no project dependencies"]:::lvl
-        DC["Domain.Core"]
-        PC["Platform.Core"]
-        TEL["Platform.Telemetry"]
-    end
-
-    subgraph C[" "]
-        LC["<b>2. Abstractions</b><br/>no EF providers, no transports"]:::lvl
-        ABS["Messaging.Abstractions<br/><i>contracts only</i>"]
-        EB["EventBus<br/><i>IEventBus</i>"]
-        PEF["Persistence.EntityFramework<br/><i>EF abstractions, no provider</i>"]
-    end
-
-    subgraph L[" "]
-        LL["<b>3. Core logic</b><br/>persistence-ignorant"]:::lvl
-        MSG["Messaging<br/><i>behaviors, decorators, POCOs</i>"]
-        DA["Domain.Application<br/><i>logging, validation</i>"]
-    end
-
-    subgraph I[" "]
-        LI["<b>4. Implementations</b><br/>swappable"]:::lvl
-        RED["Messaging.Redis"]
-        MEF["Messaging.EntityFramework<br/><i>generic TContext</i>"]
-        SB["EventBus.ServiceBus"]
-        RMQ["EventBus.RabbitMQ"]
-        REL["Persistence.EF.Relational<br/><i>only project with DB providers</i>"]
-    end
-
-    ABS ==> DC
-    ABS ==> PC
-    PEF ==> TEL
-    MSG ==> ABS
-
-    RED --> MSG
-    MEF --> MSG
-    SB --> EB
-    RMQ --> EB
-    REL --> PEF
-
-    LC ~~~ LF
-    LL ~~~ LC
-    LI ~~~ LL
-
-    classDef lvl fill:none,stroke:none,text-align:left
-```
-
-### Swap points
-
-| Concern | Abstraction | Implementations | What changes in a service when swapping |
-|---|---|---|---|
-| Event bus | `IEventBus`, `IIntegrationEventHandler<T>` | Azure Service Bus, RabbitMQ | One registration line (`AddServiceBusEventBus` → `AddRabbitMqEventBus`) and the project reference — handlers and events are untouched |
-| Idempotency store | `IIdempotencyService` | EF Core (transactional, source of truth) decorating Redis (fast path) | Builder calls only (`AddIdempotencyEntityFramework`, `AddRedisIdempotencyCache`) |
-| Outbox | `IEventBusOutboxService` | EF Core outbox + `OutboxProcessor` | None — domain event handlers call `AddAndSaveEventAsync` |
-| Persistence | `ITransactionalUnitOfWork`, `IRepository<T>` | `SiriusDBContext` / `SiriusReadDbContext` (relational) | The service's `DbContext` base class; a new backend would be a new `Platform.Persistence.*` project |
-| Telemetry | Behaviors, decorators, `INotificationPublisher` | OpenTelemetry | None — registered by `AddSiriusMediator` |
-
-Full dependency rules: [Messaging & persistence layers](docs/architecture/01-messaging-persistence-layers.md).
+The full rationale, decision framework and ADRs are in [Principles & ADRs](docs/architecture/00-principles-and-adrs.md). How the projects are layered and where each technology can be swapped is shown in [Isolation and abstractions](docs/architecture/README.md#isolation-and-abstractions).
 
 ---
 
 ## 🧱 Building Blocks
 
-| Project | Responsibility | Docs |
-|---|---|---|
-| `Domain.Core` | DDD seed work: entities, value objects, domain events | [Domain events](docs/architecture/03-domain-events-consistency.md) |
-| `Domain.Application` | Logging and validation behaviors | [Pipeline](docs/architecture/02-command-pipeline.md) |
-| `Platform.Core` | `Result` / `Error` (railway-oriented) | [Pipeline](docs/architecture/02-command-pipeline.md) |
-| `Platform.Messaging.Abstractions` | Command, query, event and service contracts | [Layers](docs/architecture/01-messaging-persistence-layers.md) |
-| `Platform.Messaging` | Idempotency and telemetry behaviors, POCOs | [Idempotency](docs/architecture/04-idempotency.md) |
-| `Platform.Messaging.EntityFramework` | `AddSiriusMediator`, transactions, outbox | [Outbox](docs/architecture/05-transactional-outbox.md) |
-| `Platform.Messaging.Redis` | Redis fast path for idempotency | [Idempotency](docs/architecture/04-idempotency.md) |
-| `Platform.Persistence.EntityFramework` | EF Core abstractions (unit of work) | [Layers](docs/architecture/01-messaging-persistence-layers.md) |
-| `Platform.Persistence.EntityFramework.Relational` | Write/read `DbContext`s, mappings, migrations | [Read model](docs/architecture/08-cqrs-read-model.md) |
-| `Platform.EventBus` | `IEventBus` abstraction | [Event bus](docs/architecture/07-event-bus.md) |
-| `Platform.EventBus.ServiceBus` | Azure Service Bus transport (default) | [Event bus](docs/architecture/07-event-bus.md) |
-| `Platform.EventBus.RabbitMQ` | RabbitMQ transport (alternative) | [Event bus](docs/architecture/07-event-bus.md) |
-| `Platform.Telemetry` | OpenTelemetry sources and meters | [Telemetry](docs/architecture/06-telemetry.md) |
-| `Platform.ServiceDefaults` | Aspire defaults, JWT auth, OpenAPI | [Configuration](docs/developer-guide/01-service-configuration.md) |
-| `Platform.WebApi` | `Result` → HTTP, exception middleware | [Pipeline](docs/architecture/02-command-pipeline.md#http-mapping) |
-| `Platform.Infrastructure` | Current user context (`IUserHttpContext`) | [Configuration](docs/developer-guide/01-service-configuration.md) |
+The platform is split into 16 small projects, each with a single responsibility. The [project list, dependency tiers and swap points](docs/architecture/README.md#isolation-and-abstractions) are in the architecture overview.
 
 ### The command pipeline
 
