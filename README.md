@@ -25,21 +25,21 @@ The blocks are exercised by a [sample B2B domain](docs/features/README.md) (cust
 
 ```mermaid
 %%{init: {"themeVariables": {"fontSize": "12px"}, "flowchart": {"nodeSpacing": 15, "rankSpacing": 30, "padding": 6}}}%%
-flowchart TB
+flowchart LR
     subgraph S["Business services · what teams write"]
-        direction LR
+        direction TB
         H["Aggregates · Commands · Queries<br/>Domain & integration event handlers"]
     end
 
     subgraph A["Contracts · stable abstractions"]
-        direction LR
+        direction TB
         A1["ICommand / IQuery<br/>Result · Error"]
         A2["IDomainEventHandler<br/>IIntegrationEventHandler"]
         A3["IRepository · IUnitOfWork<br/>IEventBusOutboxService"]
     end
 
     subgraph P["Platform logic · applied automatically"]
-        direction LR
+        direction TB
         P1["Pipeline<br/>logging · validation · transaction"]
         P2["Idempotency<br/>commands & consumers"]
         P3["Outbox &<br/>domain event dispatch"]
@@ -47,7 +47,7 @@ flowchart TB
     end
 
     subgraph T["Technology adapters · swappable"]
-        direction LR
+        direction TB
         T1["Azure Service Bus / RabbitMQ"]
         T2["EF Core + SQL Server"]
         T3["Redis"]
@@ -55,7 +55,7 @@ flowchart TB
     end
 
     S -- "depends only on" --> A
-    P -. "implements & decorates" .-> A
+    A <-. "implements & decorates" .- P
     P -- "uses" --> T
 ```
 
