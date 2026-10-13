@@ -9,7 +9,7 @@ This repository is licensed under the [MIT License](LICENSE). It builds on the w
 
 | Component | Used by | License model | What it means for you |
 |---|---|---|---|
-| [Duende IdentityServer](https://duendesoftware.com/products/identityserver) 7.x | `Qlt.Infrastructure.Identity` | Commercial license; free for development and testing; a free Community Edition exists for qualifying organizations | Running it in production requires a license that fits your organization. See [Duende licensing](https://duendesoftware.com/products/identityserver#pricing). |
+| [Duende IdentityServer](https://duendesoftware.com/products/identityserver) 8.x | `Qlt.Infrastructure.Identity` | Commercial license; free for development and testing; a free Community Edition exists for qualifying organizations | Running it in production requires a license that fits your organization. See [Duende licensing](https://duendesoftware.com/products/identityserver#pricing). |
 | [MediatR](https://github.com/LuckyPennySoftware/MediatR) 13+ | Platform messaging pipeline | Dual license (Reciprocal Public License 1.5 or commercial), license key required for commercial use; free community edition for qualifying organizations | Configure your own license key if your use requires one. See [Lucky Penny Software](https://luckypennysoftware.com). |
 | [FluentAssertions](https://xceed.com/fluent-assertions/) 8.x | Test projects only | Xceed Community License: free for non-commercial use; commercial use requires a paid license | Not shipped with the application. Commercial users should license it or pin to 7.x (Apache-2.0). |
 
