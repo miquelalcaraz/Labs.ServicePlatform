@@ -59,11 +59,9 @@ flowchart LR
     P -- "uses" --> T
 ```
 
-Business code talks only to contracts. The platform implements and decorates those contracts — pipeline, idempotency, outbox, telemetry — and is the only layer that touches concrete technology, which can be swapped underneath.
-
 > **"Platform evolves, services sleep peacefully."**
 
-The building blocks were designed before every technology decision was final (event bus transport, persistence backend, caching). Instead of betting on one, each concern sits behind an abstraction, and business services depend **only** on those abstractions:
+The building blocks were designed before every technology decision was final (event bus transport, persistence backend, caching). Instead of betting on one, business code talks **only** to contracts; the platform implements and decorates them — pipeline, idempotency, outbox, telemetry — and is the only layer that touches concrete technology, which can be swapped underneath:
 
 | Strategy | How it shows up in the code |
 |---|---|
@@ -79,7 +77,7 @@ The full rationale, decision framework and ADRs are in [Principles & ADRs](docs/
 
 ## 🧩 Isolation and Abstractions
 
-Each project knows as little as possible, and dependencies only point towards more stable, more abstract projects. Business services reference level 2 (contracts) and get levels 3–4 wired by the platform. Services never reference each other — they communicate through integration events published in `Sirius.Contracts.*` projects.
+Each project knows as little as possible, and dependencies only point towards more stable, more abstract projects. Business code (aggregates, handlers) only uses level-2 contracts; each service's Infrastructure project references the level-4 implementations just to register them. Services never reference each other — they communicate through integration events published in `Sirius.Contracts.*` projects.
 
 ```mermaid
 %%{init: {"themeVariables": {"fontSize": "11px"}, "flowchart": {"nodeSpacing": 12, "rankSpacing": 25, "padding": 4}}}%%
@@ -275,7 +273,7 @@ In Claude Code the skills are picked up automatically from `.claude/skills/` whe
 ```
 src/
  ├── Sirius.Domain/            → Domain.Core, Domain.Application (DDD seed work and behaviors)   ┐
- ├── Sirius.Platform/          → Platform.* building blocks                                    ┘ building blocks
+ ├── Sirius.Platform/          → Platform.* building blocks                                    ┘ platform
  ├── Sirius.Contracts/         → Integration event contracts shared between services          ┐
  ├── Sirius.Services/                                                                          │
  │    ├── Accounts/            → Api, Application, Domain, Infrastructure                      │
@@ -391,8 +389,8 @@ This is an evolving reference, not a finished product. Known limitations of the 
 - **Audit log** — entities get automatic `CreatedAt`/`UpdatedAt` and an optimistic concurrency `RowVersion`. A full audit log (`AuditLog` entity) is designed but not wired yet; see the [backlog](docs/backlog/audit-log-proposal.md).
 - **Authorization** — there is no generic authorization behavior in the pipeline; endpoints use ASP.NET Core authorization policies.
 - **Delivery guarantees** — the outbox and idempotent consumers protect the implemented paths; they do not provide end-to-end exactly-once delivery.
-- **Sample shortcuts** — emails are only logged, the activation link carries no confirmation token, and APIs disable audience validation. See [Simplifications in the sample](docs/features/02-onboarding-activation-workflow.md#simplifications-in-the-sample).
-- **Development-only security settings** — IdentityServer clients use hard-coded secrets and `RequirePkce = false`, the Scalar UI clients use the implicit flow, JWT bearer validation runs with `RequireHttpsMetadata = false`, and the BackOffice client also allows a fixed `https://localhost:5001` redirect URI. They keep the local setup simple; a real deployment needs PKCE, secrets from a vault and HTTPS metadata.
+- **Sample shortcuts** — emails are only logged and the activation link carries no confirmation token. See [Simplifications in the sample](docs/features/02-onboarding-activation-workflow.md#simplifications-in-the-sample).
+- **Development-only security settings** — IdentityServer clients use hard-coded secrets and `RequirePkce = false`, the Scalar UI clients use the implicit flow, JWT bearer validation runs with `RequireHttpsMetadata = false` and `ValidateAudience = false`, and the BackOffice client also allows a fixed `https://localhost:5001` redirect URI. They keep the local setup simple; a real deployment needs PKCE, secrets from a vault, HTTPS metadata and audience validation.
 
 ---
 
