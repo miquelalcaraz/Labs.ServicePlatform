@@ -189,6 +189,8 @@ Meter `Sirius.Domain.Application` (version `1.0.0`):
 | Idempotency | `application.idempotency.check_duration`, `application.idempotency.duplicate_commands`, `application.idempotency.duplicates_detected` | `IdempotencyBehavior`, idempotency decorators |
 | Outbox | `application.outbox.events_saved`, `application.outbox.state_changes`, `application.outbox.events_failed`, `application.outbox.operation_duration`, `application.outbox.batch_size` | outbox services (see [05-transactional-outbox.md](05-transactional-outbox.md#telemetry)) |
 
+`application.transactions.duration` carries `command_type` and `success`. When a command returns a failed `Result`, `TransactionBehavior` rolls back and records the duration with `success = false` and `rollback_reason = result_failure`. The `Transaction {Command}` activity gets `transaction.rolled_back = true`, `transaction.rollback_reason = result_failure` and `error.code`, but its status is not set to `Error`, because a business failure is an expected outcome. Exceptions still set status `Error`.
+
 Meter `Sirius.Platform.Persistence.Migrations`: `persistence.migrations.executed`, `persistence.migrations.duration` (activities `Migration operation {Context}`, `Migrating {Context}`, `Seeding {Context}`).
 
 ---

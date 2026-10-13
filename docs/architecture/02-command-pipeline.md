@@ -194,12 +194,19 @@ sequenceDiagram
         H-->>DEP: Result
         DEP->>DEP: dispatch domain events until none remain
         DEP-->>TX: Result
-        TX->>DB: CommitTransactionAsync() (final SaveChanges + COMMIT)
-        DB-->>TX: LastCommittedTransactionId set
-        TX-->>IEP: Result
-        IEP->>IEP: PublishEventsThroughEventBusAsync(transactionId)
-        IEP-->>IDM: Result
-        IDM->>IDM: MarkAsCompletedAsync (cache)
+        alt Result.IsSuccess
+            TX->>DB: CommitTransactionAsync() (final SaveChanges + COMMIT)
+            DB-->>TX: LastCommittedTransactionId set
+            TX-->>IEP: Result
+            IEP->>IEP: PublishEventsThroughEventBusAsync(transactionId)
+            IEP-->>IDM: Result
+            IDM->>IDM: MarkAsCompletedAsync (cache)
+        else Result.IsFailure (validation or business error)
+            TX->>DB: ROLLBACK
+            TX-->>IEP: Result (failure)
+            IEP-->>IDM: Result (nothing to publish)
+            IDM->>DB: DiscardAsync (detach IdempotencyEntry, delete cache key)
+        end
     end
     IDM-->>LOG: Result
     LOG-->>API: Result
@@ -272,8 +279,11 @@ public interface IDomainEntityChangeTracker
 1. `TransactionBehavior` returns immediately for non-commands. If a transaction is already active it tags the activity as nested and just calls `next()`.
 2. Otherwise it runs inside `CreateExecutionStrategy().ExecuteAsync(...)` and calls `BeginTransactionAsync()`.
 3. Inner pipeline runs: validation → command handler → `SaveChangesAsync()` → domain event dispatch.
-4. `TransactionBehavior` records `GetPendingChangesCount()` and calls `CommitTransactionAsync()`, which applies audit timestamps, performs a final `SaveChangesAsync()`, commits, and sets `LastCommittedTransactionId`. Any failure rolls back and rethrows.
-5. `IntegrationEventProcessorBehavior` reads the transaction ID and publishes the outbox events for that transaction.
+4. If the response is a failed `Result` (validation or business error), `TransactionBehavior` rolls the transaction back and returns the failure: nothing written by the handler — business data, outbox rows or the `IdempotencyEntry` — is persisted. The activity is tagged `transaction.rolled_back = true` (see [Telemetry](06-telemetry.md)).
+5. Otherwise it records `GetPendingChangesCount()` and calls `CommitTransactionAsync()`, which applies audit timestamps, performs a final `SaveChangesAsync()`, commits, and sets `LastCommittedTransactionId`. An exception rolls back and rethrows.
+6. `IntegrationEventProcessorBehavior` reads the transaction ID and publishes the outbox events for that transaction. After a rollback there is no current transaction and `LastCommittedTransactionId` is not set, so nothing is published.
+
+A nested command (sent while a transaction is already active, e.g. from an integration event handler) never commits or rolls back on its own; the owner of the transaction decides. See [Known Gaps](#known-gaps).
 
 `SiriusDBContext.SaveChangesAsync` also sets `CreatedAt` (added) / `UpdatedAt` (modified) on every `Entity` and converts unique-constraint violations into `UniqueConstraintViolationException`.
 
@@ -297,7 +307,7 @@ public interface IDomainEntityChangeTracker
 
 | Area | Details |
 |---|---|
-| Failed `Result` is committed | `TransactionBehavior` commits whenever no exception is thrown. A validation or business failure returned as `Result.Failure` still commits the transaction — including the `IdempotencyEntry` added by `IdempotencyBehavior` — so a retry with the same `RequestId` is treated as a duplicate. |
+| Failed nested command is not rolled back | A command that runs inside a transaction it does not own (e.g. sent from an integration event handler) is not rolled back when it returns a failed `Result`. Its idempotency entry is discarded, but other changes it tracked are committed if the outer handler continues. No handler triggers this today. |
 | Telemetry scope | Command/query telemetry behaviors are innermost; their duration covers the handler only (not validation, transaction or domain event dispatch). |
 | HTTP status mapping | `ToHttpResult()` maps every failure (including `Error.NotFound`, `Error.Conflict`, `Error.Unauthorized`) to `400 Bad Request`. |
 | Authorization behavior | No authorization behavior in the pipeline; authorization is enforced at endpoint level (policies). |

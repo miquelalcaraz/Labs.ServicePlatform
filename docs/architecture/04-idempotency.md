@@ -27,6 +27,7 @@ public interface IIdempotencyService
     Task<bool> ExistsAsync(IdempotencyKey key);
     Task MarkAsProcessingAsync(IdempotencyKey key, string? typeName = null);
     Task MarkAsCompletedAsync(IdempotencyKey key);
+    Task DiscardAsync(IdempotencyKey key);   // undo MarkAsProcessingAsync after a failure
 }
 ```
 
@@ -50,6 +51,7 @@ classDiagram
         +ExistsAsync(key) Task~bool~
         +MarkAsProcessingAsync(key, typeName) Task
         +MarkAsCompletedAsync(key) Task
+        +DiscardAsync(key) Task
     }
     class IdempotencyRedisService {
         Platform.Messaging.Redis
@@ -115,12 +117,20 @@ flowchart TB
     C -- yes --> D["return CreateDuplicateResult()<br/>(record duplicate metric + log)"]
     C -- no --> E["MarkAsProcessingAsync(key, typeName)<br/>Redis: 'processing' key (TTL 30 s)<br/>EF: Add IdempotencyEntry to change tracker"]
     E --> F["next() — transaction + validation + handler + domain events + outbox publish"]
-    F --> G["MarkAsCompletedAsync(key)<br/>Redis: 'completed' key (TTL 5 min)"]
+    F --> FR{"failed Result?"}
+    FR -- no --> G["MarkAsCompletedAsync(key)<br/>Redis: 'completed' key (TTL 5 min)"]
+    FR -- yes --> DS["DiscardAsync(key)<br/>Redis: delete key<br/>EF: detach IdempotencyEntry"]
     G --> R([return response])
+    DS --> R
     F -. exception .-> X["log error and rethrow<br/>(transaction rolled back → no DB entry)"]
 ```
 
-`IdempotencyBehavior` sits **outside** `TransactionBehavior`, but the entry it adds to the change tracker is flushed by the handler's `SaveChangesAsync()` / the final save in `CommitTransactionAsync()`, so it is committed atomically with the business data. If the pipeline throws, the transaction rolls back and no entry is persisted.
+`IdempotencyBehavior` sits **outside** `TransactionBehavior`, but the entry it adds to the change tracker is flushed by the handler's `SaveChangesAsync()` / the final save in `CommitTransactionAsync()`, so it is committed atomically with the business data.
+
+A request is only recorded as processed when it **succeeds**:
+
+- **Failed `Result`** (validation or business error): `TransactionBehavior` rolls the transaction back, and `IdempotencyBehavior` calls `DiscardAsync`, which deletes the Redis key and detaches the entry from the change tracker. A retry with the same `x-requestid` is processed again instead of being answered as a duplicate.
+- **Exception**: the transaction rolls back, so no entry is persisted in the database (see [Known Gaps](#known-gaps) for the Redis key).
 
 ### API Response for Duplicates
 
@@ -280,6 +290,5 @@ Table `IdempotencyEntry` in the **default schema of the owning context** (e.g. `
 
 | Area | Details |
 |---|---|
-| Failed `Result` marks the request as processed | The idempotency entry is committed even when the command returns a failed `Result` (see [02-command-pipeline.md](02-command-pipeline.md#known-gaps)). |
-| `processing` key after a failure | `MarkAsProcessingAsync` writes the Redis `processing` key before the handler runs and nothing removes it on failure. `ExistsAsync` only checks key existence, so a retry within `ProcessingTtl` is answered as a duplicate. |
+| `processing` key after an exception | `MarkAsProcessingAsync` writes the Redis `processing` key before the handler runs. It is removed when the command returns a failed `Result`, but not when it throws. `ExistsAsync` only checks key existence, so a retry within `ProcessingTtl` after an exception is answered as a duplicate. |
 | No cleanup job | `IdempotencyEntry` rows are never purged; the `ProcessedAt` index exists to support a future retention job. |

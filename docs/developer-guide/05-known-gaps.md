@@ -6,13 +6,13 @@ Current known limitations and planned improvements across the platform. Items ar
 
 | Gap | Severity | Area |
 |---|---|---|
-| [Failed Result is committed](#failed-result-is-committed) | High | Pipeline / Idempotency |
-| [Redis `processing` key survives failures](#redis-processing-key-survives-failures) | Medium | Idempotency |
+| [Redis `processing` key survives exceptions](#redis-processing-key-survives-exceptions) | Medium | Idempotency |
 | [Stuck `InProgress` outbox rows](#stuck-inprogress-outbox-rows) | Medium | Outbox |
 | [Authorization behavior](#authorization-behavior) | Medium | Pipeline Behaviors |
 | [Service Bus startup failure does not stop the host](#service-bus-startup-failure-does-not-stop-the-host) | Medium | Event Bus |
 | [Deferred publishing for nested commands](#deferred-publishing-for-nested-commands) | Low | Outbox |
 | [Several nested commands can publish before commit](#several-nested-commands-can-publish-before-commit) | Low (latent) | Outbox |
+| [Failed nested command is not rolled back](#failed-nested-command-is-not-rolled-back) | Low (latent) | Pipeline |
 | [No SQL retry-on-failure](#no-sql-retry-on-failure) | Low | Persistence |
 | [RabbitMQ transport robustness](#rabbitmq-transport-robustness) | Low | Event Bus |
 | [Audience validation disabled](#audience-validation-disabled) | Low | Security |
@@ -33,25 +33,14 @@ Current known limitations and planned improvements across the platform. Items ar
 
 ## Active Gaps
 
-### Failed Result is Committed
-
-**Severity**: High  
-**Area**: `TransactionBehavior`, `IdempotencyBehavior`
-
-`TransactionBehavior` commits whenever no exception is thrown. When validation fails or a handler returns `Result.Failure(...)`, the transaction is still committed, including the `IdempotencyEntry` that `IdempotencyBehavior` added to the change tracker. A client retrying with the same `x-requestid` receives `CreateResultForDuplicateRequest()` (typically success) although the original request failed.
-
-**Planned**: Roll back (or skip the commit) when the response is a failed `Result`, or add the idempotency entry only after a successful response.
-
----
-
-### Redis `processing` Key Survives Failures
+### Redis `processing` Key Survives Exceptions
 
 **Severity**: Medium  
-**Area**: `IdempotencyRedisService`
+**Area**: `IdempotencyBehavior`, `IdempotencyRedisService`
 
-`MarkAsProcessingAsync` writes `idempotency:{scope}:{id}` with value `processing` (TTL `ProcessingTtl`, 30 s) before the handler runs. Nothing removes it when the command throws, and `ExistsAsync` only checks key existence, so a retry within the TTL is treated as a duplicate.
+`MarkAsProcessingAsync` writes `idempotency:{scope}:{id}` with value `processing` (TTL `ProcessingTtl`, 30 s) before the handler runs. `IdempotencyBehavior` removes it with `DiscardAsync` when the command returns a failed `Result`, but not when the command throws. `ExistsAsync` only checks key existence, so a retry within the TTL after an exception is treated as a duplicate.
 
-**Planned**: Delete the key on failure, or distinguish `processing` from `completed` in `ExistsAsync`.
+**Planned**: Call `DiscardAsync` on exceptions too (best effort, without hiding the original exception).
 
 ---
 
@@ -105,6 +94,17 @@ Commands sent from integration event handlers run inside the transaction opened 
 The previous gap relies on the outbox rows still being unflushed when `IntegrationEventProcessorBehavior` runs. That holds for one command per integration event handler. If a handler sends two commands and the first one adds outbox rows, the second command's `SaveChangesAsync()` flushes them, and its `IntegrationEventProcessorBehavior` publishes them **before** the decorator commits — a rollback afterwards would leave a published event without its data. `ExternalUserProvisionedIntegrationEventHandler` sends two commands, but the first (`CompleteOnboardingCommand`) adds no outbox rows.
 
 **Planned**: Skip inline publishing while the transaction is owned by an outer scope, or keep integration event handlers to a single command.
+
+---
+
+### Failed Nested Command Is Not Rolled Back
+
+**Severity**: Low (latent — no handler triggers it today)  
+**Area**: `TransactionBehavior`, `IdempotencyIntegrationEventEfDecorator`
+
+`TransactionBehavior` rolls back only the transactions it owns. A command sent from an integration event handler runs inside the transaction opened by `IdempotencyIntegrationEventEfDecorator`, so when it returns a failed `Result` nothing is rolled back: `IdempotencyBehavior` discards its idempotency entry, but any other change the command tracked before failing is committed if the handler continues. Commands usually fail before changing state (validation, business checks), which keeps this latent.
+
+**Planned**: Let integration event handlers act on the failed `Result` (throw to roll back the owned transaction), or clear the failed command's tracked changes.
 
 ---
 
@@ -267,3 +267,4 @@ Emails are only logged and the activation link carries no confirmation token. Se
 | No query abstractions (CQRS) | `IQuery<T>`, `IQueryHandler<T,R>`, `TelemetryQueryBehavior` implemented in `Platform.Messaging.Abstractions` and `Platform.Messaging` | ✅ |
 | Repository nullable safety | `IRepository<T>.GetAsync` and `Repository<T>.GetAsync` return `Task<T?>` | ✅ |
 | Manual pipeline registration | `AddSiriusMediator` registers behaviors in a fixed order plus all telemetry | ✅ |
+| Failed `Result` is committed | `TransactionBehavior` rolls back when the command returns a failed `Result`; `IdempotencyBehavior` calls `IIdempotencyService.DiscardAsync` (deletes the Redis key, detaches the `IdempotencyEntry`), so the same `x-requestid` can be retried | 2026-10-13 |
