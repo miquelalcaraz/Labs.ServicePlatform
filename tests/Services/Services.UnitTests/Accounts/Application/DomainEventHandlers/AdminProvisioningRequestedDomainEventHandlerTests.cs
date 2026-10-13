@@ -1,11 +1,11 @@
 using Microsoft.Extensions.Logging;
 
-using Miqa.Contracts.Accounts.IntegrationEvents;
-using Miqa.Platform.Messaging.Services;
-using Miqa.Services.Accounts.Application.DomainEventHandlers;
-using Miqa.Services.Accounts.Domain.Events;
-using Miqa.Services.Accounts.Domain.Models.OnboardingAggregate;
-using Miqa.Services.Accounts.Domain.Repositories;
+using Sirius.Contracts.Accounts.IntegrationEvents;
+using Sirius.Platform.Messaging.Services;
+using Sirius.Services.Accounts.Application.DomainEventHandlers;
+using Sirius.Services.Accounts.Domain.Events;
+using Sirius.Services.Accounts.Domain.Models.OnboardingAggregate;
+using Sirius.Services.Accounts.Domain.Repositories;
 
 namespace Services.UnitTests.Accounts.Application.DomainEventHandlers;
 

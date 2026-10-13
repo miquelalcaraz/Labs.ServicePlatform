@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore.Storage;
 
-using Miqa.Platform.Messaging.Models;
-using Miqa.Platform.Messaging.Options;
-using Miqa.Platform.Messaging.Services;
-using Miqa.Platform.Persistence;
-using Miqa.Platform.Persistence.Configurations;
+using Sirius.Platform.Messaging.Models;
+using Sirius.Platform.Messaging.Options;
+using Sirius.Platform.Messaging.Services;
+using Sirius.Platform.Persistence;
+using Sirius.Platform.Persistence.Configurations;
 
 using Testcontainers.MsSql;
 

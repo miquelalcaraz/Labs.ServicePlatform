@@ -3,9 +3,9 @@ using FluentValidation.Results;
 
 using MediatR;
 
-using Miqa.Domain.Behaviors;
-using Miqa.Domain.Exceptions;
-using Miqa.Platform;
+using Sirius.Domain.Behaviors;
+using Sirius.Domain.Exceptions;
+using Sirius.Platform;
 
 namespace Platform.UnitTests.Behaviors;
 

@@ -2,9 +2,9 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Miqa.Infrastructure.Identity.Commands;
-using Miqa.Infrastructure.Identity.IntegrationEvents.EventHandling;
-using Miqa.Platform;
+using Sirius.Infrastructure.Identity.Commands;
+using Sirius.Infrastructure.Identity.IntegrationEvents.EventHandling;
+using Sirius.Platform;
 
 namespace Services.UnitTests.Identity.IntegrationEvents;
 

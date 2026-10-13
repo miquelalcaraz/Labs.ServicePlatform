@@ -26,9 +26,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Miqa.Platform\Miqa.Platform.EventBus.ServiceBus\Platform.EventBus.ServiceBus.csproj" />
-    <ProjectReference Include="..\..\..\src\Miqa.Platform\Miqa.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
-    <ProjectReference Include="..\..\..\src\Miqa.Platform\Miqa.Platform.Persistence.EntityFramework.Relational\Platform.Persistence.EntityFramework.Relational.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Platform\Sirius.Platform.EventBus.ServiceBus\Platform.EventBus.ServiceBus.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Platform\Sirius.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
+    <ProjectReference Include="..\..\..\src\Sirius.Platform\Sirius.Platform.Persistence.EntityFramework.Relational\Platform.Persistence.EntityFramework.Relational.csproj" />
   </ItemGroup>
 
   <ItemGroup>

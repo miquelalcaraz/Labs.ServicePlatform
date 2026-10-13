@@ -10,9 +10,9 @@ using MediatR;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 
-using Miqa.Services.Accounts.APIs;
-using Miqa.Services.Accounts.Application.Commands;
-using Miqa.Services.Accounts.Application.Queries;
+using Sirius.Services.Accounts.APIs;
+using Sirius.Services.Accounts.Application.Commands;
+using Sirius.Services.Accounts.Application.Queries;
 
 namespace Services.FunctionalTests.Accounts;
 

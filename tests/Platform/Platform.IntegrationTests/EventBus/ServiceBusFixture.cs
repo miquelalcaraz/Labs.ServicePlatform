@@ -6,7 +6,7 @@ namespace Platform.IntegrationTests.EventBus;
 
 public sealed class ServiceBusFixture : IAsyncLifetime
 {
-    public const string TopicName = "miqa-event-bus";
+    public const string TopicName = "sirius-event-bus";
     public const string MainSubscription = "it-main";
     public const string PeekSubscription = "it-peek";
 
@@ -99,7 +99,7 @@ public sealed class ServiceBusFixture : IAsyncLifetime
                 "Name": "sbemulatorns",
                 "Topics": [
                   {
-                    "Name": "miqa-event-bus",
+                    "Name": "sirius-event-bus",
                     "Properties": { "MaxSizeInMegabytes": 1024 },
                     "Subscriptions": [
                       {

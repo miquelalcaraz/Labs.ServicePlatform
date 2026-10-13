@@ -6,5 +6,5 @@ Improvements that were designed but deliberately deferred (YAGNI), and alternati
 |----------|-------------|--------|
 | [MassTransit Comparison](masstransit-comparison.md) | Why the platform keeps its own event bus instead of MassTransit | Evaluated — not adopted |
 | [Audit Log Proposal](audit-log-proposal.md) | Automatic ChangeTracker-based audit logging | Proposed |
-| [Platform Observability Improvements](platform-observability-improvements.md) | Automatic DB health check in `AddMiqaSDBContext` and correlation-aware log scope for integration event handlers | Proposed |
+| [Platform Observability Improvements](platform-observability-improvements.md) | Automatic DB health check in `AddSiriusSDBContext` and correlation-aware log scope for integration event handlers | Proposed |
 | [Unit of Work Improvements](uow-future-improvements.md) | Isolation levels, explicit UoW scopes, save-time validation | Parked (YAGNI) |

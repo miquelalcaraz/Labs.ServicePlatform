@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 
-using Miqa.Contracts.Identity.IntegrationEvents;
-using Miqa.Infrastructure.Identity.Commands;
-using Miqa.Infrastructure.Identity.Models;
-using Miqa.Platform.Messaging.Services;
+using Sirius.Contracts.Identity.IntegrationEvents;
+using Sirius.Infrastructure.Identity.Commands;
+using Sirius.Infrastructure.Identity.Models;
+using Sirius.Platform.Messaging.Services;
 
 namespace Services.UnitTests.Identity.Pages;
 

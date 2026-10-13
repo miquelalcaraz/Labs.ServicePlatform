@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
 
-using Miqa.Platform.Messaging.IntegrationEvents;
-using Miqa.Platform.Messaging.Models;
-using Miqa.Platform.Messaging.Services;
+using Sirius.Platform.Messaging.IntegrationEvents;
+using Sirius.Platform.Messaging.Models;
+using Sirius.Platform.Messaging.Services;
 
 namespace Platform.UnitTests.Messaging;
 

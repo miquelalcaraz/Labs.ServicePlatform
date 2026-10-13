@@ -15,7 +15,7 @@ This document explains:
 - Non-breaking evolution strategies
 
 ## 🛠️ Service Development
-**When implementing features in `Miqa.Services.*` microservices**, follow the rules in [Copilot Development Rules](../docs/developer-guide/06-copilot-development-rules.md).
+**When implementing features in `Sirius.Services.*` microservices**, follow the rules in [Copilot Development Rules](../docs/developer-guide/06-copilot-development-rules.md).
 
 This document defines:
 - Service project structure (Api, Application, Domain, Infrastructure, Contracts)
@@ -162,7 +162,7 @@ The project follows a **5-layer architecture** for messaging and persistence. **
 **Responsibilities:**
 - Transaction interfaces: `ITransactionalUnitOfWork` (extends `IUnitOfWork` from Domain.Core with transaction capabilities)
 - Domain entity tracking: `IDomainEntityChangeTracker` (exposes tracked entities for domain event dispatch)
-- Configuration: `MiqaDbContextConfiguration`, `MiqaReadDbContextConfiguration` (fluent API for features)
+- Configuration: `SiriusDbContextConfiguration`, `SiriusReadDbContextConfiguration` (fluent API for features)
 - Exception abstractions: `UniqueConstraintViolationException`
 
 **MUST NOT:**
@@ -179,12 +179,12 @@ The project follows a **5-layer architecture** for messaging and persistence. **
 
 #### 5️⃣ Platform.Persistence.EntityFramework.Relational (SQL/PostgreSQL Specifics)
 **Responsibilities:**
-- Concrete DbContext: `MiqaDBContext` with relational features
+- Concrete DbContext: `SiriusDBContext` with relational features
 - Entity Configurations: `IdempotencyEntryConfiguration`, `OutboxMessageConfiguration`, `AuditLogConfiguration`
 - Resilient transactions: `ResilientTransaction` (retry logic)
 - Generic repositories: `Repository<T>`
 - Migrations: `MigrateDbContextExtensions`
-- DI registration: `AddMiqaSDBContext<TContext>()`
+- DI registration: `AddSiriusSDBContext<TContext>()`
 
 **MUST:**
 - ✅ Configure table names, schemas, indexes, constraints

@@ -7,8 +7,8 @@ using Asp.Versioning.Http;
 
 using Microsoft.AspNetCore.Mvc.Testing;
 
-using Miqa.Services.Accounts.Application.Commands;
-using Miqa.Services.Accounts.Domain.Models.CompanyAggregate;
+using Sirius.Services.Accounts.Application.Commands;
+using Sirius.Services.Accounts.Domain.Models.CompanyAggregate;
 
 namespace Services.FunctionalTests.Accounts;
 

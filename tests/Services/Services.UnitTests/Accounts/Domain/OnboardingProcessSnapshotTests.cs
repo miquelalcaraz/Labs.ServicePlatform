@@ -1,4 +1,4 @@
-using Miqa.Services.Accounts.Domain.Models.OnboardingAggregate;
+using Sirius.Services.Accounts.Domain.Models.OnboardingAggregate;
 
 namespace Services.UnitTests.Accounts.Domain;
 

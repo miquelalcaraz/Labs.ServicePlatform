@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-using Miqa.Platform.Messaging.Models;
-using Miqa.Platform.Messaging.Options;
-using Miqa.Platform.Messaging.Services;
+using Sirius.Platform.Messaging.Models;
+using Sirius.Platform.Messaging.Options;
+using Sirius.Platform.Messaging.Services;
 
 using StackExchange.Redis;
 

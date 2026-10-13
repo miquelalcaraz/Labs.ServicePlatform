@@ -1,6 +1,6 @@
-using Miqa.Services.Accounts.Domain.Events;
-using Miqa.Services.Accounts.Domain.Exceptions;
-using Miqa.Services.Accounts.Domain.Models.TenantAggregate;
+using Sirius.Services.Accounts.Domain.Events;
+using Sirius.Services.Accounts.Domain.Exceptions;
+using Sirius.Services.Accounts.Domain.Models.TenantAggregate;
 
 namespace Services.UnitTests.Accounts.Domain;
 

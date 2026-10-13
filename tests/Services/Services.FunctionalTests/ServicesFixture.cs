@@ -15,7 +15,7 @@ public abstract class ServicesFixture : WebApplicationFactory<Program>, IAsyncLi
     //    public IResourceBuilder<SqlServerServerResource> IdentityDB { get; private set; }
 
     public IResourceBuilder<SqlServerDatabaseResource> IdentityDB { get; private set; }
-    public IResourceBuilder<SqlServerDatabaseResource> MiqaSystemDb { get; private set; }
+    public IResourceBuilder<SqlServerDatabaseResource> SiriusSystemDb { get; private set; }
     public IResourceBuilder<AzureServiceBusResource> AzureServiceBus { get; private set; }
     public IResourceBuilder<RedisResource> RedisCache { get; private set; }
     public IResourceBuilder<ProjectResource> IdentityApi { get; private set; }
@@ -39,7 +39,7 @@ public abstract class ServicesFixture : WebApplicationFactory<Program>, IAsyncLi
             .WithImageTag("latest")
             .WithLifetime(ContainerLifetime.Persistent);
 
-        MiqaSystemDb = SqlServer.AddDatabase("MiqaSystemDb");
+        SiriusSystemDb = SqlServer.AddDatabase("SiriusSystemDb");
         IdentityDB = SqlServer.AddDatabase("IdentityDb");
 
         RedisCache = appBuilder.AddRedis("cache")
@@ -49,7 +49,7 @@ public abstract class ServicesFixture : WebApplicationFactory<Program>, IAsyncLi
                     .RunAsEmulator(emulator => emulator
                     .WithLifetime(ContainerLifetime.Persistent));
 
-        var eventBusTopic = AzureServiceBus.AddServiceBusTopic("miqa-event-bus");
+        var eventBusTopic = AzureServiceBus.AddServiceBusTopic("sirius-event-bus");
         eventBusTopic.AddServiceBusSubscription("accounts-sub", subscriptionName: "Accounts");
         eventBusTopic.AddServiceBusSubscription("notifications-sub", subscriptionName: "Notifications");
         eventBusTopic.AddServiceBusSubscription("identity-sub", subscriptionName: "Identity");
@@ -58,7 +58,7 @@ public abstract class ServicesFixture : WebApplicationFactory<Program>, IAsyncLi
             .WithReference(IdentityDB)
             .WithReference(RedisCache)
             .WithReference(AzureServiceBus)
-            .WaitFor(MiqaSystemDb)
+            .WaitFor(SiriusSystemDb)
             .WaitFor(IdentityDB)
             .WaitFor(RedisCache)
             .WaitFor(AzureServiceBus)
@@ -74,7 +74,7 @@ public abstract class ServicesFixture : WebApplicationFactory<Program>, IAsyncLi
         {
             config.AddInMemoryCollection(new Dictionary<string, string>
             {
-                { $"ConnectionStrings:{MiqaSystemDb.Resource.Name}", _sqlserverConnectionString },
+                { $"ConnectionStrings:{SiriusSystemDb.Resource.Name}", _sqlserverConnectionString },
                 { $"ConnectionStrings:{RedisCache.Resource.Name}", _redisConnectionString },
                 { $"ConnectionStrings:{AzureServiceBus.Resource.Name}", _eventBusUri },
                 { "Identity:Url", IdentityApi.GetEndpoint("http").Url },
@@ -107,7 +107,7 @@ public abstract class ServicesFixture : WebApplicationFactory<Program>, IAsyncLi
     public async ValueTask InitializeAsync()
     {
         await _app.StartAsync();
-        _sqlserverConnectionString = await MiqaSystemDb.Resource.ConnectionStringExpression.GetValueAsync(default);
+        _sqlserverConnectionString = await SiriusSystemDb.Resource.ConnectionStringExpression.GetValueAsync(default);
         _redisConnectionString = await RedisCache.Resource.ConnectionStringExpression.GetValueAsync(default);
         _eventBusUri = await AzureServiceBus.Resource.ConnectionStringExpression.GetValueAsync(default);
 

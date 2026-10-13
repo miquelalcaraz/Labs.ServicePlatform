@@ -1,8 +1,8 @@
 using Platform.TestWebApi;
 
-using Miqa.Platform.Builders;
-using Miqa.Platform.Middleware;
-using Miqa.Platform.ServiceDefaults;
+using Sirius.Platform.Builders;
+using Sirius.Platform.Middleware;
+using Sirius.Platform.ServiceDefaults;
 
 var builder = WebApplication.CreateBuilder(args);
 

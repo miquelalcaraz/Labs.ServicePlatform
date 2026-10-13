@@ -2,10 +2,10 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Miqa.Contracts.Notifications.IntegrationEvents;
-using Miqa.Platform;
-using Miqa.Services.Accounts.Application.Commands;
-using Miqa.Services.Accounts.Infrastructure.IntegrationEvents.EventHandling;
+using Sirius.Contracts.Notifications.IntegrationEvents;
+using Sirius.Platform;
+using Sirius.Services.Accounts.Application.Commands;
+using Sirius.Services.Accounts.Infrastructure.IntegrationEvents.EventHandling;
 
 namespace Services.UnitTests.Accounts.Infrastructure;
 

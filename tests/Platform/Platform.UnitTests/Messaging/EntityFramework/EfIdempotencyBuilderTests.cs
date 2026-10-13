@@ -3,11 +3,11 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-using Miqa.Platform.Messaging.Builders;
-using Miqa.Platform.Messaging.IntegrationEvents;
-using Miqa.Platform.Messaging.Models;
-using Miqa.Platform.Messaging.Services;
-using Miqa.Platform.Persistence;
+using Sirius.Platform.Messaging.Builders;
+using Sirius.Platform.Messaging.IntegrationEvents;
+using Sirius.Platform.Messaging.Models;
+using Sirius.Platform.Messaging.Services;
+using Sirius.Platform.Persistence;
 
 using StackExchange.Redis;
 
@@ -156,5 +156,5 @@ public class BuilderTestDbContext : DbContext, ITransactionalUnitOfWork
     public void RollbackTransaction() => Database.CurrentTransaction?.Rollback();
     public Task RollbackTransactionAsync() => Database.CurrentTransaction?.RollbackAsync() ?? Task.CompletedTask;
     public int GetPendingChangesCount() => ChangeTracker.Entries().Count(e => e.State == EntityState.Added || e.State == EntityState.Modified || e.State == EntityState.Deleted);
-    public IReadOnlyList<Miqa.Domain.SeedWork.Entity> GetEntitiesWithPendingEvents() => new List<Miqa.Domain.SeedWork.Entity>();
+    public IReadOnlyList<Sirius.Domain.SeedWork.Entity> GetEntitiesWithPendingEvents() => new List<Sirius.Domain.SeedWork.Entity>();
 }

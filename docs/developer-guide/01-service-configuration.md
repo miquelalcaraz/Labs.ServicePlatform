@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide explains how to configure services in the MiqaS platform following the **two-layer pattern**. The platform provides `AddMiqaMediator` to register the MediatR pipeline with automatic telemetry, eliminating manual behavior ordering and telemetry registration.
+This guide explains how to configure services in the SiriusS platform following the **two-layer pattern**. The platform provides `AddSiriusMediator` to register the MediatR pipeline with automatic telemetry, eliminating manual behavior ordering and telemetry registration.
 
 ---
 
@@ -18,14 +18,14 @@ flowchart TB
         A1["builder.AddInfrastructureServices()"]
         A2["builder.AddRedisClient('cache')"]
         A3["AddHttpContextAccessor"]
-        A4["AddMiqaMediator (handlers + pipeline + telemetry)"]
+        A4["AddSiriusMediator (handlers + pipeline + telemetry)"]
         A5["AddValidatorsFromAssembly"]
         A1 --> A2 --> A3 --> A4 --> A5
     end
 
     subgraph L2["Layer 2 — Infrastructure (Infrastructure/Extensions/Extensions.cs)"]
-        B1["AddMiqaSDBContext#lt;T#gt; (write database)"]
-        B2["AddMiqaReadDbContext#lt;T#gt; (read-only database)"]
+        B1["AddSiriusSDBContext#lt;T#gt; (write database)"]
+        B2["AddSiriusReadDbContext#lt;T#gt; (read-only database)"]
         B3["AddMigration#lt;T, TSeeder#gt;"]
         B4["AddServiceBusEventBus + AddSubscription"]
         B5["AddRedisIdempotencyCache"]
@@ -39,7 +39,7 @@ flowchart TB
     A1 --> L2
 ```
 
-The order of calls is **not cosmetic**: Scrutor decorates existing registrations in call order, so event subscriptions must be registered before the idempotency builders, Redis before EF idempotency, and `AddMiqaMediator` last (its telemetry decorator becomes the outermost one).
+The order of calls is **not cosmetic**: Scrutor decorates existing registrations in call order, so event subscriptions must be registered before the idempotency builders, Redis before EF idempotency, and `AddSiriusMediator` last (its telemetry decorator becomes the outermost one).
 
 ---
 
@@ -72,7 +72,7 @@ app.Run();
 
 ---
 
-## AddMiqaMediator
+## AddSiriusMediator
 
 Single entry point for the MediatR pipeline. Replaces manual `AddMediatR` + behavior registration + telemetry calls.
 
@@ -84,7 +84,7 @@ Single entry point for the MediatR pipeline. Replaces manual `AddMediatR` + beha
 - `DomainEventProcessorBehavior`
 - `TelemetryCommandBehavior`, `TelemetryQueryBehavior`, `TelemetryDomainEventBehavior` (via `INotificationPublisher`), `TelemetryIntegrationEventHandlerDecorator`
 
-The call is idempotent: a second call to `AddMiqaMediator` is ignored.
+The call is idempotent: a second call to `AddSiriusMediator` is ignored.
 
 ### What the developer configures
 
@@ -114,11 +114,11 @@ flowchart TB
 | Behavior | Needs | Without it |
 |---|---|---|
 | `IdempotencyBehavior` | `IIdempotencyService` (optional) | Pass-through |
-| `TransactionBehavior`, `DomainEventProcessorBehavior`, `IntegrationEventProcessorBehavior` | `ITransactionalUnitOfWork` (registered by `AddMiqaSDBContext<T>`) | **DI resolution fails** for every request |
+| `TransactionBehavior`, `DomainEventProcessorBehavior`, `IntegrationEventProcessorBehavior` | `ITransactionalUnitOfWork` (registered by `AddSiriusSDBContext<T>`) | **DI resolution fails** for every request |
 | `IntegrationEventProcessorBehavior` | `IEventBusOutboxService` (optional, from `AddTransactionalOutbox<T>`) | No-op |
-| `DomainEventProcessorBehavior` | `IDomainEntityChangeTracker` (optional, from `AddMiqaSDBContext<T>`) | No-op |
+| `DomainEventProcessorBehavior` | `IDomainEntityChangeTracker` (optional, from `AddSiriusSDBContext<T>`) | No-op |
 
-A service using `AddMiqaMediator` must therefore register a `MiqaDBContext` with `AddMiqaSDBContext<T>`.
+A service using `AddSiriusMediator` must therefore register a `SiriusDBContext` with `AddSiriusSDBContext<T>`.
 
 ---
 
@@ -137,7 +137,7 @@ public static IServiceCollection AddApplicationServices(this IHostApplicationBui
 
     services.AddHttpContextAccessor();
 
-    services.AddMiqaMediator(cfg =>
+    services.AddSiriusMediator(cfg =>
     {
         cfg.RegisterServicesFromAssembly(AssemblyReference.Assembly);
         cfg.RegisterServicesFromAssembly(typeof(Infrastructure.AssemblyReference).Assembly);
@@ -159,11 +159,11 @@ public static void AddInfrastructureServices(this IHostApplicationBuilder builde
 {
     var services = builder.Services;
 
-    var connectionString = builder.Configuration.GetConnectionString("MiqaSystemDb");
-    var readConnectionString = builder.Configuration.GetConnectionString("MiqaSystemDbReadonly")
+    var connectionString = builder.Configuration.GetConnectionString("SiriusSystemDb");
+    var readConnectionString = builder.Configuration.GetConnectionString("SiriusSystemDbReadonly")
         ?? connectionString;
 
-    services.AddMiqaSDBContext<AccountContext>(
+    services.AddSiriusSDBContext<AccountContext>(
         conf => conf
             .SetDefaultSchema("Accounts")
             .WithIdempotency()
@@ -174,7 +174,7 @@ public static void AddInfrastructureServices(this IHostApplicationBuilder builde
         })
     );
 
-    services.AddMiqaReadDbContext<AccountReadContext>(
+    services.AddSiriusReadDbContext<AccountReadContext>(
         conf => conf
             .SetDefaultSchema("Accounts")
             .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
@@ -184,7 +184,7 @@ public static void AddInfrastructureServices(this IHostApplicationBuilder builde
     services.AddHealthChecks()
         .AddDbContextCheck<AccountContext>(name: "accounts-db", tags: ["ready"]);
 
-    services.AddMigration<AccountContext, MiqaDBContextSeed>();
+    services.AddMigration<AccountContext, SiriusDBContextSeed>();
 
     builder.AddServiceBusEventBus("eventbus")
         .AddEventBusSubscriptions();
@@ -200,9 +200,9 @@ public static void AddInfrastructureServices(this IHostApplicationBuilder builde
     services.AddTransactionalOutbox<AccountContext>(options =>
     {
         options.RegisterEventTypes(
-            typeof(Miqa.Contracts.Accounts.AssemblyReference).Assembly,
-            typeof(Miqa.Contracts.Identity.AssemblyReference).Assembly,
-            typeof(Miqa.Contracts.Notifications.AssemblyReference).Assembly);
+            typeof(Sirius.Contracts.Accounts.AssemblyReference).Assembly,
+            typeof(Sirius.Contracts.Identity.AssemblyReference).Assembly,
+            typeof(Sirius.Contracts.Notifications.AssemblyReference).Assembly);
     });
 
     services.AddScoped<ICompanyRepository, CompanyRepository>();
@@ -228,7 +228,7 @@ private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)
 ### Database
 
 ```csharp
-services.AddMiqaSDBContext<MyContext>(
+services.AddSiriusSDBContext<MyContext>(
     conf => conf
         .SetDefaultSchema("MySchema")
         .WithIdempotency()                 // optional — also enabled by AddIdempotencyEntityFramework
@@ -239,12 +239,12 @@ services.AddMiqaSDBContext<MyContext>(
 services.AddMigration<MyContext, MyContextSeed>();   // applies migrations + seed, signals MigrationReadySignal
 ```
 
-`MiqaDbContextConfiguration` exposes `SetDefaultSchema`, `RegisterModelsFromAssembly`, `WithIdempotency` and `WithTransactionalOutbox`. It is a process-wide singleton shared by every `MiqaDBContext` in the host. `AddMiqaSDBContext<T>` also registers `MiqaDBContext`, `ITransactionalUnitOfWork` and `IDomainEntityChangeTracker` as the same scoped instance.
+`SiriusDbContextConfiguration` exposes `SetDefaultSchema`, `RegisterModelsFromAssembly`, `WithIdempotency` and `WithTransactionalOutbox`. It is a process-wide singleton shared by every `SiriusDBContext` in the host. `AddSiriusSDBContext<T>` also registers `SiriusDBContext`, `ITransactionalUnitOfWork` and `IDomainEntityChangeTracker` as the same scoped instance.
 
 ### Read-Only Database
 
 ```csharp
-services.AddMiqaReadDbContext<MyReadContext>(
+services.AddSiriusReadDbContext<MyReadContext>(
     conf => conf
         .SetDefaultSchema("MySchema")
         .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
@@ -283,7 +283,7 @@ When both Redis and EF are registered, EF decorates Redis — Redis as fast cach
 
 ```csharp
 services.AddTransactionalOutbox<MyContext>(
-    options => options.RegisterEventTypes(typeof(Miqa.Contracts.MyService.AssemblyReference).Assembly),
+    options => options.RegisterEventTypes(typeof(Sirius.Contracts.MyService.AssemblyReference).Assembly),
     processor => processor.PollingInterval = TimeSpan.FromSeconds(30));   // optional
 ```
 
@@ -304,12 +304,12 @@ Requires `EventBus:SubscriptionClientName` in `appsettings.json` (see [Event Bus
 
 - [ ] Create `Api/Extensions/Extensions.cs` with `AddApplicationServices`
 - [ ] Create `Infrastructure/Extensions/Extensions.cs` with `AddInfrastructureServices`
-- [ ] Call `builder.AddInfrastructureServices()` first in the application layer, then `AddMiqaMediator`
+- [ ] Call `builder.AddInfrastructureServices()` first in the application layer, then `AddSiriusMediator`
 - [ ] In `Program.cs`: `AddServiceDefaults`, `AddApiServiceDefaults`, `ExceptionHandlingMiddleware`, `MapDefaultEndpoints`
-- [ ] Use `AddMiqaMediator` — do NOT call `AddMediatR` directly
+- [ ] Use `AddSiriusMediator` — do NOT call `AddMediatR` directly
 - [ ] Register handlers from all relevant assemblies via `RegisterServicesFromAssembly`
 - [ ] Add `WithLogging` / `WithValidation` as needed
-- [ ] Configure `AddMiqaSDBContext<T>` and `AddMigration<T, TSeeder>`
+- [ ] Configure `AddSiriusSDBContext<T>` and `AddMigration<T, TSeeder>`
 - [ ] Register event subscriptions **before** the idempotency builders
 - [ ] Register Redis idempotency **before** EF idempotency
 - [ ] Configure `AddTransactionalOutbox<T>` with all published contract assemblies
@@ -328,13 +328,13 @@ Requires `EventBus:SubscriptionClientName` in `appsettings.json` (see [Event Bus
 services.AddMediatR(cfg => { cfg.RegisterServicesFromAssembly(assembly); });
 
 // ✅ Platform manages pipeline order and telemetry
-services.AddMiqaMediator(cfg => { cfg.RegisterServicesFromAssembly(assembly); });
+services.AddSiriusMediator(cfg => { cfg.RegisterServicesFromAssembly(assembly); });
 ```
 
 ### Manually registering telemetry
 
 ```csharp
-// ❌ No longer needed — implicit in AddMiqaMediator
+// ❌ No longer needed — implicit in AddSiriusMediator
 services.AddIntegrationEventTelemetryDecorator();
 services.AddDomainEventTelemetryBehavior();
 ```
@@ -358,14 +358,14 @@ builder.AddServiceBusEventBus("eventbus").AddSubscription<E, H>();
 // ❌ Mixed in one method
 public static void AddApplicationServices(this IHostApplicationBuilder builder)
 {
-    services.AddMiqaSDBContext<MyContext>(...);    // infrastructure
-    services.AddMiqaMediator(cfg => { ... });     // application
+    services.AddSiriusSDBContext<MyContext>(...);    // infrastructure
+    services.AddSiriusMediator(cfg => { ... });     // application
 }
 
 // ✅ Clear separation
 public static void AddApplicationServices(this IHostApplicationBuilder builder)
 {
     builder.AddInfrastructureServices();          // delegates infrastructure
-    services.AddMiqaMediator(cfg => { ... });      // application only
+    services.AddSiriusMediator(cfg => { ... });      // application only
 }
 ```

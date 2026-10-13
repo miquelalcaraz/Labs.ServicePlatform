@@ -1,4 +1,4 @@
-using Miqa.Infrastructure.Identity.Models;
+using Sirius.Infrastructure.Identity.Models;
 
 namespace Services.UnitTests.Identity.Models;
 

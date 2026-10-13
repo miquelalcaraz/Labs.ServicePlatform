@@ -1,0 +1,211 @@
+/* ==========================================================================
+   Sirius.BackOfficeApp — "Clean Grey" Theme (Notion-style)
+   --------------------------------------------------------------------------
+   Bajo contraste, monocromático, sidebar clara, sin colores brillantes.
+   Inspirado en Notion, Linear, Craft.
+
+   Sobrescribe CSS custom properties de Radzen sin tocar el proyecto.
+   Referencia: src/Radzen.Blazor/themes/_css-variables.scss
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Paleta de Colores — Escala Slate (grises fríos)
+   -------------------------------------------------------------------------- */
+:root {
+    --rz-base: #e2e8f0;
+    --rz-base-50: #f8fafc;
+    --rz-base-100: #f1f5f9;
+    --rz-base-200: #e2e8f0;
+    --rz-base-300: #cbd5e1;
+    --rz-base-400: #94a3b8;
+    --rz-base-500: #64748b;
+    --rz-base-600: #475569;
+    --rz-base-700: #334155;
+    --rz-base-800: #1e293b;
+    --rz-base-900: #0f172a;
+    --rz-base-light: #f1f5f9;
+    --rz-base-lighter: #ffffff;
+    --rz-base-dark: #475569;
+    --rz-base-darker: #0f172a;
+
+    /* Primary — slate-700: botones y acciones principales */
+    --rz-primary: #334155;
+    --rz-primary-light: #475569;
+    --rz-primary-lighter: rgba(51, 65, 85, 0.08);
+    --rz-primary-dark: #1e293b;
+    --rz-primary-darker: #0f172a;
+
+    /* Secondary — slate-500: monocromático, sin color */
+    --rz-secondary: #64748b;
+    --rz-secondary-light: #94a3b8;
+    --rz-secondary-lighter: rgba(100, 116, 139, 0.08);
+    --rz-secondary-dark: #475569;
+    --rz-secondary-darker: #334155;
+
+    /* Semánticos — desaturados para encajar con el tema grey */
+    --rz-info: #64748b;
+    --rz-info-light: #94a3b8;
+    --rz-info-lighter: rgba(100, 116, 139, 0.08);
+    --rz-info-dark: #475569;
+    --rz-info-darker: #334155;
+
+    --rz-success: #16a34a;
+    --rz-success-light: #22c55e;
+    --rz-success-lighter: rgba(22, 163, 74, 0.08);
+    --rz-success-dark: #15803d;
+    --rz-success-darker: #166534;
+
+    --rz-warning: #d97706;
+    --rz-warning-light: #f59e0b;
+    --rz-warning-lighter: rgba(217, 119, 6, 0.08);
+    --rz-warning-dark: #b45309;
+    --rz-warning-darker: #92400e;
+
+    --rz-danger: #dc2626;
+    --rz-danger-light: #ef4444;
+    --rz-danger-lighter: rgba(220, 38, 38, 0.08);
+    --rz-danger-dark: #b91c1c;
+    --rz-danger-darker: #991b1b;
+}
+
+/* --------------------------------------------------------------------------
+   2. Tipografía — Inter
+   -------------------------------------------------------------------------- */
+:root {
+    --rz-text-font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* --------------------------------------------------------------------------
+   3. Fondos y Layout — body gris suave, tarjetas blancas
+   -------------------------------------------------------------------------- */
+:root {
+    --rz-body-background-color: var(--rz-base-100);
+    --rz-base-background-color: var(--rz-base-100);
+    --rz-layout-body-background-color: var(--rz-base-100);
+}
+
+/* --------------------------------------------------------------------------
+   4. Bordes y esquinas
+   -------------------------------------------------------------------------- */
+:root {
+    --rz-border-radius: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   5. Sombras — casi invisibles
+   -------------------------------------------------------------------------- */
+:root {
+    --rz-shadow-1: 0 0 0 1px rgba(15, 23, 42, 0.04);
+    --rz-shadow-2: 0 1px 2px rgba(15, 23, 42, 0.06);
+    --rz-shadow-3: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+/* --------------------------------------------------------------------------
+   6. Header — fondo blanco, borde inferior suave
+   -------------------------------------------------------------------------- */
+:root {
+    --rz-header-background-color: var(--rz-white);
+    --rz-header-color: var(--rz-base-800);
+    --rz-header-shadow: none;
+    --rz-header-border: 1px solid var(--rz-base-200);
+}
+
+/* --------------------------------------------------------------------------
+   7. Sidebar Toggle — sutil
+   -------------------------------------------------------------------------- */
+:root {
+    --rz-sidebar-toggle-color: var(--rz-base-500);
+    --rz-sidebar-toggle-background-color: transparent;
+    --rz-sidebar-toggle-border: 1px solid var(--rz-base-200);
+    --rz-sidebar-toggle-hover-color: var(--rz-base-800);
+    --rz-sidebar-toggle-hover-background-color: var(--rz-base-100);
+    --rz-sidebar-toggle-hover-border-radius: 0;
+}
+
+/* --------------------------------------------------------------------------
+   8. Sidebar — CLARA, estilo Notion (gris muy claro, bajo contraste)
+   -------------------------------------------------------------------------- */
+:root {
+    --rz-sidebar-width: 260px;
+    --rz-sidebar-background-color: var(--rz-base-50);
+    --rz-sidebar-color: var(--rz-base-600);
+    --rz-sidebar-border-inline-end: 1px solid var(--rz-base-200);
+}
+
+/* --------------------------------------------------------------------------
+   9. Panel Menu — items sutiles sobre sidebar clara, fuente compacta
+   -------------------------------------------------------------------------- */
+:root {
+    --rz-panel-menu-background-color: transparent;
+    --rz-panel-menu-font-size: 0.8125rem;
+    --rz-panel-menu-font-weight: 500;
+    --rz-panel-menu-item-color: var(--rz-base-500);
+    --rz-panel-menu-item-background-color: transparent;
+    --rz-panel-menu-item-border: none;
+    --rz-panel-menu-item-border-radius: 6px;
+    --rz-panel-menu-item-hover-color: var(--rz-base-800);
+    --rz-panel-menu-item-hover-background-color: var(--rz-base-200);
+    --rz-panel-menu-item-active-color: var(--rz-base-900);
+    --rz-panel-menu-item-active-background-color: var(--rz-base-200);
+    --rz-panel-menu-item-active-indicator: var(--rz-base-700);
+    --rz-panel-menu-icon-color: var(--rz-base-400);
+}
+
+/* --------------------------------------------------------------------------
+   10. Menu items (dropdown, context) — texto visible, compacto
+   -------------------------------------------------------------------------- */
+:root {
+    --rz-menu-item-color: var(--rz-base-700);
+    --rz-menu-item-hover-color: var(--rz-base-900);
+    --rz-menu-item-hover-background-color: var(--rz-base-100);
+    --rz-menu-item-padding-block: 0.375rem;
+    --rz-menu-item-padding-inline: 0.5rem 0.75rem;
+    --rz-on-secondary-light: var(--rz-base-900);
+}
+
+/* --------------------------------------------------------------------------
+   11. Profile Menu — neutro, gris, compacto
+   -------------------------------------------------------------------------- */
+:root {
+    --rz-profile-menu-toggle-button-color: var(--rz-base-600);
+    --rz-profile-menu-background-color: var(--rz-white);
+    --rz-profile-menu-top-item-background-color: var(--rz-white);
+    --rz-profile-menu-border: 1px solid var(--rz-base-200);
+    --rz-profile-menu-border-radius: 8px;
+    --rz-profile-menu-item-hover-background-color: var(--rz-base-100);
+    --rz-profile-menu-item-icon-width: 1.125rem;
+    --rz-profile-menu-item-icon-height: 1.125rem;
+    --rz-profile-menu-item-icon-font-size: 1.125rem;
+    --rz-profile-menu-padding-block: 0.375rem;
+    --rz-profile-menu-padding-inline: 0.75rem;
+}
+
+/* Profile menu dropdown — fuente más fina y pequeña */
+ul.rz-profile-menu .rz-navigation-menu {
+    font-size: 0.8125rem;
+    font-weight: 400;
+}
+
+/* --------------------------------------------------------------------------
+   12. Card — blancas sobre fondo gris, con sombra muy sutil
+   -------------------------------------------------------------------------- */
+:root {
+    --rz-card-background-color: var(--rz-white);
+    --rz-card-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+    --rz-card-border: 1px solid var(--rz-base-200);
+    --rz-card-border-radius: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   13. Button
+   -------------------------------------------------------------------------- */
+:root {
+    --rz-button-border-radius: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   14. Header — fuente más compacta y fina
+   -------------------------------------------------------------------------- */
+:root {
+    --rz-header-min-height: 48px;
+}

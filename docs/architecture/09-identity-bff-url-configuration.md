@@ -153,7 +153,7 @@ identity.WithEnvironment("AccountApiClient", accountApiService.GetEndpoint(launc
     .WithEnvironment("BackOfficeClient", backOfficeApp.GetEndpoint(launchProfileName));
 ```
 
-`launchProfileName` is `https` by default, or `http` when `MIQA_USE_HTTP_ENDPOINTS=1` (used for CI / Playwright).
+`launchProfileName` is `https` by default, or `http` when `SIRIUS_USE_HTTP_ENDPOINTS=1` (used for CI / Playwright).
 
 > ✅ `AppHost.cs` sets `Identity__Authority = bffEndpoint` and `IssuerUri = bffEndpoint`. Configuration is consistent.
 

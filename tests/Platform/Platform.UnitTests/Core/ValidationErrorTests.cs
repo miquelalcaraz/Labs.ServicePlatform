@@ -1,4 +1,4 @@
-using Miqa.Platform;
+using Sirius.Platform;
 
 namespace Platform.UnitTests.Core;
 

@@ -1,0 +1,56 @@
+@inherits LayoutComponentBase
+@inject CookieThemeService CookieThemeService
+<RadzenComponents />
+
+<RadzenLayout>
+    <RadzenHeader>
+        <RadzenRow JustifyContent="JustifyContent.Start" AlignItems="AlignItems.Center" Gap="0">
+            <RadzenColumn Size="5">
+                <RadzenSidebarToggle Click="@SidebarToggleClick"></RadzenSidebarToggle>
+            </RadzenColumn>
+            <RadzenColumn Size="7">
+                <RadzenStack AlignItems="AlignItems.Center" Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem" class="rz-px-2" Style="font-size: 0.8125rem; font-weight: 400;">
+                    @* <RadzenAppearanceToggle /> *@
+                    <RadzenProfileMenu Visible="@Security.IsAuthenticated()" Click="@ProfileMenuClick">
+                        <ChildContent>
+
+                            <RadzenProfileMenuItem Path="profile" Icon="settings" Text="Profile" />
+                            <RadzenProfileMenuItem Text="Logout" Value="Logout" Icon="power_settings_new" />
+                        </ChildContent>
+                        <Template>
+                            @Security.UserName
+                        </Template>
+                    </RadzenProfileMenu>
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenHeader>
+    <RadzenBody Expanded="@sidebarExpanded">
+        <RadzenRow class="rz-mx-auto rz-px-4 rz-pt-2 rz-pt-md-4 rz-pt-lg-6 rz-pt-xl-12 rz-pb-2 rz-pb-lg-12" Style="max-width: 1440px;">
+            <RadzenColumn Size="12">
+                @Body
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenBody>
+    <RadzenSidebar Responsive="false" Style="width: max-content">
+        <RadzenStack AlignItems="Radzen.AlignItems.Center" Gap="0" class="rz-py-4 rz-py-lg-6" Style="padding: var(--rz-panel-menu-item-padding); border-bottom: 1px solid var(--rz-base-200);">
+            <RadzenImage Path="images/logo.png" style="width: 32px; height: 32px;" AlternateText="Application logo"></RadzenImage>
+            <RadzenText Text="Sirius-System" Visible="@sidebarExpanded" TextStyle="Radzen.Blazor.TextStyle.Body2" class="rz-mb-0" style="color: var(--rz-base-700); font-weight: 600; letter-spacing: +0.05em;" />
+            <RadzenText Text="Backoffice" Visible="@sidebarExpanded" TextStyle="Radzen.Blazor.TextStyle.Caption" TagName="Radzen.Blazor.TagName.P" TextAlign="Radzen.TextAlign.Center" Style="color: var(--rz-base-600);" />
+        </RadzenStack>
+        <RadzenPanelMenu Style="padding: 0.5rem;" DisplayStyle="@(sidebarExpanded? MenuItemDisplayStyle.IconAndText: MenuItemDisplayStyle.Icon)">
+            <RadzenPanelMenuItem Text="Home" Path="dashboard" Icon="home" />
+            <RadzenPanelMenuItem Text="Customer Onboarding" Icon="group_add">
+                <RadzenPanelMenuItem Text="Onboarding List" Icon="list" Path="/onboarding" />
+                <RadzenPanelMenuItem Text="Start Onboarding" Icon="add_circle" Path="/onboarding/start" />
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="Customer Activation" Icon="mark_email_read">
+                <RadzenPanelMenuItem Text="Activation List" Icon="list" Path="/activation" />
+            </RadzenPanelMenuItem>
+        </RadzenPanelMenu>
+        <RadzenStack AlignItems="Radzen.AlignItems.Center" Gap="0" class="rz-py-4 rz-py-lg-6" Style="padding: var(--rz-panel-menu-item-padding);">
+            <RadzenText Text="Sirius-System v1.0.0" Visible="@sidebarExpanded" TextStyle="Radzen.Blazor.TextStyle.Caption" TagName="Radzen.Blazor.TagName.P" TextAlign="Radzen.TextAlign.Center" Style="color: var(--rz-base-400);" />
+            <RadzenText Text="Copyright Ⓒ 2026" Visible="@sidebarExpanded" TextStyle="Radzen.Blazor.TextStyle.Caption" class="rz-mb-0" TagName="Radzen.Blazor.TagName.P" TextAlign="Radzen.TextAlign.Center" Style="color: var(--rz-base-400);" />
+        </RadzenStack>
+    </RadzenSidebar>
+</RadzenLayout>

@@ -3,17 +3,17 @@
 > **Status**: Proposed — deferred to keep the platform scope focused.
 > **Related**: [06 — Telemetry](../architecture/06-telemetry.md), [07 — Event Bus](../architecture/07-event-bus.md)
 
-Two cross-cutting improvements that belong in the base platform rather than in each service. Both are independent of any feature and apply to every service built on `Miqa.Platform`.
+Two cross-cutting improvements that belong in the base platform rather than in each service. Both are independent of any feature and apply to every service built on `Sirius.Platform`.
 
 ---
 
-## 1. Automatic DB Health Check in `AddMiqaSDBContext<TContext>`
+## 1. Automatic DB Health Check in `AddSiriusSDBContext<TContext>`
 
 ### Problem
 
-`AddMiqaSDBContext<TContext>` registers the `DbContext` via plain `services.AddDbContext<TContext>`, bypassing the Aspire enrollment that auto-registers health checks. Services that use this method have no database readiness probe unless they add one manually.
+`AddSiriusSDBContext<TContext>` registers the `DbContext` via plain `services.AddDbContext<TContext>`, bypassing the Aspire enrollment that auto-registers health checks. Services that use this method have no database readiness probe unless they add one manually.
 
-Today both Accounts and Notifications repeat this boilerplate after calling `AddMiqaSDBContext`:
+Today both Accounts and Notifications repeat this boilerplate after calling `AddSiriusSDBContext`:
 
 ```csharp
 services.AddHealthChecks()
@@ -24,14 +24,14 @@ Omitting it makes `/health/ready` report `Healthy` even when the database is unr
 
 ### Proposed Design
 
-Register the health check inside `AddMiqaSDBContext<TContext>` in `Platform.Persistence.EntityFramework.Relational`:
+Register the health check inside `AddSiriusSDBContext<TContext>` in `Platform.Persistence.EntityFramework.Relational`:
 
 ```csharp
-public static IServiceCollection AddMiqaSDBContext<TContext>(
+public static IServiceCollection AddSiriusSDBContext<TContext>(
     this IServiceCollection services,
-    Action<MiqaDbContextConfiguration> configuration,
+    Action<SiriusDbContextConfiguration> configuration,
     Action<DbContextOptionsBuilder> dbOptions)
-    where TContext : MiqaDBContext
+    where TContext : SiriusDBContext
 {
     // ... existing registration ...
 
@@ -148,7 +148,7 @@ The decorator only adds what is available on the event itself. Context that come
 
 | Improvement | Layer | Mechanism |
 |-------------|-------|-----------|
-| Automatic DB health check | `Platform.Persistence.EntityFramework.Relational` | `AddDbContextCheck<TContext>` inside `AddMiqaSDBContext` |
+| Automatic DB health check | `Platform.Persistence.EntityFramework.Relational` | `AddDbContextCheck<TContext>` inside `AddSiriusSDBContext` |
 | Correlation log scope | `Platform.Messaging.Abstractions` + `Platform.Messaging` | `ICorrelatedIntegrationEvent` + `CorrelationLoggingIntegrationEventDecorator<T>` via Scrutor |
 
 Both follow the existing architectural patterns of the platform and introduce no breaking changes.

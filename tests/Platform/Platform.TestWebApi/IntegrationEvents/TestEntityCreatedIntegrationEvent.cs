@@ -1,4 +1,4 @@
-using Miqa.Platform.Messaging.IntegrationEvents;
+using Sirius.Platform.Messaging.IntegrationEvents;
 
 namespace Platform.TestWebApi.IntegrationEvents;
 

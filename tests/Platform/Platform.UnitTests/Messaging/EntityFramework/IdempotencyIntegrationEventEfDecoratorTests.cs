@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Logging;
 
-using Miqa.Platform.Messaging.IntegrationEvents;
-using Miqa.Platform.Messaging.Models;
-using Miqa.Platform.Messaging.Services;
-using Miqa.Platform.Persistence;
+using Sirius.Platform.Messaging.IntegrationEvents;
+using Sirius.Platform.Messaging.Models;
+using Sirius.Platform.Messaging.Services;
+using Sirius.Platform.Persistence;
 
 namespace Platform.UnitTests.Messaging.EntityFramework;
 

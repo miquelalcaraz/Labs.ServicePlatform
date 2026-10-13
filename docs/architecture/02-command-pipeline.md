@@ -6,7 +6,7 @@ Covers the Result Pattern, CQRS, Pipeline Behaviors, and Unit of Work — the co
 
 ## Result Pattern
 
-All commands and queries return `Result` or `Result<T>` (Railway-Oriented Programming). Located in `Platform.Core` (namespace `Miqa.Platform`).
+All commands and queries return `Result` or `Result<T>` (Railway-Oriented Programming). Located in `Platform.Core` (namespace `Sirius.Platform`).
 
 ```csharp
 // Success track
@@ -93,10 +93,10 @@ public interface IDomainEventHandler<TEvent> : INotificationHandler<TEvent>
 
 ```csharp
 // Write: transactions, audit timestamps, idempotency, outbox
-public class MiqaDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityChangeTracker { }
+public class SiriusDBContext : DbContext, ITransactionalUnitOfWork, IDomainEntityChangeTracker { }
 
 // Read: NoTrackingWithIdentityResolution, SaveChanges sealed to throw, read-replica ready
-public abstract class MiqaReadDbContext : DbContext { }
+public abstract class SiriusReadDbContext : DbContext { }
 ```
 
 Query handlers live in Infrastructure and inject the read context (e.g. `AccountReadContext`); command handlers use the write context through repositories. See [08-cqrs-read-model.md](08-cqrs-read-model.md).
@@ -109,11 +109,11 @@ Behaviors wrap command/query execution using MediatR's Chain of Responsibility. 
 
 ### Registration
 
-Services do not register platform behaviors by hand. `AddMiqaMediator` (in `Platform.Messaging.EntityFramework`) registers the standard pipeline; services only provide assemblies plus their optional logging and validation behaviors:
+Services do not register platform behaviors by hand. `AddSiriusMediator` (in `Platform.Messaging.EntityFramework`) registers the standard pipeline; services only provide assemblies plus their optional logging and validation behaviors:
 
 ```csharp
 // Accounts.API/Extensions/Extensions.cs
-services.AddMiqaMediator(cfg =>
+services.AddSiriusMediator(cfg =>
 {
     cfg.RegisterServicesFromAssembly(AssemblyReference.Assembly);
     cfg.RegisterServicesFromAssembly(typeof(Infrastructure.AssemblyReference).Assembly);
@@ -142,7 +142,7 @@ services.AddCommandTelemetryBehavior();             // IPipelineBehavior<,> (reg
 services.AddQueryTelemetryBehavior();               // IPipelineBehavior<,> (registered after AddMediatR)
 ```
 
-`AddMiqaMediator` is idempotent (marker type), and `WithLogging` / `WithValidation` validate that the type is an open generic with two type parameters.
+`AddSiriusMediator` is idempotent (marker type), and `WithLogging` / `WithValidation` validate that the type is an open generic with two type parameters.
 
 ### Effective Order
 
@@ -175,7 +175,7 @@ sequenceDiagram
     participant VAL as ValidationBehavior
     participant DEP as DomainEventProcessor
     participant H as CommandHandler
-    participant DB as MiqaDBContext
+    participant DB as SiriusDBContext
 
     API->>LOG: Send(command)
     LOG->>IDM: next()
@@ -257,7 +257,7 @@ public interface ITransactionalUnitOfWork : IUnitOfWork
 }
 ```
 
-`MiqaDBContext` also implements `IDomainEntityChangeTracker` for domain event dispatch:
+`SiriusDBContext` also implements `IDomainEntityChangeTracker` for domain event dispatch:
 
 ```csharp
 public interface IDomainEntityChangeTracker
@@ -275,7 +275,7 @@ public interface IDomainEntityChangeTracker
 4. `TransactionBehavior` records `GetPendingChangesCount()` and calls `CommitTransactionAsync()`, which applies audit timestamps, performs a final `SaveChangesAsync()`, commits, and sets `LastCommittedTransactionId`. Any failure rolls back and rethrows.
 5. `IntegrationEventProcessorBehavior` reads the transaction ID and publishes the outbox events for that transaction.
 
-`MiqaDBContext.SaveChangesAsync` also sets `CreatedAt` (added) / `UpdatedAt` (modified) on every `Entity` and converts unique-constraint violations into `UniqueConstraintViolationException`.
+`SiriusDBContext.SaveChangesAsync` also sets `CreatedAt` (added) / `UpdatedAt` (modified) on every `Entity` and converts unique-constraint violations into `UniqueConstraintViolationException`.
 
 ---
 
@@ -283,7 +283,7 @@ public interface IDomainEntityChangeTracker
 
 **Why `ICommandRequest` marker?** C# lacks open generic pattern matching. The marker enables `request is not ICommandRequest` for zero-reflection filtering. `IIdempotentRequest` follows the same idea for idempotency.
 
-**Why `AddMiqaMediator` instead of raw `AddMediatR`?** The order of platform behaviors is load-bearing (idempotency outside the transaction, outbox publishing after commit, domain events inside the transaction). Centralizing it prevents services from getting it wrong.
+**Why `AddSiriusMediator` instead of raw `AddMediatR`?** The order of platform behaviors is load-bearing (idempotency outside the transaction, outbox publishing after commit, domain events inside the transaction). Centralizing it prevents services from getting it wrong.
 
 **Why separate telemetry behaviors for commands and queries?** Distinct counters (`application.command_handlers.processed` vs `application.query_handlers.processed`) and histograms for independent read vs write monitoring.
 

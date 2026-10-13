@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 
-using Miqa.Contracts.Accounts.IntegrationEvents;
+using Sirius.Contracts.Accounts.IntegrationEvents;
 
 namespace Services.UnitTests.Identity;
 

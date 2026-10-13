@@ -4,12 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 using Platform.TestWebApi.Infrastructure;
 
-using Miqa.Domain.Behaviors;
-using Miqa.Platform.EventBus;
-using Miqa.Platform.EventBus.Builders;
-using Miqa.Platform.Messaging.Builders;
-using Miqa.Platform.Persistence.Builders;
-using Miqa.Platform.Persistence.Migrations;
+using Sirius.Domain.Behaviors;
+using Sirius.Platform.EventBus;
+using Sirius.Platform.EventBus.Builders;
+using Sirius.Platform.Messaging.Builders;
+using Sirius.Platform.Persistence.Builders;
+using Sirius.Platform.Persistence.Migrations;
 
 using System.Diagnostics.Contracts;
 using System.Reflection;
@@ -27,7 +27,7 @@ public static class Extensions
 
         services.AddHttpContextAccessor();
 
-        services.AddMiqaMediator(cfg =>
+        services.AddSiriusMediator(cfg =>
         {
             cfg.RegisterServicesFromAssembly(AssemblyReference.Assembly);
             cfg.RegisterServicesFromAssembly(typeof(AssemblyReference).Assembly);
@@ -49,7 +49,7 @@ public static class Extensions
         var readConnectionString = builder.Configuration.GetConnectionString("TestDbReadonly")
             ?? connectionString;
 
-        services.AddMiqaSDBContext<TestDbContext>(
+        services.AddSiriusSDBContext<TestDbContext>(
             conf => conf
                 .SetDefaultSchema("test")
                 .RegisterModelsFromAssembly(Assembly.GetExecutingAssembly()),
@@ -59,7 +59,7 @@ public static class Extensions
             })
         );
 
-        services.AddMiqaReadDbContext<TestReadDbContext>(
+        services.AddSiriusReadDbContext<TestReadDbContext>(
                 conf => conf
                     .SetDefaultSchema("test")
                     .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),

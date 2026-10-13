@@ -17,7 +17,7 @@ sequenceDiagram
     participant H as CreateCompanyCommandHandler
     participant DEH as CompanyCreatedDomainEventHandler
     participant DB as AccountContext (SQL)
-    participant BUS as Service Bus (miqa-event-bus)
+    participant BUS as Service Bus (sirius-event-bus)
     participant N as Notifications
 
     C->>API: PUT /api/accounts/companies (x-requestid)
@@ -159,7 +159,7 @@ The command handler creates two `EmailNotification` aggregates, sends them throu
 
 ## What Gets Committed Atomically
 
-Accounts transaction (database `MiqaSystemDb`, schema `Accounts`):
+Accounts transaction (database `SiriusSystemDb`, schema `Accounts`):
 
 | Data | Table | Same Transaction |
 |------|-------|:---:|

@@ -6,10 +6,10 @@ using System.Text.Json.Serialization;
 using Asp.Versioning;
 using Asp.Versioning.Http;
 
-using Miqa.Services.Accounts.APIs;
-using Miqa.Services.Accounts.Domain.Models.CompanyAggregate;
+using Sirius.Services.Accounts.APIs;
+using Sirius.Services.Accounts.Domain.Models.CompanyAggregate;
 
-using static Miqa.Services.Accounts.Authorization.AccountsAuthorizationPolicies;
+using static Sirius.Services.Accounts.Authorization.AccountsAuthorizationPolicies;
 
 namespace Services.FunctionalTests.Accounts;
 

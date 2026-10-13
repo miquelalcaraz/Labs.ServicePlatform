@@ -1,7 +1,7 @@
 using Platform.TestWebApi.Infrastructure;
 
-using Miqa.Platform;
-using Miqa.Platform.Messaging.Commands;
+using Sirius.Platform;
+using Sirius.Platform.Messaging.Commands;
 
 namespace Platform.TestWebApi.Commands;
 

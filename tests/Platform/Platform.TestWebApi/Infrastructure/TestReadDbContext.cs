@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 
-using Miqa.Platform.Persistence;
-using Miqa.Platform.Persistence.Options;
+using Sirius.Platform.Persistence;
+using Sirius.Platform.Persistence.Options;
 
 namespace Platform.TestWebApi.Infrastructure;
 
-public class TestReadDbContext : MiqaReadDbContext
+public class TestReadDbContext : SiriusReadDbContext
 {
     public TestReadDbContext(
         DbContextOptions<TestDbContext> options,
-        MiqaReadDbContextConfiguration configuration)
+        SiriusReadDbContextConfiguration configuration)
         : base(options, configuration)
     {
     }

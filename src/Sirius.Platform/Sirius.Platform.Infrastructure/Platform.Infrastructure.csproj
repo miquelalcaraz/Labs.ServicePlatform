@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<RootNamespace>Sirius.Platform</RootNamespace>
+		<IsAotCompatible>true</IsAotCompatible>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.13" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\..\Sirius.Domain\Sirius.Domain.Application\Domain.Application.csproj" /> 
+	</ItemGroup>
+</Project>

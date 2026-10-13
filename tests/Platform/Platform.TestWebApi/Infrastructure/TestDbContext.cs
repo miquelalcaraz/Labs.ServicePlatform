@@ -1,15 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 
-using Miqa.Platform.Persistence;
-using Miqa.Platform.Persistence.Options;
+using Sirius.Platform.Persistence;
+using Sirius.Platform.Persistence.Options;
 
 namespace Platform.TestWebApi.Infrastructure;
 
-public class TestDbContext : MiqaDBContext
+public class TestDbContext : SiriusDBContext
 {
     public TestDbContext(
         DbContextOptions<TestDbContext> options,
-        MiqaDbContextConfiguration configuration)
+        SiriusDbContextConfiguration configuration)
         : base(options, configuration)
     {
     }

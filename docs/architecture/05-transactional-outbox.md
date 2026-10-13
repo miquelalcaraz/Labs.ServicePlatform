@@ -247,9 +247,9 @@ The outbox stores `TypeName = event.GetType().FullName` and needs the type to de
 services.AddTransactionalOutbox<AccountContext>(options =>
 {
     options.RegisterEventTypes(
-        typeof(Miqa.Contracts.Accounts.AssemblyReference).Assembly,
-        typeof(Miqa.Contracts.Identity.AssemblyReference).Assembly,
-        typeof(Miqa.Contracts.Notifications.AssemblyReference).Assembly);
+        typeof(Sirius.Contracts.Accounts.AssemblyReference).Assembly,
+        typeof(Sirius.Contracts.Identity.AssemblyReference).Assembly,
+        typeof(Sirius.Contracts.Notifications.AssemblyReference).Assembly);
 });
 ```
 
@@ -261,7 +261,7 @@ Unregistered event types make deserialization throw `InvalidOperationException` 
 
 ## Telemetry
 
-`OutboxMessageService`, `EventBusOutboxService` and `OutboxProcessor` emit (ActivitySource / Meter `Miqa.Domain.Application`):
+`OutboxMessageService`, `EventBusOutboxService` and `OutboxProcessor` emit (ActivitySource / Meter `Sirius.Domain.Application`):
 
 | Signal | Details |
 |--------|---------|
@@ -274,7 +274,7 @@ Unregistered event types make deserialization throw `InvalidOperationException` 
 ## Validation Checklist
 
 - [ ] Domain event handlers save integration events via `IEventBusOutboxService.AddAndSaveEventAsync` (inside transaction)
-- [ ] The service uses `AddMiqaMediator` so `IntegrationEventProcessorBehavior` runs outside `TransactionBehavior`
+- [ ] The service uses `AddSiriusMediator` so `IntegrationEventProcessorBehavior` runs outside `TransactionBehavior`
 - [ ] `AddTransactionalOutbox<TContext>` is registered (it also registers `OutboxProcessor` and enables the outbox mapping)
 - [ ] `AddMigration<TContext>` is registered so `MigrationReadySignal` exists and is signalled
 - [ ] All published integration event types are registered via `OutboxMessageOptions.RegisterEventTypes`

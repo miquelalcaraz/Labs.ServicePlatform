@@ -151,7 +151,7 @@ flowchart LR
 
 ### Eventual Consistency (Across Bounded Contexts)
 
-Integration events are published asynchronously through the event bus (Azure Service Bus topic `miqa-event-bus` by default). Each receiving service processes the event in its own transaction behind the idempotent consumer decorator.
+Integration events are published asynchronously through the event bus (Azure Service Bus topic `sirius-event-bus` by default). Each receiving service processes the event in its own transaction behind the idempotent consumer decorator.
 
 Real integration event flows between services:
 
@@ -234,7 +234,7 @@ In this flow the outbox events are committed atomically with the business data a
 
 ### Identity: Two Contexts
 
-Identity keeps ASP.NET Identity / Duende data in `IdentityContext` and the platform infrastructure (idempotency + outbox) in `IdentityLogsContext : MiqaDBContext`. Command handlers such as `ProvisionCustomerAdminCommandHandler` write users and tenants through `ResilientTransaction.New(_identityContext)` and then add the integration event to the outbox of `IdentityLogsContext`. These are **two separate database transactions**, so Identity relies on idempotent "create if not exists" logic instead of a single atomic commit.
+Identity keeps ASP.NET Identity / Duende data in `IdentityContext` and the platform infrastructure (idempotency + outbox) in `IdentityLogsContext : SiriusDBContext`. Command handlers such as `ProvisionCustomerAdminCommandHandler` write users and tenants through `ResilientTransaction.New(_identityContext)` and then add the integration event to the outbox of `IdentityLogsContext`. These are **two separate database transactions**, so Identity relies on idempotent "create if not exists" logic instead of a single atomic commit.
 
 ### Domain Event Handler Example
 
@@ -267,7 +267,7 @@ The handler loads the persisted company and adds an integration event to the out
 
 **Why dispatch domain events WITHIN the transaction (not after)?** Handlers need access to persisted data and must be able to modify the database atomically. If dispatch happened after commit, handler failures would leave the system in an inconsistent state.
 
-**Why a separate DomainEventProcessorBehavior instead of dispatching in SaveChanges?** Separating dispatch from persistence follows SRP. The behavior is configurable independently and keeps `MiqaDBContext` focused on persistence.
+**Why a separate DomainEventProcessorBehavior instead of dispatching in SaveChanges?** Separating dispatch from persistence follows SRP. The behavior is configurable independently and keeps `SiriusDBContext` focused on persistence.
 
 **Why cascading re-check?** Domain event handlers may raise additional domain events. The re-check loop ensures all cascading events are processed within the same transaction.
 

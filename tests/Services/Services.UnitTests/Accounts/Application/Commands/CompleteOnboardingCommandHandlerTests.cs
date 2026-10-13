@@ -1,10 +1,10 @@
 using Microsoft.Extensions.Logging;
 
-using Miqa.Domain.SeedWork;
-using Miqa.Services.Accounts.Application.Commands;
-using Miqa.Services.Accounts.Domain.Models.OnboardingAggregate;
-using Miqa.Services.Accounts.Domain.Models.UserMembershipAggregate;
-using Miqa.Services.Accounts.Domain.Repositories;
+using Sirius.Domain.SeedWork;
+using Sirius.Services.Accounts.Application.Commands;
+using Sirius.Services.Accounts.Domain.Models.OnboardingAggregate;
+using Sirius.Services.Accounts.Domain.Models.UserMembershipAggregate;
+using Sirius.Services.Accounts.Domain.Repositories;
 
 namespace Services.UnitTests.Accounts.Application.Commands;
 

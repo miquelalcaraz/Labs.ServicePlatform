@@ -18,12 +18,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\..\..\src\Miqa.Contracts\Miqa.Contracts.Accounts\Contracts.Accounts.csproj" IsAspireProjectResource="false" />
-		<ProjectReference Include="..\..\..\src\Miqa.Infrastructure\Miqa.Infrastructure.Identity\Infrastructure.Identity.csproj" />
-		<ProjectReference Include="..\..\..\src\Miqa.Services\Miqa.Services.Accounts\Api\Accounts.API.csproj" IsAspireProjectResource="false" />
-		<ProjectReference Include="..\..\..\src\Miqa.Services\Miqa.Services.Accounts\Application\Accounts.Application.csproj" IsAspireProjectResource="false" />
-		<ProjectReference Include="..\..\..\src\Miqa.Services\Miqa.Services.Accounts\Domain\Accounts.Domain.csproj" IsAspireProjectResource="false" />
-		<ProjectReference Include="..\..\..\src\Miqa.Services\Miqa.Services.Accounts\Infrastructure\Accounts.Infrastructure.csproj" IsAspireProjectResource="false" />
+		<ProjectReference Include="..\..\..\src\Sirius.Contracts\Sirius.Contracts.Accounts\Contracts.Accounts.csproj" IsAspireProjectResource="false" />
+		<ProjectReference Include="..\..\..\src\Sirius.Infrastructure\Sirius.Infrastructure.Identity\Infrastructure.Identity.csproj" />
+		<ProjectReference Include="..\..\..\src\Sirius.Services\Sirius.Services.Accounts\Api\Accounts.API.csproj" IsAspireProjectResource="false" />
+		<ProjectReference Include="..\..\..\src\Sirius.Services\Sirius.Services.Accounts\Application\Accounts.Application.csproj" IsAspireProjectResource="false" />
+		<ProjectReference Include="..\..\..\src\Sirius.Services\Sirius.Services.Accounts\Domain\Accounts.Domain.csproj" IsAspireProjectResource="false" />
+		<ProjectReference Include="..\..\..\src\Sirius.Services\Sirius.Services.Accounts\Infrastructure\Accounts.Infrastructure.csproj" IsAspireProjectResource="false" />
 	</ItemGroup>
 
 

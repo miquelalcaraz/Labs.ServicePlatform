@@ -1,4 +1,4 @@
-﻿using Miqa.Platform.Persistence.Migrations;
+﻿using Sirius.Platform.Persistence.Migrations;
 
 namespace Platform.TestWebApi.Infrastructure
 {
