@@ -12,18 +12,18 @@ namespace Sirius.Domain.Behaviors;
 
 /// <summary>
 /// MediatR pipeline behavior that logs command/query execution with performance tracking.
-/// Works with any request context (HTTP, messaging, background jobs) via IUserHttpContext.
+/// Works with any request context (HTTP, messaging, background jobs) via ICurrentUserContext.
 /// </summary>
 public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
     private readonly ILogger<LoggingBehavior<TRequest, TResponse>> _logger;
-    private readonly IUserHttpContext? _contextAccessor;
+    private readonly ICurrentUserContext? _contextAccessor;
     private const int SlowCommandThresholdMs = 500;
 
     public LoggingBehavior(
         ILogger<LoggingBehavior<TRequest, TResponse>> logger,
-        IUserHttpContext? contextAccessor = null)
+        ICurrentUserContext? contextAccessor = null)
     {
         _logger = logger;
         _contextAccessor = contextAccessor;

@@ -12,10 +12,10 @@ namespace Sirius.Platform.Apis;
 
 public abstract class ApiServices(
     IMediator mediator,
-    IUserHttpContext userHttpContext,
+    ICurrentUserContext userHttpContext,
     ILogger<ApiServices> logger)
 {
     public IMediator Mediator { get; set; } = mediator;
     public ILogger<ApiServices> Logger { get; } = logger;
-    public IUserHttpContext UserHttpContext { get; } = userHttpContext;
+    public ICurrentUserContext CurrentUser { get; } = userHttpContext;
 }

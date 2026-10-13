@@ -34,7 +34,7 @@ namespace Sirius.Services.Accounts.APIs
             if (requestId == Guid.Empty)
             {
                 services.Logger.LogWarning("Invalid request - RequestId is missing - {@Request}", request);
-                return TypedResults.BadRequest(new ApiErrorResponse { Code = "ValidationError", Message = "Empty GUID is not valid for request ID", TraceId = services.UserHttpContext.TraceId });
+                return TypedResults.BadRequest(new ApiErrorResponse { Code = "ValidationError", Message = "Empty GUID is not valid for request ID", TraceId = services.CurrentUser.TraceId });
             }
 
             using (services.Logger.BeginScope(new List<KeyValuePair<string, object>> { new("IdentifiedCommandId", requestId) }))
@@ -61,7 +61,7 @@ namespace Sirius.Services.Accounts.APIs
                 else
                     services.Logger.LogInformation("CreateCompanyCommand succeeded - RequestId: {RequestId}", requestId);
 
-                return result.ToHttpResult(services.UserHttpContext.TraceId);
+                return result.ToHttpResult(services.CurrentUser.TraceId);
             }
         }
 
@@ -72,7 +72,7 @@ namespace Sirius.Services.Accounts.APIs
             var result = await services.Mediator.Send(new GetCompanyByIdQuery(id));
 
             if (result.IsFailure)
-                return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = "Company not found.", TraceId = services.UserHttpContext.TraceId });
+                return TypedResults.NotFound(new ApiErrorResponse { Code = "NotFound", Message = "Company not found.", TraceId = services.CurrentUser.TraceId });
 
             return TypedResults.Ok(result.Value);
         }
