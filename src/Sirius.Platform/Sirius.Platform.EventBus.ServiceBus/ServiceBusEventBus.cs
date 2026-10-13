@@ -151,7 +151,15 @@ public sealed class ServiceBusEventBus(
 
         if (_processor is not null)
         {
-            await _processor.StopProcessingAsync(cancellationToken);
+            try
+            {
+                await _processor.StopProcessingAsync(cancellationToken);
+            }
+            catch (ObjectDisposedException)
+            {
+                // SemaphoreSlim race condition in the Azure Service Bus SDK during teardown — safe to ignore.
+                logger.LogInformation("ServiceBus processor already disposed during stop processing.");
+            }
             await _processor.DisposeAsync();
         }
 

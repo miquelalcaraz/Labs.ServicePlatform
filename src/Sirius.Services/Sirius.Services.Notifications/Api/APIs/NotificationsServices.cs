@@ -9,8 +9,8 @@ namespace Sirius.Services.Notifications.APIs
     public class NotificationsServices(
                     IMediator mediator,
                     ICurrentUserContext userHttpContext,
-                    ILogger<ApiServices> logger
-        ) : ApiServices(mediator, userHttpContext, logger)
+                    ILogger<NotificationsServices> logger
+        ) : ApiServices<NotificationsServices>(mediator, userHttpContext, logger)
     {
     }
 
