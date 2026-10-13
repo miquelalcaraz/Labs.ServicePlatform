@@ -216,11 +216,9 @@ tests/Services/
 │   │   ├── IntegrationEvents/
 │   │   ├── Models/
 │   │   └── Pages/
-│   ├── Notifications/
-│   │   ├── Application/Commands/
-│   │   └── IntegrationEvents/
-│   └── Notificatios/
-│       └── NotificatiosTestBase.cs
+│   └── Notifications/
+│       ├── Application/Commands/
+│       └── IntegrationEvents/
 └── Services.FunctionalTests/
     ├── ServicesFixture.cs
     ├── AutoAuthorizeMiddleware.cs
@@ -234,7 +232,7 @@ tests/Services/
     ├── Identity/
     │   ├── IdentityFixture.cs
     │   └── IdentityApiTests.cs
-    └── Notificatios/
+    └── Notifications/
         └── NotificationsFixture.cs
 ```
 
