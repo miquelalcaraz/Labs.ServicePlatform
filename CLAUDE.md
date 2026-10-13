@@ -19,6 +19,8 @@ Shared instructions for AI assistants working in this repository (Claude Code re
 Claude Code skills (`.claude/skills/`):
 - `sirius-platform-architect` — changes to `src/Sirius.Platform` and `src/Sirius.Domain`.
 - `sirius-feature-developer` — business features in services, contracts, Identity and the BackOffice.
+- `aspire` (+ `aspire-orchestration`, `aspire-monitoring`) — run and observe the AppHost with the Aspire CLI; agents use `aspire start` / `aspire stop`, never `dotnet run` on the AppHost.
+- `dotnet-inspect` — query and diff NuGet APIs before upgrading dependencies.
 
 **Before making architectural decisions or modifying base components, read the principles & ADRs document.** Significant decisions are recorded there as new ADRs.
 

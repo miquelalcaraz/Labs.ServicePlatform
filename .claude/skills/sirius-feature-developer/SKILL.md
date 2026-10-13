@@ -96,6 +96,8 @@ dotnet test tests/Services/Services.UnitTests
 dotnet run --project tests/Services/Services.FunctionalTests   # Docker required
 ```
 
+When the feature crosses services (new integration event, consumer or workflow step), also run the app with the `aspire` skill and follow one request through the trace (`aspire otel traces` / `aspire otel spans`): the outbox publish in the producer and the consumer span in the other service should share the trace. Stop it with `aspire stop` afterwards.
+
 If you could not run something, say so — don't imply it passed.
 
 ### 6. Document the feature
