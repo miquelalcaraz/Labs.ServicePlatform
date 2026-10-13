@@ -21,8 +21,8 @@ flowchart LR
 
     MED --> CMD
     MED --> QRY
-    WCTX -- "SiriusSystemDb" --> DB[("SQL Server")]
-    RCTX -- "SiriusSystemDbReadonly<br/>(fallback: SiriusSystemDb)" --> DB
+    WCTX -- "SiriusDb" --> DB[("SQL Server")]
+    RCTX -- "SiriusDbReadonly<br/>(fallback: SiriusDb)" --> DB
 ```
 
 ---
@@ -37,7 +37,7 @@ flowchart LR
 | DI roles | Concrete type + `SiriusDBContext`, `ITransactionalUnitOfWork`, `IDomainEntityChangeTracker` | Only its own type |
 | EF model | Domain entities + `IdempotencyEntry` / `OutboxMessage` (when enabled) | Domain entities only (+ `RowVersion`/`CreatedAt` audit mapping) |
 | Pipeline | Commands (`TransactionBehavior`, domain events, outbox) | Queries (no transaction) |
-| Connection (Accounts) | `SiriusSystemDb` | `SiriusSystemDbReadonly` (fallback to `SiriusSystemDb`) |
+| Connection (Accounts) | `SiriusDb` | `SiriusDbReadonly` (fallback to `SiriusDb`) |
 
 ---
 
@@ -89,8 +89,8 @@ public class AccountReadContext : SiriusReadDbContext
 
 ```csharp
 // Accounts.Infrastructure/Extensions/Extensions.cs
-var connectionString = builder.Configuration.GetConnectionString("SiriusSystemDb");
-var readConnectionString = builder.Configuration.GetConnectionString("SiriusSystemDbReadonly")
+var connectionString = builder.Configuration.GetConnectionString("SiriusDb");
+var readConnectionString = builder.Configuration.GetConnectionString("SiriusDbReadonly")
     ?? connectionString;
 
 services.AddSiriusReadDbContext<AccountReadContext>(
@@ -137,10 +137,10 @@ public class GetCompanyByIdQueryHandler(AccountReadContext context)
 For SQL Server AlwaysOn or Azure SQL read replicas:
 
 ```
-ConnectionStrings__SiriusSystemDbReadonly: Server=...;ApplicationIntent=ReadOnly;...
+ConnectionStrings__SiriusDbReadonly: Server=...;ApplicationIntent=ReadOnly;...
 ```
 
-If `SiriusSystemDbReadonly` is not configured, the read context transparently falls back to the write connection string. No code changes required — purely infrastructure configuration.
+If `SiriusDbReadonly` is not configured, the read context transparently falls back to the write connection string. No code changes required — purely infrastructure configuration.
 
 ---
 

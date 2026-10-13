@@ -115,7 +115,7 @@ flowchart LR
         ASP["Aspire DistributedApplication<br/>(dashboard disabled)"]
         WAF["WebApplicationFactory#lt;Program#gt;<br/>connection strings injected"]
     end
-    ASP --> SQL[("SQL Server container<br/>SiriusSystemDb / IdentityDb / testDb")]
+    ASP --> SQL[("SQL Server container<br/>SiriusDb / IdentityDb / testDb")]
     ASP --> RED[("Redis container")]
     ASP --> SB[("Service Bus emulator<br/>topic sirius-event-bus")]
     WAF --> HOST["API under test"]
@@ -125,7 +125,7 @@ flowchart LR
 | Fixture | Usage | Notes |
 |---|---|---|
 | `BuildingBlocksFixture` | `[Collection("BuildingBlocks")]` (`ICollectionFixture`) | Hosts `Platform.TestWebApi`; SQL Server on port 1446, subscription `Platform` |
-| `ServicesFixture` (abstract) → `AccountsFixture`, `IdentityFixture`, `NotificationsFixture` | `IClassFixture<AccountsFixture>` etc. | SQL Server on port 1445 with `SiriusSystemDb` and `IdentityDb`; adds `AutoAuthorizeMiddleware` through an `IStartupFilter` |
+| `ServicesFixture` (abstract) → `AccountsFixture`, `IdentityFixture`, `NotificationsFixture` | `IClassFixture<AccountsFixture>` etc. | SQL Server on port 1445 with `SiriusDb` and `IdentityDb`; adds `AutoAuthorizeMiddleware` through an `IStartupFilter` |
 
 `AutoAuthorizeMiddleware` authenticates every request with a fixed test identity (`sub = AutoAuthorizeMiddleware.IDENTITY_ID`) so endpoints protected by `RequireAuthorization()` and role policies can be exercised. The role defaults to `PlatformAdmin` and can be overridden per request with the `X-Test-Role` header — authorization tests use it to assert `403 Forbidden` for denied roles.
 

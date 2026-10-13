@@ -36,7 +36,7 @@ flowchart LR
     end
 
     subgraph Infrastructure
-        SQL[("SQL Server<br/>SiriusSystemDb · IdentityDb")]
+        SQL[("SQL Server<br/>SiriusDb · IdentityDb")]
         Redis[(Redis)]
         Bus{{"Azure Service Bus<br/>topic sirius-event-bus"}}
     end
@@ -46,7 +46,7 @@ flowchart LR
     Services <-. integration events .-> Bus
 ```
 
-> Accounts and Notifications share `SiriusSystemDb` (one schema each); Identity uses `IdentityDb`.
+> Accounts and Notifications share `SiriusDb` (one schema each); Identity uses `IdentityDb`.
 
 - **Accounts API** — companies, tenants, subscriptions, the customer **onboarding** process and the customer **activation** process (DDD aggregates and process state machines).
 - **Identity** — Duende IdentityServer with ASP.NET Core Identity; provisions tenant admin users and activates them.
@@ -167,7 +167,7 @@ docs/                       → Architecture and developer documentation
 ```bash
 git clone https://github.com/miquelalcaraz/Labs.CleanArchitecture.BuildingBlocks.git
 cd Labs.CleanArchitecture.BuildingBlocks
-dotnet build SiriusSystem.slnx
+dotnet build Sirius.slnx
 dotnet run --project src/Sirius.Infrastructure/Sirius.Infrastructure.AppHost
 ```
 

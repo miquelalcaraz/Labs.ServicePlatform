@@ -53,5 +53,5 @@ Restored from NuGet at build time; not redistributed in this repository.
 For the full list, including transitive dependencies, run:
 
 ```bash
-dotnet list SiriusSystem.slnx package --include-transitive
+dotnet list Sirius.slnx package --include-transitive
 ```

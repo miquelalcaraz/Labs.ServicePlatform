@@ -155,9 +155,9 @@ public static IServiceCollection AddApplicationServices(this IHostApplicationBui
 public static void AddInfrastructureServices(this IHostApplicationBuilder builder)
 {
     var services = builder.Services;
-    // Services share the SiriusSystemDb database, each one in its own schema
-    var connectionString = builder.Configuration.GetConnectionString("SiriusSystemDb");
-    var readConnectionString = builder.Configuration.GetConnectionString("SiriusSystemDbReadonly")
+    // Services share the SiriusDb database, each one in its own schema
+    var connectionString = builder.Configuration.GetConnectionString("SiriusDb");
+    var readConnectionString = builder.Configuration.GetConnectionString("SiriusDbReadonly")
         ?? connectionString;
 
     // Write context
@@ -223,7 +223,7 @@ private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)
 - **Register handlers from both assemblies** — Application (commands, domain event handlers) and Infrastructure (query handlers)
 - **Infrastructure calls go in `AddInfrastructureServices`** — database, event bus, idempotency, outbox, repositories
 - **Order matters** — `AddInfrastructureServices` before `AddSiriusMediator`; inside it: subscriptions → Redis idempotency → EF idempotency → outbox (Scrutor decorates in call order)
-- **Configuration** — `appsettings.json` needs `EventBus:SubscriptionClientName` (matching the AppHost subscription) and the `IdempotencyCache` section; connection names `SiriusSystemDb`, `eventbus` and `cache` come from Aspire
+- **Configuration** — `appsettings.json` needs `EventBus:SubscriptionClientName` (matching the AppHost subscription) and the `IdempotencyCache` section; connection names `SiriusDb`, `eventbus` and `cache` come from Aspire
 
 ---
 

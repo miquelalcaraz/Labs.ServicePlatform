@@ -159,8 +159,8 @@ public static void AddInfrastructureServices(this IHostApplicationBuilder builde
 {
     var services = builder.Services;
 
-    var connectionString = builder.Configuration.GetConnectionString("SiriusSystemDb");
-    var readConnectionString = builder.Configuration.GetConnectionString("SiriusSystemDbReadonly")
+    var connectionString = builder.Configuration.GetConnectionString("SiriusDb");
+    var readConnectionString = builder.Configuration.GetConnectionString("SiriusDbReadonly")
         ?? connectionString;
 
     services.AddSiriusSDBContext<AccountContext>(

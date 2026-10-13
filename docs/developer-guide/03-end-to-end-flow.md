@@ -159,7 +159,7 @@ The command handler creates two `EmailNotification` aggregates, sends them throu
 
 ## What Gets Committed Atomically
 
-Accounts transaction (database `SiriusSystemDb`, schema `Accounts`):
+Accounts transaction (database `SiriusDb`, schema `Accounts`):
 
 | Data | Table | Same Transaction |
 |------|-------|:---:|
