@@ -9,7 +9,7 @@ A **reusable base architecture for event-driven .NET services** on **.NET 10** a
 
 The platform is exercised by a [sample B2B domain](docs/features/README.md) (customer onboarding and activation) that proves it works end to end across several services.
 
-**Start here:** [Principle](#-design-principle) · [Building blocks](#-building-blocks) · [Isolation & abstractions](#-isolation-and-abstractions) · [Reference implementation](#-reference-implementation) · [AI-assisted development](#-ai-assisted-development) · [Run locally](#-running-the-project) · [Docs](#-documentation)
+**Start here:** [Principle](#-design-principle) · [Isolation & abstractions](#-isolation-and-abstractions) · [Building blocks](#-building-blocks) · [Reference implementation](#-reference-implementation) · [AI-assisted development](#-ai-assisted-development) · [Run locally](#-running-the-project) · [Docs](#-documentation)
 
 > [!NOTE]
 > **Continuation of [Labs.Aspire.uSLearn](https://github.com/miquelalcaraz/Labs.Aspire.uSLearn).**
@@ -59,11 +59,9 @@ flowchart LR
     P -- "uses" --> T
 ```
 
-Business code talks only to contracts. The platform implements and decorates those contracts — pipeline, idempotency, outbox, telemetry — and is the only layer that touches concrete technology, which can be swapped underneath.
-
 > **"Platform evolves, services sleep peacefully."**
 
-The building blocks were designed before every technology decision was final (event bus transport, persistence backend, caching). Instead of betting on one, each concern sits behind an abstraction, and business services depend **only** on those abstractions:
+The building blocks were designed before every technology decision was final (event bus transport, persistence backend, caching). Instead of betting on one, business code talks **only** to contracts; the platform implements and decorates them — pipeline, idempotency, outbox, telemetry — and is the only layer that touches concrete technology, which can be swapped underneath:
 
 | Strategy | How it shows up in the code |
 |---|---|
@@ -77,55 +75,9 @@ The full rationale, decision framework and ADRs are in [Principles & ADRs](docs/
 
 ---
 
-## 🧱 Building Blocks
-
-| Project | Responsibility |
-|---|---|
-| `Domain.Core` | DDD seed work: `Entity` (domain events, `CreatedAt`/`UpdatedAt`, `RowVersion`), `ValueObject`, `IAggregateRoot`, `IRepository`, `IUnitOfWork`, `IDomainEvent` |
-| `Domain.Application` | Cross-cutting MediatR behaviors: `LoggingBehavior`, `ValidationBehavior` (FluentValidation) |
-| `Platform.Core` | `Result` / `Result<T>` and `Error` (railway-oriented results) |
-| `Platform.Messaging.Abstractions` | Contracts: `ICommand<T>`, `IQuery<T>`, `IDomainEventHandler<T>`, `IIntegrationEventHandler<T>`, `IIdempotencyService`, `IEventBusOutboxService`, `IntegrationEvent` |
-| `Platform.Messaging` | Persistence-ignorant logic: `IdempotencyBehavior`, telemetry behaviors/decorators, `IdempotentCommand<T>`, outbox/idempotency POCOs |
-| `Platform.Messaging.EntityFramework` | `AddSiriusMediator`, `TransactionBehavior`, `DomainEventProcessorBehavior`, `IntegrationEventProcessorBehavior`, EF idempotency, outbox services and `OutboxProcessor` — generic over any `DbContext` |
-| `Platform.Messaging.Redis` | Redis fast path for idempotency checks; the EF idempotency service decorates it and remains the source of truth |
-| `Platform.Persistence.EntityFramework` | EF Core abstractions: `ITransactionalUnitOfWork`, `IDomainEntityChangeTracker`, fluent context configuration |
-| `Platform.Persistence.EntityFramework.Relational` | `SiriusDBContext` (write) and `SiriusReadDbContext` (read-only), entity configurations, `Repository<T>`, `ResilientTransaction`, migrations |
-| `Platform.EventBus` | `IEventBus` abstraction and subscription builder |
-| `Platform.EventBus.ServiceBus` | Azure Service Bus implementation (default) |
-| `Platform.EventBus.RabbitMQ` | RabbitMQ implementation (alternative, see limitations) |
-| `Platform.Telemetry` | OpenTelemetry activity sources, meters and helpers |
-| `Platform.ServiceDefaults` / `Platform.WebApi` / `Platform.Infrastructure` | Aspire service defaults, JWT authentication, OpenAPI + Scalar, `Result` → HTTP mapping, exception middleware, `IUserHttpContext` |
-
-### The command pipeline
-
-Every command flows through the same pipeline, configured with a single call:
-
-```csharp
-services.AddSiriusMediator(cfg =>
-{
-    cfg.RegisterServicesFromAssembly(AssemblyReference.Assembly);
-    cfg.WithLogging(typeof(LoggingBehavior<,>));
-    cfg.WithValidation(typeof(ValidationBehavior<,>));
-});
-```
-
-```mermaid
-flowchart LR
-    L[Logging] --> I[Idempotency]
-    I --> IE["IntegrationEventProcessor<br/><i>publishes outbox after commit</i>"]
-    IE --> T["Transaction<br/><i>BEGIN / COMMIT</i>"]
-    T --> V[Validation]
-    V --> D["DomainEventProcessor<br/><i>dispatches domain events inside the transaction</i>"]
-    D --> H[[Handler]]
-```
-
-Telemetry behaviors, the domain event publisher and the integration event decorators are registered by the same call. Consumers of integration events get the equivalent guarantees through decorators: telemetry → idempotency (inbox) + transaction → handler. See [Command pipeline](docs/architecture/02-command-pipeline.md) and [Idempotency](docs/architecture/04-idempotency.md).
-
----
-
 ## 🧩 Isolation and Abstractions
 
-The building blocks are split so that **each project knows as little as possible**. Dependencies only point towards more stable, more abstract projects:
+Each project knows as little as possible, and dependencies only point towards more stable, more abstract projects. Business code (aggregates, handlers) only uses level-2 contracts; each service's Infrastructure project references the level-4 implementations just to register them. Services never reference each other — they communicate through integration events published in `Sirius.Contracts.*` projects.
 
 ```mermaid
 %%{init: {"themeVariables": {"fontSize": "11px"}, "flowchart": {"nodeSpacing": 12, "rankSpacing": 25, "padding": 4}}}%%
@@ -177,19 +129,6 @@ flowchart BT
     classDef lvl fill:none,stroke:none,text-align:left
 ```
 
-Thick arrows show the main references between levels; thin arrows show which building block each implementation plugs into. Not every reference is drawn: `Platform.Telemetry` is used across levels, `Persistence.EntityFramework` also uses `Domain.Core` / `Platform.Core`, and `Messaging.EntityFramework` also references `EventBus` and `Persistence.EntityFramework` (it is the glue between messaging and EF). Nothing ever points upwards.
-
-What each layer is **not allowed** to know — enforced by project references, not just by convention:
-
-| Project | Does not know about |
-|---|---|
-| `Domain.Core` | Platform, MediatR pipeline, EF, any infrastructure |
-| `Platform.Messaging.Abstractions` / `Platform.Messaging` | Entity Framework, database providers, transports |
-| `Platform.Messaging.EntityFramework` | SQL Server / PostgreSQL providers, table names, entity configurations — works with any `DbContext` |
-| `Platform.Persistence.EntityFramework` | Database providers |
-| `Platform.EventBus.*` transports | Each other — every transport depends only on `Platform.EventBus` |
-| `Platform.Persistence.EntityFramework.Relational` | — it is the **only** place for relational specifics (configurations, migrations, providers) |
-
 ### Swap points
 
 | Concern | Abstraction | Implementations | What changes in a service when swapping |
@@ -200,23 +139,55 @@ What each layer is **not allowed** to know — enforced by project references, n
 | Persistence | `ITransactionalUnitOfWork`, `IRepository<T>` | `SiriusDBContext` / `SiriusReadDbContext` (relational) | The service's `DbContext` base class; a new backend would be a new `Platform.Persistence.*` project |
 | Telemetry | Behaviors, decorators, `INotificationPublisher` | OpenTelemetry | None — registered by `AddSiriusMediator` |
 
-### Isolation between services
+Full dependency rules: [Messaging & persistence layers](docs/architecture/01-messaging-persistence-layers.md).
 
-Services never reference each other. They communicate only through **integration events** published in `Sirius.Contracts.{Service}` projects, which depend on nothing but `Platform.Messaging.Abstractions`. A producing service writes events to its outbox; consumers subscribe through the event bus and process them idempotently.
+---
 
-What a service actually writes, with no infrastructure in sight:
+## 🧱 Building Blocks
+
+| Project | Responsibility | Docs |
+|---|---|---|
+| `Domain.Core` | DDD seed work: entities, value objects, domain events | [Domain events](docs/architecture/03-domain-events-consistency.md) |
+| `Domain.Application` | Logging and validation behaviors | [Pipeline](docs/architecture/02-command-pipeline.md) |
+| `Platform.Core` | `Result` / `Error` (railway-oriented) | [Pipeline](docs/architecture/02-command-pipeline.md) |
+| `Platform.Messaging.Abstractions` | Command, query, event and service contracts | [Layers](docs/architecture/01-messaging-persistence-layers.md) |
+| `Platform.Messaging` | Idempotency and telemetry behaviors, POCOs | [Idempotency](docs/architecture/04-idempotency.md) |
+| `Platform.Messaging.EntityFramework` | `AddSiriusMediator`, transactions, outbox | [Outbox](docs/architecture/05-transactional-outbox.md) |
+| `Platform.Messaging.Redis` | Redis fast path for idempotency | [Idempotency](docs/architecture/04-idempotency.md) |
+| `Platform.Persistence.EntityFramework` | EF Core abstractions (unit of work) | [Layers](docs/architecture/01-messaging-persistence-layers.md) |
+| `Platform.Persistence.EntityFramework.Relational` | Write/read `DbContext`s, mappings, migrations | [Read model](docs/architecture/08-cqrs-read-model.md) |
+| `Platform.EventBus` | `IEventBus` abstraction | [Event bus](docs/architecture/07-event-bus.md) |
+| `Platform.EventBus.ServiceBus` | Azure Service Bus transport (default) | [Event bus](docs/architecture/07-event-bus.md) |
+| `Platform.EventBus.RabbitMQ` | RabbitMQ transport (alternative) | [Event bus](docs/architecture/07-event-bus.md) |
+| `Platform.Telemetry` | OpenTelemetry sources and meters | [Telemetry](docs/architecture/06-telemetry.md) |
+| `Platform.ServiceDefaults` | Aspire defaults, JWT auth, OpenAPI | [Configuration](docs/developer-guide/01-service-configuration.md) |
+| `Platform.WebApi` | `Result` → HTTP, exception middleware | [Pipeline](docs/architecture/02-command-pipeline.md#http-mapping) |
+| `Platform.Infrastructure` | Current user context (`IUserHttpContext`) | [Configuration](docs/developer-guide/01-service-configuration.md) |
+
+### The command pipeline
+
+Every command flows through the same pipeline, configured with a single call:
 
 ```csharp
-// Domain event handler (Application layer) — runs inside the command's transaction
-public async Task Handle(CompanyCreatedDomainEvent notification, CancellationToken ct)
-    => await _outboxService.AddAndSaveEventAsync(new CompanyCreatedIntegrationEvent(...));
-
-// Integration event handler (Infrastructure layer) — thin translator, idempotency and telemetry applied by decorators
-public async Task Handle(CompanyCreatedIntegrationEvent @event)
-    => await _mediator.Send(new SendCompanyWelcomeEmailsCommand(...));
+services.AddSiriusMediator(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(AssemblyReference.Assembly);
+    cfg.WithLogging(typeof(LoggingBehavior<,>));
+    cfg.WithValidation(typeof(ValidationBehavior<,>));
+});
 ```
 
-Details: [Messaging & persistence layers](docs/architecture/01-messaging-persistence-layers.md) · [Event bus](docs/architecture/07-event-bus.md) · [CQRS read model](docs/architecture/08-cqrs-read-model.md).
+```mermaid
+flowchart LR
+    L[Logging] --> I[Idempotency]
+    I --> IE["IntegrationEventProcessor<br/><i>publishes outbox after commit</i>"]
+    IE --> T["Transaction<br/><i>BEGIN / COMMIT</i>"]
+    T --> V[Validation]
+    V --> D["DomainEventProcessor<br/><i>dispatches domain events inside the transaction</i>"]
+    D --> H[[Handler]]
+```
+
+Telemetry behaviors, the domain event publisher and the integration event decorators are registered by the same call. Consumers of integration events get the equivalent guarantees through decorators: telemetry → idempotency (inbox) + transaction → handler. See [Command pipeline](docs/architecture/02-command-pipeline.md) and [Idempotency](docs/architecture/04-idempotency.md).
 
 ---
 
@@ -302,7 +273,7 @@ In Claude Code the skills are picked up automatically from `.claude/skills/` whe
 ```
 src/
  ├── Sirius.Domain/            → Domain.Core, Domain.Application (DDD seed work and behaviors)   ┐
- ├── Sirius.Platform/          → Platform.* building blocks                                    ┘ building blocks
+ ├── Sirius.Platform/          → Platform.* building blocks                                    ┘ platform
  ├── Sirius.Contracts/         → Integration event contracts shared between services          ┐
  ├── Sirius.Services/                                                                          │
  │    ├── Accounts/            → Api, Application, Domain, Infrastructure                      │
@@ -418,8 +389,8 @@ This is an evolving reference, not a finished product. Known limitations of the 
 - **Audit log** — entities get automatic `CreatedAt`/`UpdatedAt` and an optimistic concurrency `RowVersion`. A full audit log (`AuditLog` entity) is designed but not wired yet; see the [backlog](docs/backlog/audit-log-proposal.md).
 - **Authorization** — there is no generic authorization behavior in the pipeline; endpoints use ASP.NET Core authorization policies.
 - **Delivery guarantees** — the outbox and idempotent consumers protect the implemented paths; they do not provide end-to-end exactly-once delivery.
-- **Sample shortcuts** — emails are only logged, the activation link carries no confirmation token, and APIs disable audience validation. See [Simplifications in the sample](docs/features/02-onboarding-activation-workflow.md#simplifications-in-the-sample).
-- **Development-only security settings** — IdentityServer clients use hard-coded secrets and `RequirePkce = false`, the Scalar UI clients use the implicit flow, JWT bearer validation runs with `RequireHttpsMetadata = false`, and the BackOffice client also allows a fixed `https://localhost:5001` redirect URI. They keep the local setup simple; a real deployment needs PKCE, secrets from a vault and HTTPS metadata.
+- **Sample shortcuts** — emails are only logged and the activation link carries no confirmation token. See [Simplifications in the sample](docs/features/02-onboarding-activation-workflow.md#simplifications-in-the-sample).
+- **Development-only security settings** — IdentityServer clients use hard-coded secrets and `RequirePkce = false`, the Scalar UI clients use the implicit flow, JWT bearer validation runs with `RequireHttpsMetadata = false` and `ValidateAudience = false`, and the BackOffice client also allows a fixed `https://localhost:5001` redirect URI. They keep the local setup simple; a real deployment needs PKCE, secrets from a vault, HTTPS metadata and audience validation.
 
 ---
 
