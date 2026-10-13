@@ -12,6 +12,12 @@ namespace Sirius.BackOfficeApp.Api
         {
             app.MapGet("auth/Login", (HttpContext httpContext, string returnUrl = "/") =>
             {
+                // Only allow local return URLs to prevent open redirects
+                if (!IsLocalUrl(returnUrl))
+                {
+                    returnUrl = "/";
+                }
+
                 if (httpContext.User.Identity?.IsAuthenticated == true)
                 {
                     return Results.Redirect(returnUrl);
@@ -40,5 +46,9 @@ namespace Sirius.BackOfficeApp.Api
             return app;
         }
 
+        private static bool IsLocalUrl(string? url) =>
+            !string.IsNullOrEmpty(url)
+            && url[0] == '/'
+            && (url.Length == 1 || (url[1] != '/' && url[1] != '\\'));
     }
 }

@@ -1,5 +1,5 @@
 @using Sirius.BackOfficeApp.Components.Pages
-<Router AppAssembly="@typeof(Program).Assembly">
+<Router AppAssembly="@typeof(Program).Assembly" NotFoundPage="typeof(NotFound)">
     <Found Context="routeData">
         <AuthorizeRouteView RouteData="@routeData">
             <NotAuthorized>
@@ -8,7 +8,4 @@
             <Authorizing></Authorizing>
         </AuthorizeRouteView>
     </Found>
-    <NotFound>
-        <NotFound />
-    </NotFound>
 </Router>
