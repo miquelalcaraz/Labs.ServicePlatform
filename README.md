@@ -249,7 +249,7 @@ Azure Service Bus (emulator) is the default. To use RabbitMQ:
 2. In the infrastructure projects of Accounts, Notifications and Identity, reference `Platform.EventBus.RabbitMQ` instead of `Platform.EventBus.ServiceBus`.
 3. In their service registration (`Infrastructure/Extensions/Extensions.cs` in Accounts and Notifications, `Extensions/Extensions.cs` in Identity), replace `builder.AddServiceBusEventBus("eventbus")` with `builder.AddRabbitMqEventBus("eventbus")`.
 
-Handlers and integration events do not change. Note the [delivery differences](#️-project-status-and-known-limitations) between both transports.
+Handlers and integration events do not change. Note the [delivery differences](docs/developer-guide/05-known-gaps.md#rabbitmq-transport-robustness) between both transports.
 
 ### Running the tests
 
@@ -293,19 +293,15 @@ Suggested reading path:
 
 ## ⚠️ Project Status and Known Limitations
 
-This is an evolving reference, not a finished product. Known limitations of the current code (full list in [Known gaps](docs/developer-guide/05-known-gaps.md)):
+This is an evolving reference, not a finished product. The main open gaps:
 
-- **Failed results commit** — `TransactionBehavior` only rolls back on exceptions. A command that returns a failed `Result` (including validation errors) still commits, together with its idempotency entry, so a retry with the same `x-requestid` is treated as a duplicate.
-- **Idempotency cache** — the Redis `processing` key is not removed when a command throws; a retry within its TTL (30 s by default) is answered as a duplicate.
-- **Outbox recovery** — the `OutboxProcessor` retries events in `NotPublished` or `FailedToPublish` state at a fixed polling interval. Events left in `InProgress` (for example, if the process stops right after claiming them) are not retried.
-- **RabbitMQ delivery** — the RabbitMQ consumer acknowledges messages even when a handler throws, and no dead-letter exchange is configured, so failed messages are lost. The Azure Service Bus implementation abandons the message, lets the broker retry it and dead-letters it after the maximum delivery count.
-- **Event bus selection** — the transport is chosen in code (AppHost `#define` plus one registration per service), not through configuration.
-- **Not packaged yet** — the building blocks are consumed as project references; the NuGet packaging and semantic versioning described in [Principles & ADRs](docs/architecture/00-principles-and-adrs.md) are design goals.
-- **Audit log** — entities get automatic `CreatedAt`/`UpdatedAt` and an optimistic concurrency `RowVersion`. A full audit log (`AuditLog` entity) is designed but not wired yet; see the [backlog](docs/backlog/audit-log-proposal.md).
-- **Authorization** — there is no generic authorization behavior in the pipeline; endpoints use ASP.NET Core authorization policies.
-- **Delivery guarantees** — the outbox and idempotent consumers protect the implemented paths; they do not provide end-to-end exactly-once delivery.
-- **Sample shortcuts** — emails are only logged and the activation link carries no confirmation token. See [Simplifications in the sample](docs/features/02-onboarding-activation-workflow.md#simplifications-in-the-sample).
-- **Development-only security settings** — IdentityServer clients use hard-coded secrets and `RequirePkce = false`, the Scalar UI clients use the implicit flow, JWT bearer validation runs with `RequireHttpsMetadata = false` and `ValidateAudience = false`, and the BackOffice client also allows a fixed `https://localhost:5001` redirect URI. They keep the local setup simple; a real deployment needs PKCE, secrets from a vault, HTTPS metadata and audience validation.
+- **Failed results commit** — a command that returns a failed `Result` still commits its idempotency entry, so a retry with the same `x-requestid` is answered as a duplicate. ([details](docs/developer-guide/05-known-gaps.md#failed-result-is-committed))
+- **Outbox recovery** — events left `InProgress` by a stopped process are not reclaimed. ([details](docs/developer-guide/05-known-gaps.md#stuck-inprogress-outbox-rows))
+- **RabbitMQ delivery** — failed messages are acknowledged and lost; Azure Service Bus (the default) retries and dead-letters them. ([details](docs/developer-guide/05-known-gaps.md#rabbitmq-transport-robustness))
+- **Development-only security** — hard-coded client secrets, no PKCE and no audience validation keep the local setup simple. ([details](docs/developer-guide/05-known-gaps.md#development-only-security-settings))
+- **Not packaged yet** — the building blocks are consumed as project references, not NuGet packages. ([details](docs/developer-guide/05-known-gaps.md#building-blocks-not-packaged))
+
+The complete list, with severity and planned fixes, is in [Known gaps](docs/developer-guide/05-known-gaps.md).
 
 ---
 

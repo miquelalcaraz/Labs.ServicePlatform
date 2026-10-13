@@ -15,6 +15,11 @@ Current known limitations and planned improvements across the platform. Items ar
 | [RabbitMQ transport robustness](#rabbitmq-transport-robustness) | Low | Event Bus |
 | [Audience validation disabled](#audience-validation-disabled) | Low | Security |
 | [Audit log not implemented](#audit-log-not-implemented) | Low | Persistence |
+| [Development-only security settings](#development-only-security-settings) | Low (development only) | Security |
+| [Event bus transport selected in code](#event-bus-transport-selected-in-code) | Low | Event Bus |
+| [Building blocks not packaged](#building-blocks-not-packaged) | Low | Distribution |
+| [No end-to-end exactly-once delivery](#no-end-to-end-exactly-once-delivery) | Low (by design) | Messaging |
+| [Sample shortcuts](#sample-shortcuts) | Low (sample only) | Reference implementation |
 | [Entity base class uses `[NotMapped]`](#entity-base-class-uses-notmapped) | Low (accepted) | Domain.Core |
 
 ---
@@ -107,6 +112,53 @@ APIs configure `Audience` but set `ValidateAudience = false` and `RequireHttpsMe
 **Area**: `Domain.Core`, `Platform.Persistence.EntityFramework.Relational`
 
 `AuditLog` is a placeholder POCO and `AuditLogConfiguration` is never applied. Only `CreatedAt` / `UpdatedAt` / `RowVersion` are maintained automatically. See [audit-log-proposal.md](../backlog/audit-log-proposal.md).
+
+---
+
+### Development-Only Security Settings
+
+**Severity**: Low (development only)  
+**Area**: Identity, `Platform.ServiceDefaults`
+
+IdentityServer clients use hard-coded secrets and `RequirePkce = false`, the Scalar UI clients use the implicit flow, and the BackOffice client also allows a fixed `https://localhost:5001` redirect URI. Together with the [disabled audience validation](#audience-validation-disabled), they keep the local setup simple.
+
+**Planned**: Before any real deployment — PKCE, secrets from a vault, HTTPS metadata and audience validation.
+
+---
+
+### Event Bus Transport Selected in Code
+
+**Severity**: Low  
+**Area**: AppHost, service registration
+
+The transport is chosen with a `#define` in `AppHost.cs` plus one registration line and one project reference per service, not through configuration. See [Event bus](../architecture/07-event-bus.md).
+
+---
+
+### Building Blocks Not Packaged
+
+**Severity**: Low  
+**Area**: Distribution
+
+The building blocks are consumed as project references. The NuGet packaging and semantic versioning described in [Principles & ADRs](../architecture/00-principles-and-adrs.md) are design goals.
+
+---
+
+### No End-to-End Exactly-Once Delivery
+
+**Severity**: Low (by design)  
+**Area**: Outbox, idempotent consumers
+
+The transactional outbox and idempotent consumers protect the implemented paths (at-least-once publishing, deduplicated handling); they do not provide end-to-end exactly-once delivery.
+
+---
+
+### Sample Shortcuts
+
+**Severity**: Low (sample only)  
+**Area**: Reference implementation
+
+Emails are only logged and the activation link carries no confirmation token. See [Simplifications in the sample](../features/02-onboarding-activation-workflow.md#simplifications-in-the-sample).
 
 ---
 
