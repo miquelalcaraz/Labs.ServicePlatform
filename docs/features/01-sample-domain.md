@@ -60,8 +60,18 @@ flowchart LR
 ## Accounts Model
 
 ```mermaid
+---
+config:
+  themeVariables:
+    fontSize: 10px
+  class:
+    nodeSpacing: 10
+    rankSpacing: 10
+    padding: 6
+    hideEmptyMembersBox: true
+---
 classDiagram
-    direction LR
+    direction TB
     class Tenant {
         Name
         Status: Pending/Active/Suspended/Closed
