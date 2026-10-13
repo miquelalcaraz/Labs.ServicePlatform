@@ -128,48 +128,56 @@ Telemetry behaviors, the domain event publisher and the integration event decora
 The building blocks are split so that **each project knows as little as possible**. Dependencies only point towards more stable, more abstract projects:
 
 ```mermaid
-%%{init: {"themeVariables": {"fontSize": "12px"}, "flowchart": {"nodeSpacing": 15, "rankSpacing": 35, "padding": 6}}}%%
+%%{init: {"themeVariables": {"fontSize": "11px"}, "flowchart": {"nodeSpacing": 12, "rankSpacing": 25, "padding": 4}}}%%
 flowchart BT
-    subgraph F["① Foundation · no project dependencies"]
-        direction LR
+    subgraph F[" "]
+        LF["<b>1. Foundation</b><br/>no project dependencies"]:::lvl
         DC["Domain.Core"]
         PC["Platform.Core"]
         TEL["Platform.Telemetry"]
     end
 
-    subgraph C["② Abstractions · no EF providers, no transports"]
-        direction LR
+    subgraph C[" "]
+        LC["<b>2. Abstractions</b><br/>no EF providers, no transports"]:::lvl
         ABS["Messaging.Abstractions<br/><i>contracts only</i>"]
         EB["EventBus<br/><i>IEventBus</i>"]
         PEF["Persistence.EntityFramework<br/><i>EF abstractions, no provider</i>"]
     end
 
-    subgraph L["③ Core logic · persistence-ignorant"]
-        direction LR
+    subgraph L[" "]
+        LL["<b>3. Core logic</b><br/>persistence-ignorant"]:::lvl
         MSG["Messaging<br/><i>behaviors, decorators, POCOs</i>"]
         DA["Domain.Application<br/><i>logging, validation</i>"]
     end
 
-    subgraph I["④ Implementations · swappable"]
-        direction LR
-        SB["EventBus.ServiceBus"]
-        RMQ["EventBus.RabbitMQ"]
+    subgraph I[" "]
+        LI["<b>4. Implementations</b><br/>swappable"]:::lvl
         RED["Messaging.Redis"]
         MEF["Messaging.EntityFramework<br/><i>generic TContext</i>"]
+        SB["EventBus.ServiceBus"]
+        RMQ["EventBus.RabbitMQ"]
         REL["Persistence.EF.Relational<br/><i>only project with DB providers</i>"]
     end
 
-    C ==> F
-    L ==> C
+    ABS ==> DC
+    ABS ==> PC
+    PEF ==> TEL
+    MSG ==> ABS
 
-    SB --> EB
-    RMQ --> EB
     RED --> MSG
     MEF --> MSG
+    SB --> EB
+    RMQ --> EB
     REL --> PEF
+
+    LC ~~~ LF
+    LL ~~~ LC
+    LI ~~~ LL
+
+    classDef lvl fill:none,stroke:none,text-align:left
 ```
 
-Thick arrows summarize the project references between levels; thin arrows show which building block each implementation plugs into. `Platform.Telemetry` is used across levels, and `Messaging.EntityFramework` also references `EventBus` and `Persistence.EntityFramework` (it is the glue between messaging and EF). Nothing ever points upwards.
+Thick arrows show the main references between levels; thin arrows show which building block each implementation plugs into. Not every reference is drawn: `Platform.Telemetry` is used across levels, `Persistence.EntityFramework` also uses `Domain.Core` / `Platform.Core`, and `Messaging.EntityFramework` also references `EventBus` and `Persistence.EntityFramework` (it is the glue between messaging and EF). Nothing ever points upwards.
 
 What each layer is **not allowed** to know — enforced by project references, not just by convention:
 
