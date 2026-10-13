@@ -9,7 +9,7 @@ A **reusable base architecture for event-driven .NET services** on **.NET 10** a
 
 The platform is exercised by a [sample B2B domain](docs/features/README.md) (customer onboarding and activation) that proves it works end to end across several services.
 
-**Start here:** [Principle](#-design-principle) · [Building blocks](#-building-blocks) · [Reference implementation](#-reference-implementation) · [AI-assisted development](#-ai-assisted-development) · [Run locally](#-running-the-project) · [Docs](#-documentation)
+**Start here:** [Principle](#-design-principle) · [Isolation & abstractions](#-isolation-and-abstractions) · [Building blocks](#-building-blocks) · [Reference implementation](#-reference-implementation) · [AI-assisted development](#-ai-assisted-development) · [Run locally](#-running-the-project) · [Docs](#-documentation)
 
 > [!NOTE]
 > **Continuation of [Labs.Aspire.uSLearn](https://github.com/miquelalcaraz/Labs.Aspire.uSLearn).**
@@ -23,11 +23,63 @@ The platform is exercised by a [sample B2B domain](docs/features/README.md) (cus
 
 ## 🧭 Design Principle
 
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "12px"}, "flowchart": {"nodeSpacing": 15, "rankSpacing": 30, "padding": 6}}}%%
+flowchart LR
+    subgraph S["Business services · what teams write"]
+        direction TB
+        H["Aggregates · Commands · Queries<br/>Domain & integration event handlers"]
+    end
+
+    subgraph A["Contracts · stable abstractions"]
+        direction TB
+        A1["ICommand / IQuery<br/>Result · Error"]
+        A2["IDomainEventHandler<br/>IIntegrationEventHandler"]
+        A3["IRepository · IUnitOfWork<br/>IEventBusOutboxService"]
+    end
+
+    subgraph P["Platform logic · applied automatically"]
+        direction TB
+        P1["Pipeline<br/>logging · validation · transaction"]
+        P2["Idempotency<br/>commands & consumers"]
+        P3["Outbox &<br/>domain event dispatch"]
+        P4["Telemetry"]
+    end
+
+    subgraph T["Technology adapters · swappable"]
+        direction TB
+        T1["Azure Service Bus / RabbitMQ"]
+        T2["EF Core + SQL Server"]
+        T3["Redis"]
+        T4["OpenTelemetry"]
+    end
+
+    S -- "depends only on" --> A
+    A <-. "implements & decorates" .- P
+    P -- "uses" --> T
+```
+
+Business code talks only to contracts. The platform implements and decorates those contracts — pipeline, idempotency, outbox, telemetry — and is the only layer that touches concrete technology, which can be swapped underneath.
+
 > **"Platform evolves, services sleep peacefully."**
 
-The platform was designed before every technology decision was final (event bus transport, persistence backend, caching). Instead of betting on one, each concern sits behind an abstraction: business services write aggregates, commands and handlers against contracts only, and the platform applies pipeline, idempotency, outbox and telemetry around them. Services never reference each other — they communicate through integration events published in `Sirius.Contracts.*` projects.
+The building blocks were designed before every technology decision was final (event bus transport, persistence backend, caching). Instead of betting on one, each concern sits behind an abstraction, and business services depend **only** on those abstractions:
 
-Each project knows as little as possible, and dependencies only point towards more stable, more abstract projects. Business services reference level 2 (contracts) and get levels 3–4 wired by the platform:
+| Strategy | How it shows up in the code |
+|---|---|
+| **Dependency inversion** | Handlers implement `ICommandHandler<,>`, `IDomainEventHandler<>`, `IIntegrationEventHandler<>`; they never see `DbContext` transactions, the bus client or Redis |
+| **Layered contracts** | `*.Abstractions` projects hold contracts only; implementations live in separate projects that can be swapped |
+| **Composition over inheritance** | Idempotency, telemetry and transactions are pipeline behaviors and decorators applied automatically, not base classes to inherit from |
+| **One registration point** | `AddSiriusMediator(...)` wires the whole pipeline in a fixed order, so services cannot get it wrong |
+| **Opt-in evolution** | New capabilities are added as new behaviors, decorators or implementations; existing services keep working unchanged |
+
+The full rationale, decision framework and ADRs are in [Principles & ADRs](docs/architecture/00-principles-and-adrs.md).
+
+---
+
+## 🧩 Isolation and Abstractions
+
+Each project knows as little as possible, and dependencies only point towards more stable, more abstract projects. Business services reference level 2 (contracts) and get levels 3–4 wired by the platform. Services never reference each other — they communicate through integration events published in `Sirius.Contracts.*` projects.
 
 ```mermaid
 %%{init: {"themeVariables": {"fontSize": "11px"}, "flowchart": {"nodeSpacing": 12, "rankSpacing": 25, "padding": 4}}}%%
@@ -89,7 +141,7 @@ flowchart BT
 | Persistence | `ITransactionalUnitOfWork`, `IRepository<T>` | `SiriusDBContext` / `SiriusReadDbContext` (relational) | The service's `DbContext` base class; a new backend would be a new `Platform.Persistence.*` project |
 | Telemetry | Behaviors, decorators, `INotificationPublisher` | OpenTelemetry | None — registered by `AddSiriusMediator` |
 
-Rationale, decision framework and ADRs: [Principles & ADRs](docs/architecture/00-principles-and-adrs.md) · full dependency rules: [Messaging & persistence layers](docs/architecture/01-messaging-persistence-layers.md).
+Full dependency rules: [Messaging & persistence layers](docs/architecture/01-messaging-persistence-layers.md).
 
 ---
 
