@@ -4,8 +4,26 @@
 
 The read side of CQRS uses a separate `QltReadDbContext` base class, fully isolated from write-side infrastructure. Queries use a dedicated context with no-tracking behavior and no access to `SaveChanges`, transactional outbox, or idempotency tables.
 
-**Layer**: `Platform.Persistence.EntityFramework.Relational` (base class), `Platform.Persistence.EntityFramework` (configuration)  
+**Layer**: `Platform.Persistence.EntityFramework.Relational` (base class + registration), `Platform.Persistence.EntityFramework` (configuration)  
 **Key types**: `QltReadDbContext`, `QltReadDbContextConfiguration`, `AddQltReadDbContext<T>`
+
+```mermaid
+flowchart LR
+    API["Minimal API endpoint"] --> MED{{"MediatR"}}
+
+    subgraph WRITE["Write side"]
+        CMD["ICommand → ICommandHandler<br/>(Application)"] --> REPO["Repositories"] --> WCTX["AccountContext : QltDBContext"]
+    end
+
+    subgraph READ["Read side"]
+        QRY["IQuery → IQueryHandler<br/>(Infrastructure)"] --> RCTX["AccountReadContext : QltReadDbContext"]
+    end
+
+    MED --> CMD
+    MED --> QRY
+    WCTX -- "QltSystemDb" --> DB[("SQL Server")]
+    RCTX -- "QltSystemDbReadonly<br/>(fallback: QltSystemDb)" --> DB
+```
 
 ---
 
@@ -13,12 +31,13 @@ The read side of CQRS uses a separate `QltReadDbContext` base class, fully isola
 
 | | Write (`QltDBContext`) | Read (`QltReadDbContext`) |
 |---|---|---|
-| Base class | `QltDBContext` | `QltReadDbContext` |
-| Tracking | Default (on) | `NoTrackingWithIdentityResolution` |
-| `SaveChanges` | Transactional + audit | Throws `InvalidOperationException` |
-| DI roles | `ITransactionalUnitOfWork`, `IDomainEntityChangeTracker` | Only its own type |
-| EF model | Domain + infrastructure tables | Domain entities only |
-| Connection | `accountdb` | `accountdb-readonly` (fallback to write) |
+| Base class | `QltDBContext` | `QltReadDbContext` (abstract) |
+| Tracking | Default (on) | `NoTrackingWithIdentityResolution`, `AutoDetectChangesEnabled = false` |
+| `SaveChanges` | Audit timestamps + unique-constraint translation; commit through `ITransactionalUnitOfWork` | All four overloads `sealed` and throw `InvalidOperationException` |
+| DI roles | Concrete type + `QltDBContext`, `ITransactionalUnitOfWork`, `IDomainEntityChangeTracker` | Only its own type |
+| EF model | Domain entities + `IdempotencyEntry` / `OutboxMessage` (when enabled) | Domain entities only (+ `RowVersion`/`CreatedAt` audit mapping) |
+| Pipeline | Commands (`TransactionBehavior`, domain events, outbox) | Queries (no transaction) |
+| Connection (Accounts) | `QltSystemDb` | `QltSystemDbReadonly` (fallback to `QltSystemDb`) |
 
 ---
 
@@ -28,18 +47,18 @@ The read side of CQRS uses a separate `QltReadDbContext` base class, fully isola
 
 Defined in `Platform.Persistence.EntityFramework` (no provider dependency):
 
-- `RegisterModelsFromAssembly` — registers domain entity configurations
-- `SetDefaultSchema` — sets the default schema for entity mappings
+- `RegisterModelsFromAssembly(params Assembly[])` — registers entity configuration assemblies
+- `SetDefaultSchema(string)` — sets the default schema for entity mappings
 
-Each read context gets its **own** `QltReadDbContextConfiguration` instance — it does not share the write context's configuration singleton.
+It is a separate type from `QltDbContextConfiguration`, so read contexts never pick up write-side features (idempotency, outbox). It is registered as a **singleton shared by all read contexts** of the process (`GetOrCreateQltReadDbContextConfiguration()`).
 
 ### QltReadDbContext
 
 Defined in `Platform.Persistence.EntityFramework.Relational` (requires EF Relational for `HasDefaultSchema`):
 
-- Abstract base class with `NoTrackingWithIdentityResolution` as default query behavior
-- `SaveChanges` / `SaveChangesAsync` overrides throw `InvalidOperationException`
-- Sealed `SaveChanges` prevents accidental writes through the read context
+- Abstract base class; constructor sets `QueryTrackingBehavior.NoTrackingWithIdentityResolution` and disables automatic change detection
+- `OnModelCreating` applies configurations from the registered assemblies, the default schema, and the shared entity audit configuration
+- `SaveChanges` / `SaveChangesAsync` (all overloads) are `sealed` and throw `InvalidOperationException("Read-only context. Use the write context to persist changes.")`
 
 ---
 
@@ -48,9 +67,16 @@ Defined in `Platform.Persistence.EntityFramework.Relational` (requires EF Relati
 ### Define a Read Context
 
 ```csharp
+// Accounts.Infrastructure/Persistence/AccountReadContext.cs
 public class AccountReadContext : QltReadDbContext
 {
-    public DbSet<Organization> Organizations { get; set; } = null!;
+    public DbSet<Company> Companies { get; set; } = null!;
+    public DbSet<CompanyContact> CompanyContacts { get; set; } = null!;
+    public DbSet<Tenant> Tenants { get; set; } = null!;
+    public DbSet<Subscription> Subscriptions { get; set; } = null!;
+    public DbSet<UserMembership> UserMemberships { get; set; } = null!;
+    public DbSet<OnboardingProcess> OnboardingProcesses { get; set; } = null!;
+    public DbSet<CustomerActivationProcess> CustomerActivationProcesses { get; set; } = null!;
 
     public AccountReadContext(
         DbContextOptions<AccountReadContext> options,
@@ -62,33 +88,47 @@ public class AccountReadContext : QltReadDbContext
 ### Register in DI
 
 ```csharp
-var readConnectionString = builder.Configuration.GetConnectionString("accountdb-readonly")
+// Accounts.Infrastructure/Extensions/Extensions.cs
+var connectionString = builder.Configuration.GetConnectionString("QltSystemDb");
+var readConnectionString = builder.Configuration.GetConnectionString("QltSystemDbReadonly")
     ?? connectionString;
 
 services.AddQltReadDbContext<AccountReadContext>(
     conf => conf
-        .SetDefaultSchema("accounts")
+        .SetDefaultSchema("Accounts")
         .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
     options => options.UseSqlServer(readConnectionString)
 );
 ```
 
+The read context reuses the same `IEntityTypeConfiguration<T>` classes as the write context (same Infrastructure assembly), so both sides map the domain identically. Notifications follows the same pattern with `NotificationsReadContext`.
+
 ### Use in Queries
 
+The query record lives in Application; the handler lives in Infrastructure and injects the read context:
+
 ```csharp
-public class OrganizationQueries(AccountReadContext context) : IOrganizationQueries
+// Accounts.Application/Queries/GetCompanyByIdQuery.cs
+public record GetCompanyByIdQuery(Guid Id) : IQuery<CompanyDetail>;
+
+// Accounts.Infrastructure/Persistence/Queries/GetCompanyByIdQueryHandler.cs
+public class GetCompanyByIdQueryHandler(AccountReadContext context)
+    : IQueryHandler<GetCompanyByIdQuery, CompanyDetail>
 {
-    public async Task<OrganizationDto?> GetByIdAsync(Guid id)
+    public async Task<Result<CompanyDetail>> Handle(GetCompanyByIdQuery request, CancellationToken cancellationToken)
     {
-        return await context.Organizations
-            .Where(o => o.Id == id)
-            .Select(o => new OrganizationDto { ... })
-            .FirstOrDefaultAsync();
+        var company = await context.Set<Company>()
+            .FirstOrDefaultAsync(c => c.Id == request.Id, cancellationToken);
+
+        if (company is null)
+            return Result.Failure<CompanyDetail>(Error.NotFound.WithMessage($"Company with id '{request.Id}' was not found."));
+
+        return Result.Success(new CompanyDetail { /* projection */ });
     }
 }
 ```
 
-`AsNoTracking()` is not needed — it is the default behavior from the base class.
+`AsNoTracking()` is not needed — it is the default behavior from the base class. Queries flow through MediatR (`TelemetryQueryBehavior`, `LoggingBehavior`, `ValidationBehavior`), while `TransactionBehavior` and `IdempotencyBehavior` pass them through.
 
 ---
 
@@ -97,16 +137,25 @@ public class OrganizationQueries(AccountReadContext context) : IOrganizationQuer
 For SQL Server AlwaysOn or Azure SQL read replicas:
 
 ```
-accountdb-readonly: Server=...;ApplicationIntent=ReadOnly;...
+ConnectionStrings__QltSystemDbReadonly: Server=...;ApplicationIntent=ReadOnly;...
 ```
 
-If `accountdb-readonly` is not configured, the read context transparently falls back to the write connection string. No code changes required — purely infrastructure configuration.
+If `QltSystemDbReadonly` is not configured, the read context transparently falls back to the write connection string. No code changes required — purely infrastructure configuration.
 
 ---
 
 ## Validation Checklist
 
-- [ ] Query classes inject the read context, not the write context
-- [ ] Read context does not register infrastructure tables (outbox, idempotency, audit)
+- [ ] Query handlers inject the read context, not the write context or repositories
+- [ ] Read context does not map infrastructure tables (outbox, idempotency, audit log)
 - [ ] `AddQltReadDbContext<T>` used for registration (not `AddQltSDBContext<T>`)
-- [ ] No `SaveChanges` calls through read context (enforced by sealed override)
+- [ ] No `SaveChanges` calls through read context (enforced by sealed overrides)
+
+---
+
+## Known Gaps
+
+| Area | Details |
+|---|---|
+| Shared read configuration | `QltReadDbContextConfiguration` is a process-wide singleton: two read contexts in the same host would share schema and assemblies (last `SetDefaultSchema` wins). |
+| Replica lag | Reading from a replica right after a command may return stale data; no read-your-writes mechanism is provided. |

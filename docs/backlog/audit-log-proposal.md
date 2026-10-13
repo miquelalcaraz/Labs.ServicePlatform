@@ -1,35 +1,21 @@
-# 21 — Audit Log: Automatic ChangeTracker Proposal
+# Audit Log — Automatic ChangeTracker Proposal
 
-## Status
-**Proposed** — Not yet implemented. Placeholder POCO and EF configuration exist. The previous manual implementation has been removed.
+> **Status**: Proposed — not implemented. `AuditLog` (placeholder POCO) and `AuditLogConfiguration` exist but are not applied to any context.
+> **Related**: [01 — Messaging & Persistence Layers](../architecture/01-messaging-persistence-layers.md), [Known Gaps](../developer-guide/05-known-gaps.md)
+
+Every entity already gets `CreatedAt` / `UpdatedAt` and an optimistic concurrency `RowVersion` automatically. This proposal covers the next step: a persistent record of **who changed what**.
 
 ## Context
 
-The original audit implementation required developers to manually create `AuditLog` entries and attach them to entities via `Entity._audits`. This approach had several problems:
+An earlier version of the platform had a manual audit implementation: developers created `AuditLog` entries and attached them to entities through `Entity._audits`. It was removed because:
 
-1. **Polluted `Entity` base class** — Every entity carried `List<AuditLog>`, `AuditLogs`, and `RemoveAudits()`, mixing infrastructure with domain
-2. **Developer burden** — Each command handler had to manually construct audit entries with correct `userId`, `aggregateType`, etc.
-3. **Inconsistent coverage** — Easy to forget, leading to gaps in audit trail
-4. **Coupled to `IDomainEvent`** — `AuditLog.Changes` stored serialized domain events, conflating audit (what changed) with messaging (what happened)
-5. **Serialization in the POCO** — `JsonSerializer` logic inside the domain model violated persistence ignorance
+1. **It polluted the `Entity` base class** — every entity carried an audit collection, mixing infrastructure with domain.
+2. **It put the burden on developers** — each command handler had to build audit entries by hand, with the correct user and aggregate type.
+3. **Coverage was inconsistent** — easy to forget, leading to gaps in the audit trail.
+4. **It was coupled to `IDomainEvent`** — `AuditLog.Changes` stored serialized domain events, conflating audit (*what changed*) with messaging (*what happened*).
+5. **It broke persistence ignorance** — serialization logic lived inside the domain model.
 
-## Cleanup Performed
-
-The following was removed to prevent the incomplete design from contaminating the codebase:
-
-| Removed | Location |
-|---------|----------|
-| `_audits`, `AuditLogs`, `RemoveAudits()` | `Entity.cs` (Domain.Core) |
-| `AuditLogsExtension.SaveAuditLogsAsync()` | `Platform.Persistence.EntityFramework` (deleted file) |
-| `UseAuditLogs` property + `WithAuditLogs()` | `QltDbContextConfiguration` |
-| `ConfigureAuditLogs()` / `SaveAuditLogsAsync()` calls | `QltDBContext.OnModelCreating` / `CommitTransactionAsync` |
-| `AuditLog : Entity` inheritance, `IDomainEvent Changes`, `Create()` factory | `AuditLog.cs` → simplified to plain POCO |
-| `Block` / `UnBlock` enum values | `AuditActionType` → moved to domain-specific enums if needed |
-
-**Preserved:**
-- `AuditLog` POCO (placeholder with new schema)
-- `AuditLogConfiguration` (updated to match new POCO)
-- `AuditActionType` enum (simplified: None, Create, Update, Delete)
+Only the simplified `AuditLog` POCO, its `AuditLogConfiguration` and the `AuditActionType` enum (`None`, `Create`, `Update`, `Delete`) were kept as a starting point.
 
 ## Proposed Design: Automatic Audit via EF ChangeTracker
 
@@ -60,13 +46,13 @@ CommitTransactionAsync / SaveChangesAsync
 public interface IAuditable { }
 
 // Domain entity
-public class Organization : Entity, IAggregateRoot, IAuditable
+public class Company : Entity, IAggregateRoot, IAuditable
 {
     // ...
 }
 ```
 
-Only entities implementing `IAuditable` are audited. This avoids auditing infrastructure entities (OutboxMessage, IdempotencyEntry, etc.).
+Only entities implementing `IAuditable` are audited. This avoids auditing infrastructure entities (`OutboxMessage`, `IdempotencyEntry`, etc.).
 
 #### 2. Changes format: OldValues / NewValues JSON
 
@@ -88,8 +74,8 @@ public class AuditLog
 {
     public Guid Id { get; set; }
     public Guid EntityId { get; set; }
-    public string EntityType { get; set; }
-    public string UserId { get; set; }
+    public string EntityType { get; set; } = null!;
+    public string UserId { get; set; } = null!;
     public AuditActionType ActionType { get; set; }
     public DateTime Timestamp { get; set; }
     public string? Changes { get; set; }  // JSON with Old/New values
@@ -140,12 +126,12 @@ public class AuditSaveChangesInterceptor : SaveChangesInterceptor
 }
 ```
 
-**Pro:** Clean separation, testable, follows EF Core conventions.  
-**Con:** Requires `IUserHttpContext` injection into interceptor (needs `IServiceProvider` in DbContext options).
+**Pro:** Clean separation, testable, follows EF Core conventions.
+**Con:** Requires `IUserHttpContext` injection into the interceptor (needs `IServiceProvider` in DbContext options).
 
 #### Option B: Override in QltDBContext
 
-Add audit capture directly in `CommitTransactionAsync` (where `SaveAuditLogsAsync` was previously called):
+Add audit capture directly in `CommitTransactionAsync`:
 
 ```csharp
 // In CommitTransactionAsync, before commit:
@@ -154,33 +140,18 @@ Set<AuditLog>().AddRange(auditEntries);
 await base.SaveChangesAsync(cancellationToken);
 ```
 
-**Pro:** Simple, no interceptor plumbing.  
-**Con:** Couples audit to QltDBContext, requires a second `SaveChangesAsync` call.
+**Pro:** Simple, no interceptor plumbing.
+**Con:** Couples audit to `QltDBContext`, requires a second `SaveChangesAsync` call.
 
 ### Edge Cases to Consider
 
-1. **Background jobs / message consumers** — No `HttpContext`. `IUserHttpContext` returns null. Need a strategy: system user constant, or `IAuditContextProvider` abstraction that supports both HTTP and non-HTTP contexts
-2. **Batch operations with `ExecuteUpdateAsync`** — Bypass ChangeTracker entirely. Not auditable through this mechanism. Document as known limitation or use DB triggers for batch audit
-3. **Sensitive data** — Some properties should not appear in audit logs (passwords, tokens). Consider `[AuditIgnore]` attribute
-4. **Performance** — Serializing changes on every save adds overhead. Consider: is audit needed on every DbContext, or only on specific ones?
-
-### Estimated Effort
-
-| Task | Effort |
-|------|--------|
-| `IAuditable` marker interface | Trivial |
-| `AuditChangeTrackerService` (capture logic) | Medium |
-| `SaveChangesInterceptor` or QltDBContext integration | Medium |
-| `IUserHttpContext` null-safety for non-HTTP contexts | Low |
-| Unit tests (interceptor + change capture) | Medium |
-| Integration tests (full save + audit verification) | Medium |
-| Apply `IAuditable` to existing entities | Low |
-| Migration for updated audit table schema | Low |
-| **Total** | **~1-2 days** |
+1. **Background jobs / message consumers** — No `HttpContext`, so `IUserHttpContext` returns null. Needs a strategy: a system user constant, or an `IAuditContextProvider` abstraction that supports both HTTP and non-HTTP contexts.
+2. **Batch operations with `ExecuteUpdateAsync`** — Bypass the ChangeTracker entirely. Not auditable through this mechanism; document as a known limitation or use DB triggers for batch audit.
+3. **Sensitive data** — Some properties should not appear in audit logs (passwords, tokens). Consider an `[AuditIgnore]` attribute.
+4. **Performance** — Serializing changes on every save adds overhead. Consider whether audit is needed on every DbContext or only on specific ones.
 
 ## References
 
 - [EF Core Interceptors — SaveChanges](https://learn.microsoft.com/en-us/ef/core/logging-events-diagnostics/interceptors#savechanges-interception)
 - [EF Core Change Tracking](https://learn.microsoft.com/en-us/ef/core/change-tracking/)
 - ABP Framework `IAuditedObject` pattern
-- Clean Architecture audit trail patterns

@@ -1,13 +1,13 @@
 # Qlt · Building Blocks Reference Architecture
 
 ![.NET](https://img.shields.io/badge/.NET-10.0-512BD4?logo=dotnet)
-![Aspire](https://img.shields.io/badge/Aspire-13.2-512BD4)
+![Aspire](https://img.shields.io/badge/Aspire-13.6-512BD4)
 ![Status](https://img.shields.io/badge/status-in%20progress-yellow)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A **reference architecture for event-driven microservices** on **.NET 10** and **Aspire**, organized around a set of reusable **building blocks**: CQRS pipeline, domain and integration events, transactional outbox, idempotent commands and consumers, read models and observability.
 
-The building blocks are applied to a sample B2B domain — **customer onboarding and subscription lifecycle** — with three services, an IdentityServer, a BFF and a Blazor back office.
+The building blocks are applied to a [sample B2B domain](docs/features/README.md) — **customer onboarding and activation** — with three services, an IdentityServer, a BFF and a Blazor back office.
 
 **Start here:** [Overview](#-overview) · [Building blocks](#-building-blocks) · [Run locally](#-running-the-project) · [Documentation](#-documentation) · [Known limitations](#️-project-status-and-known-limitations)
 
@@ -28,15 +28,25 @@ The guiding principle is **"Platform evolves, services sleep peacefully"**: busi
 ```mermaid
 flowchart LR
     BO[BackOfficeApp<br/>Blazor + Radzen] --> BFF[backoffice-bff<br/>YARP]
-    BFF --> Accounts[Accounts API]
-    BFF --> Identity[Identity<br/>Duende IdentityServer]
-    Notifications[Notifications API]
 
-    Accounts & Notifications --> SQL[(SQL Server<br/>QltSystemDb)]
-    Identity --> IdDb[(SQL Server<br/>IdentityDb)]
-    Accounts & Notifications & Identity --> Redis[(Redis)]
-    Accounts & Notifications & Identity <--> Bus{{Azure Service Bus<br/>topic qlt-event-bus}}
+    subgraph Services
+        Accounts[Accounts API]
+        Identity[Identity<br/>Duende IdentityServer]
+        Notifications[Notifications API]
+    end
+
+    subgraph Infrastructure
+        SQL[("SQL Server<br/>QltSystemDb · IdentityDb")]
+        Redis[(Redis)]
+        Bus{{"Azure Service Bus<br/>topic qlt-event-bus"}}
+    end
+
+    BFF --> Accounts & Identity
+    Services --> SQL & Redis
+    Services <-. integration events .-> Bus
 ```
+
+> Accounts and Notifications share `QltSystemDb` (one schema each); Identity uses `IdentityDb`.
 
 - **Accounts API** — companies, tenants, subscriptions, the customer **onboarding** process and the customer **activation** process (DDD aggregates and process state machines).
 - **Identity** — Duende IdentityServer with ASP.NET Core Identity; provisions tenant admin users and activates them.
@@ -69,8 +79,8 @@ Every event is written to the publisher's **transactional outbox** in the same d
 | `Domain.Application` | Cross-cutting MediatR behaviors: `LoggingBehavior`, `ValidationBehavior` (FluentValidation) |
 | `Platform.Core` | `Result` / `Result<T>` and `Error` (railway-oriented results) |
 | `Platform.Messaging.Abstractions` | Contracts: `ICommand<T>`, `IQuery<T>`, `IDomainEventHandler<T>`, `IIntegrationEventHandler<T>`, `IIdempotencyService`, `IEventBusOutboxService`, `IntegrationEvent` |
-| `Platform.Messaging` | Persistence-ignorant logic: `IdempotencyBehavior`, telemetry behaviors/decorators, `AddQltMediator` |
-| `Platform.Messaging.EntityFramework` | `TransactionBehavior`, `DomainEventProcessorBehavior`, `IntegrationEventProcessorBehavior`, EF idempotency, outbox services and `OutboxProcessor` |
+| `Platform.Messaging` | Persistence-ignorant logic: `IdempotencyBehavior`, telemetry behaviors/decorators, `IdempotentCommand<T>`, outbox/idempotency POCOs |
+| `Platform.Messaging.EntityFramework` | `AddQltMediator`, `TransactionBehavior`, `DomainEventProcessorBehavior`, `IntegrationEventProcessorBehavior`, EF idempotency, outbox services and `OutboxProcessor` |
 | `Platform.Messaging.Redis` | Redis fast path for idempotency checks |
 | `Platform.Persistence.EntityFramework` | EF Core abstractions: `ITransactionalUnitOfWork`, `IDomainEntityChangeTracker`, fluent context configuration |
 | `Platform.Persistence.EntityFramework.Relational` | `QltDBContext` (write) and `QltReadDbContext` (read-only), entity configurations, `Repository<T>`, `ResilientTransaction`, migrations |
@@ -78,7 +88,7 @@ Every event is written to the publisher's **transactional outbox** in the same d
 | `Platform.EventBus.ServiceBus` | Azure Service Bus implementation (default) |
 | `Platform.EventBus.RabbitMQ` | RabbitMQ implementation (alternative, see limitations) |
 | `Platform.Telemetry` | OpenTelemetry activity sources, meters and helpers |
-| `Platform.ServiceDefaults` / `Platform.WebApi` | Aspire service defaults, authentication, OpenAPI + Scalar, API error handling |
+| `Platform.ServiceDefaults` / `Platform.WebApi` / `Platform.Infrastructure` | Aspire service defaults, JWT authentication, OpenAPI + Scalar, `Result` → HTTP mapping, exception middleware, `IUserHttpContext` |
 
 Every command flows through the same pipeline, configured with a single call:
 
@@ -91,11 +101,17 @@ services.AddQltMediator(cfg =>
 });
 ```
 
+```mermaid
+flowchart LR
+    L[Logging] --> I[Idempotency]
+    I --> IE["IntegrationEventProcessor<br/><i>publishes outbox after commit</i>"]
+    IE --> T["Transaction<br/><i>BEGIN / COMMIT</i>"]
+    T --> V[Validation]
+    V --> D["DomainEventProcessor<br/><i>dispatches domain events inside the transaction</i>"]
+    D --> H[[Handler]]
 ```
-Logging → Idempotency → IntegrationEventProcessor → Transaction → Validation → DomainEventProcessor → Handler
-                        (publishes outbox           (BEGIN /                    (dispatches domain events
-                         after commit)               COMMIT)                     inside the transaction)
-```
+
+Telemetry behaviors, the domain event publisher and the integration event decorators are registered by the same call. See [Command pipeline](docs/architecture/02-command-pipeline.md) for the details.
 
 ---
 
@@ -104,14 +120,14 @@ Logging → Idempotency → IntegrationEventProcessor → Transaction → Valida
 | Area | Technologies |
 | --- | --- |
 | Runtime | .NET 10, ASP.NET Core minimal APIs, API versioning, OpenAPI + Scalar |
-| Orchestration | Aspire 13.2 (AppHost, service defaults, service discovery, health checks, dashboard) |
+| Orchestration | Aspire 13.6 (AppHost, service defaults, service discovery, health checks, dashboard) |
 | Domain / application | DDD, CQRS with MediatR, pipeline behaviors, FluentValidation, Result pattern |
 | Persistence | Entity Framework Core 10 + SQL Server, separate read context, Redis |
 | Messaging | Azure Service Bus (emulator in development) or RabbitMQ, transactional outbox, idempotent consumers |
-| Identity | Duende IdentityServer 7 + ASP.NET Core Identity, BFF with YARP |
+| Identity | Duende IdentityServer 8 + ASP.NET Core Identity, BFF with YARP |
 | Front end | Blazor Web App + Radzen |
 | Observability | Structured logging, OpenTelemetry traces and metrics (trace context propagated through the bus) |
-| Testing | xUnit, Moq, FluentAssertions, EF InMemory, Testcontainers, Aspire testing |
+| Testing | xUnit, Moq, FluentAssertions, EF InMemory, Testcontainers, Aspire hosting (in-process test fixtures), xUnit v3 for functional tests |
 
 ---
 
@@ -149,8 +165,8 @@ docs/                       → Architecture and developer documentation
 ### Run with Aspire
 
 ```bash
-git clone https://github.com/miquelalcaraz/Labs.Aspire.BuildingBlocks.git
-cd Labs.Aspire.BuildingBlocks
+git clone https://github.com/miquelalcaraz/Labs.CleanArchitecture.BuildingBlocks.git
+cd Labs.CleanArchitecture.BuildingBlocks
 dotnet build QltSystem.slnx
 dotnet run --project src/Qlt.Infrastructure/Qlt.Infrastructure.AppHost
 ```
@@ -197,33 +213,40 @@ dotnet run --project tests/Services/Services.FunctionalTests
 
 ## 📖 Documentation
 
-| Document | Content |
+The documentation is organized in four sections; each has an index:
+
+| Section | What you will find |
 |---|---|
-| [Messaging & persistence layers](docs/architecture/01-messaging-persistence-layers.md) | The layered building blocks, their responsibilities and dependency rules |
-| [Domain events & consistency](docs/architecture/03-domain-events-consistency.md) | Domain events inside the transaction, strong vs eventual consistency |
-| [Telemetry](docs/architecture/06-telemetry.md) | OpenTelemetry for commands, domain events and integration events |
-| [CQRS read model](docs/architecture/08-cqrs-read-model.md) | Read-only `DbContext` and query-side separation |
-| [Identity & BFF URL configuration](docs/architecture/09-identity-bff-url-configuration.md) | The BFF as public identity facade, issuer and URL wiring |
-| [Service configuration](docs/developer-guide/01-service-configuration.md) | How a service wires the building blocks (`AddQltMediator`, contexts, outbox, idempotency) |
-| [Transactional pipeline](docs/developer-guide/02-transactional-pipeline.md) | What runs inside and after the transaction, and failure scenarios |
-| [AI-assisted development rules](docs/developer-guide/06-copilot-development-rules.md) | Templates and rules used to build services with AI assistants |
+| [Architecture](docs/architecture/README.md) | How each building block works internally: layers, pipeline, domain events, idempotency, outbox, telemetry, event bus, read model, BFF |
+| [Developer guide](docs/developer-guide/README.md) | How to build a service on top of them: configuration, transactional pipeline, an end-to-end walkthrough, testing, known gaps, AI-assisted development rules |
+| [Sample feature](docs/features/README.md) | The example domain (customer onboarding & activation) and its cross-service workflow, API and UI |
 | [Backlog](docs/backlog/README.md) | Designed but deliberately deferred improvements |
 
-> [!NOTE]
-> The documentation is being reviewed against the current implementation. Some examples still use the `Organization` sample from uSLearn; the equivalent in this codebase is the `Company` aggregate (`CreateCompanyCommand`, `CompanyCreatedDomainEvent`).
+Suggested reading path:
+
+| Step | Document |
+|---|---|
+| 1 | [Messaging & persistence layers](docs/architecture/01-messaging-persistence-layers.md) — the building blocks and their dependency rules |
+| 2 | [Command pipeline](docs/architecture/02-command-pipeline.md) — Result pattern, CQRS and the behavior chain |
+| 3 | [Transactional pipeline](docs/developer-guide/02-transactional-pipeline.md) — what runs inside and after the transaction |
+| 4 | [End-to-end flow](docs/developer-guide/03-end-to-end-flow.md) — one request traced across two services |
+| 5 | [Onboarding & activation workflow](docs/features/02-onboarding-activation-workflow.md) — a multi-step process built from these pieces |
 
 ---
 
 ## ⚠️ Project Status and Known Limitations
 
-This is an evolving reference, not a finished product. Known limitations of the current code:
+This is an evolving reference, not a finished product. Known limitations of the current code (full list in [Known gaps](docs/developer-guide/05-known-gaps.md)):
 
+- **Failed results commit** — `TransactionBehavior` only rolls back on exceptions. A command that returns a failed `Result` (including validation errors) still commits, together with its idempotency entry, so a retry with the same `x-requestid` is treated as a duplicate.
+- **Idempotency cache** — the Redis `processing` key is not removed when a command throws; a retry within its TTL (30 s by default) is answered as a duplicate.
 - **Outbox recovery** — the `OutboxProcessor` retries events in `NotPublished` or `FailedToPublish` state at a fixed polling interval. Events left in `InProgress` (for example, if the process stops right after claiming them) are not retried.
 - **RabbitMQ delivery** — the RabbitMQ consumer acknowledges messages even when a handler throws, and no dead-letter exchange is configured, so failed messages are lost. The Azure Service Bus implementation abandons the message, lets the broker retry it and dead-letters it after the maximum delivery count.
 - **Event bus selection** — the transport is chosen in code (AppHost `#define` plus one registration per service), not through configuration.
 - **Audit log** — entities get automatic `CreatedAt`/`UpdatedAt` and an optimistic concurrency `RowVersion`. A full audit log (`AuditLog` entity) is designed but not wired yet; see the [backlog](docs/backlog/audit-log-proposal.md).
 - **Authorization** — there is no generic authorization behavior in the pipeline; endpoints use ASP.NET Core authorization policies.
 - **Delivery guarantees** — the outbox and idempotent consumers protect the implemented paths; they do not provide end-to-end exactly-once delivery.
+- **Sample shortcuts** — emails are only logged, the activation link carries no confirmation token, and APIs disable audience validation. See [Simplifications in the sample](docs/features/02-onboarding-activation-workflow.md#simplifications-in-the-sample).
 
 ---
 

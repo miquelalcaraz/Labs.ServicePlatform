@@ -1,10 +1,9 @@
-# Unit of Work — Future Improvements (Nice to Have)
+# Unit of Work — Parked Improvements
 
-> **Status**: Parked — Designs ready to implement when a real use case arises.  
-> **Date**: June 2025  
-> **Related**: [doc 07 — Unit of Work Pattern](07-unit-of-work-pattern.md)
+> **Status**: Parked — designs ready to implement when a real use case arises.
+> **Related**: [02 — Command Pipeline](../architecture/02-command-pipeline.md), [01 — Messaging & Persistence Layers](../architecture/01-messaging-persistence-layers.md)
 
-These improvements were designed, some prototyped, and intentionally removed following YAGNI. Each section includes the rationale, design, and estimated effort so they can be picked up quickly when needed.
+These improvements were designed, some prototyped, and intentionally removed following YAGNI. Each section records the rationale and the design so it can be picked up quickly when needed.
 
 ---
 
@@ -42,8 +41,6 @@ public interface IRequiresIsolation
 [TransactionIsolation(IsolationLevel.Serializable)]
 public record TransferFundsCommand : ICommand<bool> { ... }
 ```
-
-**Effort**: ~2 hours (interface + implementation + behavior change + tests)
 
 ---
 
@@ -124,15 +121,13 @@ await scope.CommitAsync();
 
 **When to implement**: When a background service or non-pipeline code needs explicit transaction management.
 
-**Effort**: ~1 hour (file + tests already designed, see git history)
-
 ---
 
 ## 3. Change Tracker Inspection (`HasChanges()`)
 
 **What**: Expose `ChangeTracker.HasChanges()` on `ITransactionalUnitOfWork`.
 
-**Why it was removed**: Redundant with `GetPendingChangesCount() > 0`. While `HasChanges()` short-circuits (more performant for a boolean check), no code path needs a "has changes?" boolean — the integrated `GetPendingChangesCount()` serves the telemetry use case, and skipping commit based on `HasChanges()` would be a risky micro-optimization.
+**Why it was removed**: Redundant with `GetPendingChangesCount() > 0`. While `HasChanges()` short-circuits (more performant for a boolean check), no code path needs a "has changes?" boolean — `GetPendingChangesCount()` serves the telemetry use case, and skipping commit based on `HasChanges()` would be a risky micro-optimization.
 
 **Design**:
 
@@ -146,19 +141,15 @@ public bool HasChanges() => ChangeTracker.HasChanges();
 
 **When to implement**: If a performance-critical path needs a quick boolean check without counting all tracked entities.
 
-**Effort**: ~10 minutes (one-liner on interface + implementation)
-
 ---
 
 ## 4. Unit of Work Audit Trail
 
 **What**: A dedicated database table recording transaction metadata (TransactionId, StartedAt, CompletedAt, UserId, EntitiesAffected, CommandName, Succeeded).
 
-**Why it was deferred**: OpenTelemetry `BehaviorHelper` already records `transaction.id`, `transaction.duration_ms`, `transaction.success`, and now `transaction.entities_affected` as activity tags and histogram metrics. A separate DB table would duplicate this with higher write overhead.
+**Why it was deferred**: `TransactionBehavior` already records `transaction.id`, `transaction.duration_ms`, `transaction.success` and `transaction.entities_affected` as activity tags and histogram metrics (see [06 — Telemetry](../architecture/06-telemetry.md)). A separate table would duplicate this with higher write overhead.
 
-**When to implement**: If compliance or regulatory requirements demand a persistent, queryable audit trail that outlives telemetry retention, or if OpenTelemetry infrastructure is not available in a deployment.
-
-**Effort**: ~1 day (POCO, entity configuration, behavior integration, tests)
+**When to implement**: If compliance or regulatory requirements demand a persistent, queryable audit trail that outlives telemetry retention, or if OpenTelemetry infrastructure is not available in a deployment. Entity-level auditing is covered separately in the [Audit Log proposal](audit-log-proposal.md).
 
 ---
 
@@ -170,16 +161,14 @@ public bool HasChanges() => ChangeTracker.HasChanges();
 
 **When to implement**: If aggregate invariants need to be enforced at the persistence boundary (defense-in-depth), or if entities are modified by domain event handlers and need re-validation before commit.
 
-**Effort**: ~4 hours (intercept `SaveChangesAsync`, scan tracked entities, validate, throw/return)
-
 ---
 
 ## Summary
 
-| Improvement | Removed Because | Trigger to Implement | Effort |
-|------------|----------------|---------------------|--------|
-| IsolationLevel | No command needs it | Financial transactions, read-heavy queries | ~2h |
-| UnitOfWorkScope | Pipeline handles it | Background service needs transactions | ~1h |
-| HasChanges() | Redundant with count | Performance-critical boolean check | ~10min |
-| Audit Trail | OpenTelemetry covers it | Compliance/regulatory requirement | ~1d |
-| Validation Before Save | Pipeline validates commands | Defense-in-depth for aggregate invariants | ~4h |
+| Improvement | Not implemented because | Trigger to implement |
+|------------|----------------|---------------------|
+| IsolationLevel | No command needs it | Financial transactions, read-heavy queries |
+| UnitOfWorkScope | Pipeline handles it | Background service needs transactions |
+| HasChanges() | Redundant with count | Performance-critical boolean check |
+| Audit Trail | OpenTelemetry covers it | Compliance/regulatory requirement |
+| Validation Before Save | Pipeline validates commands | Defense-in-depth for aggregate invariants |

@@ -1,10 +1,9 @@
 # Platform Observability — Proposed Improvements
 
-> **Status**: Proposed — Deferred to avoid scope creep. Applicable to all services built on `Qlt.Platform`.
-> **Date**: 2026-04-10
+> **Status**: Proposed — deferred to keep the platform scope focused.
 > **Related**: [06 — Telemetry](../architecture/06-telemetry.md), [07 — Event Bus](../architecture/07-event-bus.md)
 
-Two cross-cutting improvements identified as missing in the base platform. Both are independent of any feature and apply to all services built on `Qlt.Platform`.
+Two cross-cutting improvements that belong in the base platform rather than in each service. Both are independent of any feature and apply to every service built on `Qlt.Platform`.
 
 ---
 
@@ -12,30 +11,29 @@ Two cross-cutting improvements identified as missing in the base platform. Both 
 
 ### Problem
 
-`AddQltSDBContext<TContext>` registers the `DbContext` via plain `services.AddDbContext<TContext>`, bypassing the Aspire enrollment that auto-registers health checks. Services that use this method have no SQL Server readiness probe unless they manually add one.
+`AddQltSDBContext<TContext>` registers the `DbContext` via plain `services.AddDbContext<TContext>`, bypassing the Aspire enrollment that auto-registers health checks. Services that use this method have no database readiness probe unless they add one manually.
 
-In the current state every service must write this boilerplate after calling `AddQltSDBContext`:
+Today both Accounts and Notifications repeat this boilerplate after calling `AddQltSDBContext`:
 
 ```csharp
 services.AddHealthChecks()
-    .AddDbContextCheck<MyContext>(name: "my-db", tags: ["ready"]);
+    .AddDbContextCheck<AccountContext>(name: "accounts-db", tags: ["ready"]);
 ```
 
-Omitting it causes the `/health/ready` endpoint to return `Healthy` even when the database is unreachable — silent misconfiguration in production.
+Omitting it makes `/health/ready` report `Healthy` even when the database is unreachable — a silent misconfiguration.
 
 ### Proposed Design
 
-Embed the health check registration directly inside `AddQltSDBContext<TContext>` in `Platform.Persistence.EntityFramework.Relational`:
+Register the health check inside `AddQltSDBContext<TContext>` in `Platform.Persistence.EntityFramework.Relational`:
 
 ```csharp
-// Platform.Persistence.EntityFramework.Relational/Builders/Extensions.cs
 public static IServiceCollection AddQltSDBContext<TContext>(
     this IServiceCollection services,
-    Action<QltDbContextConfiguration> configure,
-    Action<DbContextOptionsBuilder> optionsAction)
-    where TContext : DbContext
+    Action<QltDbContextConfiguration> configuration,
+    Action<DbContextOptionsBuilder> dbOptions)
+    where TContext : QltDBContext
 {
-    services.AddDbContext<TContext>(optionsAction);
+    // ... existing registration ...
 
     services.AddHealthChecks()
         .AddDbContextCheck<TContext>(
@@ -46,69 +44,87 @@ public static IServiceCollection AddQltSDBContext<TContext>(
 }
 ```
 
-The `name` defaults to a kebab-cased context type name (`account-context`, `notifications-context`) so it is self-describing in health check dashboards without any caller configuration.
+The name defaults to the kebab-cased context type name (`account-context`, `notifications-context`), so it is self-describing in health dashboards without any caller configuration.
 
 ### Dependency
 
-`Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore` must be added to `Platform.Persistence.EntityFramework.Relational.csproj`. No other projects need the explicit reference.
-
-### Effort
-
-~1 hour (extension change + unit test + verify zero boilerplate in Accounts/Notifications).
+`Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore` must be added to `Platform.Persistence.EntityFramework.Relational.csproj`.
 
 ### Impact
 
 | Service | Current state | After |
 |---------|--------------|-------|
-| Services using `AddQltSDBContext<TContext>` with manual `AddDbContextCheck` | Boilerplate repeated in every service | Removed — covered by platform |
-| All future services | Must remember to add it | Zero effort — automatic |
+| Accounts, Notifications | Manual `AddDbContextCheck` in each service | Removed — covered by the platform |
+| Future services | Must remember to add it | Automatic |
 
 ---
 
-## 2. `CorrelationIdLoggingIntegrationEventDecorator<T>` in `Platform.Messaging`
+## 2. Correlation-Aware Log Scope for Integration Event Handlers
 
 ### Problem
 
-`IntegrationEvent` base class already carries a `CorrelationId` property. However, log entries emitted inside integration event handlers have no automatic log scope enrichment, making it impossible to correlate logs across services using structured log aggregators (Application Insights, Seq, etc.) without per-handler boilerplate:
+The onboarding and activation workflows carry a `CorrelationId` across services, but only as an ad-hoc property: some integration events declare it (`ActivationEmailRequested`, `UserActivated`, `ActivationDelivered`, `CustomerGoLive`, `CustomerActivationCompleted`, all as `Guid?`), while the `IntegrationEvent` base record only has `Id` and `CreationDate`.
+
+As a result, the platform cannot enrich logs with the correlation id generically. Command handlers open the log scope themselves after loading the process aggregate:
 
 ```csharp
-// Every handler must repeat this manually today
 using (_logger.BeginScope(new Dictionary<string, object?>
 {
-    ["CorrelationId"] = @event.CorrelationId
+    ["CorrelationId"] = process.CorrelationId,
+    ["ActivationProcessId"] = process.Id
 }))
 {
     // handler body
 }
 ```
 
+and integration event handlers do not open any scope, so their log entries cannot be correlated across services in a structured log store (Application Insights, Seq, etc.) without extra work.
+
 ### Proposed Design
 
-Add a new decorator in `Platform.Messaging` following the same pattern as `TelemetryIntegrationEventHandlerDecorator<T>`:
+**Step 1 — Make correlation a platform concept.** Add an opt-in contract in `Platform.Messaging.Abstractions` and implement it on the events that already carry the property:
 
 ```csharp
-// Platform.Messaging/Decorators/CorrelationIdLoggingIntegrationEventDecorator.cs
-public class CorrelationIdLoggingIntegrationEventDecorator<T>
-    : IIntegrationEventHandler<T>
+public interface ICorrelatedIntegrationEvent
+{
+    Guid? CorrelationId { get; }
+}
+
+public record ActivationEmailRequestedIntegrationEvent(
+    /* ... */
+    Guid? CorrelationId) : IntegrationEvent, ICorrelatedIntegrationEvent;
+```
+
+An opt-in interface keeps the change non-breaking; moving `CorrelationId` to the base record is the alternative if every event should carry it.
+
+**Step 2 — Add a decorator** in `Platform.Messaging`, following the same pattern as `TelemetryIntegrationEventHandlerDecorator<T>` (including `IDecoratedHandler<T>`, so the idempotency decorator still resolves the real handler name):
+
+```csharp
+public class CorrelationLoggingIntegrationEventDecorator<T>
+    : IIntegrationEventHandler<T>, IDecoratedHandler<T>
     where T : IntegrationEvent
 {
     private readonly IIntegrationEventHandler<T> _inner;
-    private readonly ILogger<CorrelationIdLoggingIntegrationEventDecorator<T>> _logger;
+    private readonly ILogger<CorrelationLoggingIntegrationEventDecorator<T>> _logger;
 
-    public CorrelationIdLoggingIntegrationEventDecorator(
+    public CorrelationLoggingIntegrationEventDecorator(
         IIntegrationEventHandler<T> inner,
-        ILogger<CorrelationIdLoggingIntegrationEventDecorator<T>> logger)
+        ILogger<CorrelationLoggingIntegrationEventDecorator<T>> logger)
     {
         _inner = inner;
         _logger = logger;
     }
 
+    public IIntegrationEventHandler<T> InnerHandler => _inner;
+
     public async Task Handle(T @event)
     {
-        using (_logger.BeginScope(new Dictionary<string, object?>
-        {
-            ["CorrelationId"] = @event.CorrelationId
-        }))
+        var scope = new Dictionary<string, object?> { ["IntegrationEventId"] = @event.Id };
+
+        if (@event is ICorrelatedIntegrationEvent { CorrelationId: { } correlationId })
+            scope["CorrelationId"] = correlationId;
+
+        using (_logger.BeginScope(scope))
         {
             await _inner.Handle(@event);
         }
@@ -116,40 +132,23 @@ public class CorrelationIdLoggingIntegrationEventDecorator<T>
 }
 ```
 
-Registration via Scrutor in `AddEventBus()` / `AddServiceBusEventBus()`, exactly as `TelemetryIntegrationEventHandlerDecorator<T>` is already registered:
-
-```csharp
-services.Decorate(
-    typeof(IIntegrationEventHandler<>),
-    typeof(CorrelationIdLoggingIntegrationEventDecorator<>));
-```
+It is registered with Scrutor next to the telemetry decorator, so every handler gets the scope without code changes.
 
 ### Scope Limitation
 
-The decorator injects only what is available on `IntegrationEvent` base (`CorrelationId`, `EventId`, `CreationDate`). Handler-specific context fields — such as `ActivationProcessId` in Epic 2 handlers — remain the responsibility of each handler, as they depend on data fetched from the repository, not from the event itself.
+The decorator only adds what is available on the event itself. Context that comes from loading an aggregate (such as `ActivationProcessId`) remains the responsibility of the command handler.
 
 ### Layer Compliance
 
-`Platform.Messaging` does NOT reference Entity Framework. This decorator uses only `ILogger` and the `IntegrationEvent` base type — both already present in the layer. No dependency violations.
-
-### Effort
-
-~2 hours (decorator class + Scrutor wiring + unit tests for scope injection + verify handlers can remove manual BeginScope for CorrelationId).
-
-### Impact
-
-| Handler | Current state | After |
-|---------|--------------|-------|
-| Handlers with manual `BeginScope(CorrelationId)` | `CorrelationId` scope setup repeated per handler | Decorator covers `CorrelationId`; only handler-specific scopes remain |
-| All future handlers | Must remember to add it | Zero effort — automatic |
+`Platform.Messaging` does not reference Entity Framework. The decorator only uses `ILogger` and the messaging abstractions already present in the layer.
 
 ---
 
 ## Summary
 
-| Improvement | Layer | Mechanism | Effort |
-|-------------|-------|-----------|--------|
-| Auto DB health check | `Platform.Persistence.EntityFramework.Relational` | Embed `AddDbContextCheck<TContext>` inside `AddQltSDBContext` | ~1h |
-| Auto CorrelationId log scope | `Platform.Messaging` | New `CorrelationIdLoggingIntegrationEventDecorator<T>` via Scrutor | ~2h |
+| Improvement | Layer | Mechanism |
+|-------------|-------|-----------|
+| Automatic DB health check | `Platform.Persistence.EntityFramework.Relational` | `AddDbContextCheck<TContext>` inside `AddQltSDBContext` |
+| Correlation log scope | `Platform.Messaging.Abstractions` + `Platform.Messaging` | `ICorrelatedIntegrationEvent` + `CorrelationLoggingIntegrationEventDecorator<T>` via Scrutor |
 
-Both improvements follow the existing architectural patterns of the platform and introduce no breaking changes. Services implementing these capabilities manually today will simply have redundant-but-harmless registrations until they are cleaned up.
+Both follow the existing architectural patterns of the platform and introduce no breaking changes.

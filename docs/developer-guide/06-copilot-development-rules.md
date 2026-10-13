@@ -1,41 +1,59 @@
 # Copilot Development Rules — QltS Services
 
-This document defines the rules and patterns that **must** be followed when implementing features in `Qlt.Services.*` microservices. The platform is consumed as NuGet packages — do not modify or recreate platform internals.
+This document defines the rules and patterns that **must** be followed when implementing features in `Qlt.Services.*` microservices. In this repository the platform (`src/Qlt.Platform`, `src/Qlt.Domain`) is consumed through project references (several projects are also packable as NuGet) — do not modify or recreate platform internals from a service.
 
 ---
 
 ## Service Project Structure
 
-Every service follows a **5-project structure**:
+Every service follows a **4-project structure** plus a **shared Contracts project** that lives outside the service folder:
 
 ```
-Qlt.Services.{ServiceName}/
-├── Api/                    ← Web host, endpoints, Program.cs
-│   ├── Api/                ← Endpoint classes + Services class
-│   └── Extensions/         ← AddApplicationServices (DI)
-├── Application/            ← Commands, Queries, Handlers, Validators, Domain Event Handlers
-│   ├── Commands/
-│   ├── Queries/
-│   ├── Validators/
-│   ├── DomainEventHandlers/
-│   └── AssemblyReference.cs
-├── Domain/                 ← Entities, Value Objects, Repositories, Domain Events
-│   ├── Models/{Aggregate}/
-│   ├── Events/
-│   ├── Repositories/
-│   └── Exceptions/
-├── Infrastructure/         ← DbContext, Repositories, Configurations, DI
-│   ├── Persistence/
-│   │   ├── EntityConfigurations/
-│   │   ├── Queries/        ← Query handlers (use read context)
+src/
+├── Qlt.Services/Qlt.Services.{ServiceName}/
+│   ├── Api/                    ← Web host ({ServiceName}.API.csproj), Program.cs
+│   │   ├── APIs/               ← Endpoint classes + {ServiceName}Services class
+│   │   ├── Authorization/      ← Policy names and roles
+│   │   └── Extensions/         ← AddApplicationServices (DI)
+│   ├── Application/            ← Commands, Queries, Handlers, Validators, Domain Event Handlers
+│   │   ├── Commands/
+│   │   ├── Queries/            ← Query records + view models
+│   │   ├── Validators/
+│   │   ├── DomainEventHandlers/
+│   │   └── AssemblyReference.cs
+│   ├── Domain/                 ← Entities, Value Objects, Repositories, Domain Events
+│   │   ├── Models/{Aggregate}/
+│   │   ├── Events/
 │   │   ├── Repositories/
-│   │   ├── Migrations/
-│   │   └── Seed/
-│   ├── Extensions/         ← AddInfrastructureServices (DI)
-│   └── AssemblyReference.cs
-└── Contracts/              ← Integration events shared with other services
+│   │   ├── Services/           ← Domain service interfaces
+│   │   └── Exceptions/
+│   └── Infrastructure/         ← DbContexts, Repositories, Configurations, DI
+│       ├── Persistence/
+│       │   ├── EntityConfigurations/
+│       │   ├── Queries/        ← Query handlers (use read context)
+│       │   ├── Repositories/
+│       │   ├── Migrations/
+│       │   └── Seed/
+│       ├── IntegrationEvents/EventHandling/   ← Consumed integration event handlers
+│       ├── Services/           ← Domain service implementations
+│       ├── Extensions/         ← AddInfrastructureServices (DI)
+│       └── AssemblyReference.cs
+└── Qlt.Contracts/Qlt.Contracts.{ServiceName}/ ← Integration events PUBLISHED by the service
     ├── IntegrationEvents/
     └── AssemblyReference.cs
+```
+
+Project references (Accounts as reference):
+
+```mermaid
+flowchart BT
+    DOM["Accounts.Domain"] --> DC["Domain.Core"] & PC["Platform.Core"]
+    APP["Accounts.Application"] --> DOM & DA["Domain.Application"] & CA["Contracts.Accounts"]
+    INF["Accounts.Infrastructure"] --> APP & DOM
+    INF --> CI["Contracts.Identity / Contracts.Notifications<br/>(consumed events)"]
+    INF --> PLAT["Platform.Persistence.EntityFramework.Relational<br/>Platform.Messaging.EntityFramework<br/>Platform.Messaging.Redis<br/>Platform.EventBus.ServiceBus"]
+    API["Accounts.API"] --> APP & INF & WA["Platform.WebApi"] & SD["Platform.ServiceDefaults"]
+    CA --> ABS["Platform.Messaging.Abstractions"]
 ```
 
 ### AssemblyReference Pattern
@@ -45,7 +63,7 @@ Every project that needs assembly scanning (Application, Infrastructure, Contrac
 ```csharp
 using System.Reflection;
 
-namespace Qlt.Services.{ServiceName}.{Layer};
+namespace Qlt.Services.{ServiceName}.{Layer};   // Contracts: Qlt.Contracts.{ServiceName}
 
 public static class AssemblyReference
 {
@@ -57,28 +75,32 @@ public static class AssemblyReference
 
 ## Contracts Project — Integration Event Sharing
 
-Integration events and their models live in a **separate Contracts project** that is shared between microservices.
+Integration events and their models live in a **separate Contracts project** (`src/Qlt.Contracts/Qlt.Contracts.{ServiceName}`) that is shared between microservices. Existing projects: `Contracts.Accounts`, `Contracts.Identity`, `Contracts.Notifications`.
 
 ### Rules
 
 - The Contracts project only references `Platform.Messaging.Abstractions` — nothing else
 - It contains **only** integration event records and any DTOs they carry
-- Other services that consume these events add a project reference (or NuGet reference) to the Contracts project
+- The producing service references it from **Application** (domain event handlers create the events)
+- Services that consume these events reference it from **Infrastructure** (integration event handlers)
+- Every service registers the contract assemblies it **publishes** in `AddTransactionalOutbox(...RegisterEventTypes(...))`
 - Never put commands, queries, domain events, or domain entities in Contracts
 
 ### Example
 
 ```csharp
-// Contracts/IntegrationEvents/OrderCompletedIntegrationEvent.cs
+// src/Qlt.Contracts/Qlt.Contracts.Accounts/IntegrationEvents/CompanyCreatedIntegrationEvent.cs
 using Qlt.Platform.Messaging.IntegrationEvents;
 
-namespace Qlt.Services.Orders.Contracts.IntegrationEvents;
+namespace Qlt.Contracts.Accounts.IntegrationEvents;
 
-public record OrderCompletedIntegrationEvent(
-    Guid OrderId,
-    Guid CustomerId,
-    decimal Total,
-    string Currency) : IntegrationEvent;
+public record CompanyCreatedIntegrationEvent(
+    Guid TenantId,
+    Guid CompanyId,
+    string LegalName,
+    string TradeName,
+    string TaxId,
+    string CountryCode) : IntegrationEvent;
 ```
 
 ### Contracts .csproj
@@ -87,7 +109,9 @@ public record OrderCompletedIntegrationEvent(
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <RootNamespace>Qlt.Services.{ServiceName}.Contracts</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Qlt.Contracts.{ServiceName}</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Qlt.Platform\Qlt.Platform.Messaging.Abstractions\Platform.Messaging.Abstractions.csproj" />
@@ -131,14 +155,15 @@ public static IServiceCollection AddApplicationServices(this IHostApplicationBui
 public static void AddInfrastructureServices(this IHostApplicationBuilder builder)
 {
     var services = builder.Services;
-    var connectionString = builder.Configuration.GetConnectionString("{ServiceName}Db");
-    var readConnectionString = builder.Configuration.GetConnectionString("{servicename}db-readonly")
+    // Services share the QltSystemDb database, each one in its own schema
+    var connectionString = builder.Configuration.GetConnectionString("QltSystemDb");
+    var readConnectionString = builder.Configuration.GetConnectionString("QltSystemDbReadonly")
         ?? connectionString;
 
     // Write context
     services.AddQltSDBContext<{ServiceName}Context>(
         conf => conf
-            .SetDefaultSchema("{servicename}")
+            .SetDefaultSchema("{ServiceName}")
             .WithIdempotency()
             .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
         options => options.UseSqlServer(connectionString, sqlOptions =>
@@ -150,18 +175,22 @@ public static void AddInfrastructureServices(this IHostApplicationBuilder builde
     // Read context
     services.AddQltReadDbContext<{ServiceName}ReadContext>(
         conf => conf
-            .SetDefaultSchema("{servicename}")
+            .SetDefaultSchema("{ServiceName}")
             .RegisterModelsFromAssembly(typeof(AssemblyReference).Assembly),
         options => options.UseSqlServer(readConnectionString)
     );
 
+    services.AddHealthChecks()
+        .AddDbContextCheck<{ServiceName}Context>(name: "{servicename}-db", tags: ["ready"]);
+
+    // Required: applies migrations + seed and signals MigrationReadySignal (awaited by the OutboxProcessor)
     services.AddMigration<{ServiceName}Context, {ServiceName}ContextSeed>();
 
-    // Event bus + subscriptions
+    // Event bus + subscriptions — BEFORE the idempotency builders
     builder.AddServiceBusEventBus("eventbus")
         .AddEventBusSubscriptions();
 
-    // Idempotency: Redis (fast) + EF (transactional guarantee)
+    // Idempotency: Redis (fast) FIRST, then EF (transactional guarantee) decorates it
     services.AddRedisIdempotencyCache(builder.Configuration)
         .ForApiRequests()
         .ForIntegrationEventHandlers();
@@ -170,10 +199,10 @@ public static void AddInfrastructureServices(this IHostApplicationBuilder builde
         .ForApiRequests()
         .ForIntegrationEventHandlers();
 
-    // Transactional outbox
+    // Transactional outbox — register every contracts assembly whose events this service PUBLISHES
     services.AddTransactionalOutbox<{ServiceName}Context>(options =>
     {
-        options.RegisterEventTypes(typeof(Contracts.AssemblyReference).Assembly);
+        options.RegisterEventTypes(typeof(Qlt.Contracts.{ServiceName}.AssemblyReference).Assembly);
     });
 
     // Repositories
@@ -193,6 +222,8 @@ private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)
 - **Never manually register telemetry** — `AddQltMediator` handles it automatically
 - **Register handlers from both assemblies** — Application (commands, domain event handlers) and Infrastructure (query handlers)
 - **Infrastructure calls go in `AddInfrastructureServices`** — database, event bus, idempotency, outbox, repositories
+- **Order matters** — `AddInfrastructureServices` before `AddQltMediator`; inside it: subscriptions → Redis idempotency → EF idempotency → outbox (Scrutor decorates in call order)
+- **Configuration** — `appsettings.json` needs `EventBus:SubscriptionClientName` (matching the AppHost subscription) and the `IdempotencyCache` section; connection names `QltSystemDb`, `eventbus` and `cache` come from Aspire
 
 ---
 
@@ -255,8 +286,9 @@ public class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand, boo
 
 - `SaveChangesAsync()` **flushes** to DB but does NOT commit — the `TransactionBehavior` commits later
 - Always return `Result<T>`, never throw exceptions for expected failures
-- Override `CreateResultForDuplicateRequest()` to return a meaningful value (e.g., `true` for creation commands)
+- Override `CreateResultForDuplicateRequest()` to return a meaningful value (e.g., `true` for creation commands) — the default returns `Result.Success(default)`
 - Use `[DataContract]` / `[DataMember]` for serialization support
+- A failed `Result` does **not** roll back: `TransactionBehavior` commits anything tracked (including the idempotency entry). Check business preconditions **before** adding or modifying entities, and throw (domain exception) when partial changes must be discarded
 
 ---
 
@@ -423,28 +455,34 @@ Integration event handlers act as **thin translators** — they receive an exter
 
 ### Architecture — Thin Translator Pattern
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Event Bus message arrives                                      │
-│       ↓                                                         │
-│  IdempotencyIntegrationEventEfDecorator                         │
-│       ├── BEGIN TX on LogsContext (idempotency + outbox)         │
-│       ├── Check idempotency → if duplicate, skip                │
-│       ├── Call handler.Handle(@event)                            │
-│       │       ↓                                                 │
-│       │   IntegrationEventHandler (THIN TRANSLATOR)             │
-│       │       ├── Log "Received event..."                       │
-│       │       ├── _mediator.Send(new SomeCommand(...))          │
-│       │       │       ↓                                         │
-│       │       │   MediatR Pipeline → Command Handler            │
-│       │       │       (business logic lives HERE)               │
-│       │       └── Log warning if result.IsFailure               │
-│       ├── Save idempotency entry                                │
-│       └── COMMIT TX on LogsContext                              │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+sequenceDiagram
+    participant BUS as Event bus
+    participant TEL as TelemetryIntegrationEventHandlerDecorator
+    participant IDM as IdempotencyIntegrationEventEfDecorator
+    participant H as IntegrationEventHandler (THIN TRANSLATOR)
+    participant P as MediatR pipeline
+    participant CH as Command handler
+    participant DB as Write DbContext
+
+    BUS->>TEL: Handle(@event)
+    TEL->>IDM: Handle(@event)
+    IDM->>IDM: ExistsAsync(eventId + handler name)? duplicate → skip
+    IDM->>DB: BEGIN TX
+    IDM->>H: Handle(@event)
+    H->>H: Log "Received event..."
+    H->>P: _mediator.Send(new SomeCommand(...))
+    P->>CH: TransactionBehavior sees active TX → nested
+    CH->>DB: business logic lives HERE (SaveChanges flush)
+    P-->>H: Result (domain events dispatched, outbox rows tracked)
+    H->>H: Log warning if result.IsFailure
+    IDM->>DB: IdempotencyEntry + SaveChanges + COMMIT
+    IDM-->>BUS: success → message completed
 ```
 
-### Handler Template (5-Layer Services)
+The write DbContext is the service's `QltDBContext` (`AccountContext`, `NotificationsContext`, or `IdentityLogsContext` in Identity). Outbox rows produced by the nested command are published by the `OutboxProcessor` after this commit.
+
+### Handler Template (Layered Services)
 
 ```csharp
 using MediatR;
@@ -498,7 +536,7 @@ public record ProcessCompletedOrderCommand(
     decimal Total) : ICommand<bool>;
 ```
 
-In 5-layer services, the command handler benefits from the full MediatR pipeline (`TransactionBehavior` → `DomainEventProcessorBehavior` → `IntegrationEventProcessorBehavior`), so `SaveChangesAsync()` flushes within the managed transaction — same pattern as API-facing commands.
+In layered services (Accounts, Notifications), the command handler benefits from the full MediatR pipeline. `TransactionBehavior` detects the decorator's active transaction and runs nested, `DomainEventProcessorBehavior` dispatches domain events inside it, and `SaveChangesAsync()` flushes within the decorator-managed transaction — same handler code as API-facing commands. The resulting integration events are published by the `OutboxProcessor` once the decorator commits.
 
 ### Handler Template (Identity — Dual DbContext)
 
@@ -511,23 +549,25 @@ These contexts do **not** share a transaction. The approach is:
 2. **Command handler** uses `ResilientTransaction.New(IdentityContext)` for business operations
 3. **Outbox publish** runs within the decorator's `IdentityLogsContext` transaction
 
+```mermaid
+flowchart TB
+    subgraph DEC["Decorator TX — IdentityLogsContext (idempotency + outbox)"]
+        direction TB
+        H["Handler → _mediator.Send(command)<br/>TransactionBehavior: active TX → nested"]
+        subgraph RT["ResilientTransaction — IdentityContext (users, tenants)"]
+            direction TB
+            R1["EnsureTenantExists → repo.CreateAsync (flush)"]
+            R2["CreateUserIfNotExists → repo.CreateAsync (flush)"]
+            R3["COMMIT IdentityContext TX"]
+            R1 --> R2 --> R3
+        end
+        O["_outboxService.AddAndSaveEventAsync(...)<br/>uses GetCurrentTransaction() of IdentityLogsContext"]
+        C["COMMIT IdentityLogsContext TX (idempotency + outbox saved)"]
+        H --> RT --> O --> C
+    end
 ```
-┌── Decorator TX (IdentityLogsContext) ──────────────────────────┐
-│                                                                 │
-│  Handler → _mediator.Send(command)                              │
-│       ↓                                                         │
-│  ┌── ResilientTransaction (IdentityContext) ──────────────┐     │
-│  │   EnsureTenantExists → repo.CreateAsync (flush)        │     │
-│  │   CreateUserIfNotExists → repo.CreateAsync (flush)     │     │
-│  │   COMMIT IdentityContext TX                            │     │
-│  └────────────────────────────────────────────────────────┘     │
-│       ↓                                                         │
-│  _outboxService.AddAndSaveEventAsync(...)                       │
-│       → uses GetCurrentTransaction() from IdentityLogsContext   │
-│                                                                 │
-│  COMMIT IdentityLogsContext TX (idempotency + outbox saved)     │
-└─────────────────────────────────────────────────────────────────┘
-```
+
+The two commits are **independent**: if the outer commit fails after the `IdentityContext` commit, the message is redelivered and the "if not exists" checks make the retry safe.
 
 **Integration event handler** — identical thin translator pattern:
 
@@ -589,10 +629,10 @@ public class ProvisionCustomerAdminCommandHandler
 }
 ```
 
-**Key differences from 5-layer services:**
-- Identity MediatR pipeline only has `LoggingBehavior` (no `TransactionBehavior`, no `DomainEventProcessorBehavior`)
+**Key differences from layered services:**
+- Identity uses `AddQltMediator` with `WithLogging` only (no `WithValidation`). All platform behaviors are present, but `ITransactionalUnitOfWork` is `IdentityLogsContext`, so `TransactionBehavior` / `DomainEventProcessorBehavior` only cover the idempotency + outbox context — not users or tenants
 - Handler must manage its own `IdentityContext` transaction via `ResilientTransaction`
-- `AddAndSaveEventAsync` works because the decorator's active transaction on `IdentityLogsContext` satisfies `GetCurrentTransaction()`
+- `AddAndSaveEventAsync` works because there is an active transaction on `IdentityLogsContext` — opened by the decorator (event path) or by `TransactionBehavior` (commands sent from Razor pages such as `ConfirmEmailCommand`)
 - Multiple `SaveChangesAsync` calls inside `ResilientTransaction` are safe — they flush within the transaction, commit happens at end
 
 ### Registration
@@ -613,7 +653,7 @@ private static void AddEventBusSubscriptions(this IEventBusBuilder eventBus)
 - Reference the **Contracts project** of the producing service
 - Register via `AddSubscription<TEvent, THandler>()` in `AddEventBusSubscriptions`
 - Log the received event at `Information` level, log failures at `Warning` level
-- **5-layer services**: command handler benefits from full MediatR pipeline (transactions, domain events, outbox — all automatic)
+- **Layered services**: command handler benefits from full MediatR pipeline (transactions, domain events, outbox — all automatic)
 - **Identity**: command handler must use `ResilientTransaction.New(IdentityContext)` for business operations and `AddAndSaveEventAsync` for outbox (leveraging decorator's transaction)
 
 ---
@@ -625,9 +665,11 @@ Only configure **your domain entities**. Never create configurations for platfor
 ```csharp
 internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
 {
+    private const string TableName = "Order";   // singular, schema comes from SetDefaultSchema
+
     public void Configure(EntityTypeBuilder<Order> entity)
     {
-        entity.ToTable("Order");
+        entity.ToTable(TableName);
         entity.HasKey(e => e.Id);
         entity.Property(x => x.Id).ValueGeneratedNever();
 
@@ -650,9 +692,11 @@ internal sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
 - Configurations go in `Infrastructure/Persistence/EntityConfigurations/`
 - Mark as `internal sealed class`
 - **Never create configurations for**: `OutboxMessage`, `IdempotencyEntry`, `AuditLog` — the platform manages these
-- **Never create or modify migration entries for platform tables** — they are configured automatically by `.WithIdempotency()`, `.WithAuditLogs()`
+- **Never hand-edit migration entries for platform tables** — they are added to the model automatically by `.WithIdempotency()` / `AddIdempotencyEntityFramework` and `AddTransactionalOutbox`; just generate migrations normally
+- **Never configure `RowVersion` or `CreatedAt`** — `ConfigureEntityAuditProperties` maps them for every `Entity` type
 - Use `ValueGeneratedNever()` for entity IDs (generated in code via `Entity` base constructor)
-- Configurations are auto-discovered from the assembly registered via `RegisterModelsFromAssembly`
+- Store enums as strings (`HasConversion<string>()` + `HasMaxLength`), as existing configurations do
+- Configurations are auto-discovered from the assembly registered via `RegisterModelsFromAssembly` (both write and read contexts use the same assembly)
 
 ---
 
@@ -667,7 +711,6 @@ public class OrderContext : QltDBContext
 
     public OrderContext(
         DbContextOptions<OrderContext> options,
-        IMediator mediator,
         QltDbContextConfiguration configuration)
         : base(options, configuration) { }
 
@@ -696,6 +739,7 @@ public class OrderReadContext : QltReadDbContext
 ### DbContext Rules
 
 - Write context inherits `QltDBContext` — read context inherits `QltReadDbContext`
+- The constructor only needs `DbContextOptions<T>` and `QltDbContextConfiguration` (existing contexts such as `AccountContext` also inject an unused `IMediator` — not required)
 - Call `base.OnModelCreating(modelBuilder)` in write context — it applies platform configurations
 - Read context does **not** need `OnModelCreating` override
 - Never call `SaveChanges` on the read context (throws `InvalidOperationException`)
@@ -716,29 +760,49 @@ public static class OrdersApi
         return api;
     }
 
-    public static async Task<Results<Ok<bool>, ValidationProblem, BadRequest<string>>> CreateOrderAsync(
+    public static async Task<Results<Ok<bool>, BadRequest<ApiErrorResponse>>> CreateOrderAsync(
         [FromHeader(Name = "x-requestid")] Guid requestId,
         CreateOrderRequest request,
         [AsParameters] OrdersServices services)
     {
         if (requestId == Guid.Empty)
-            return TypedResults.BadRequest("Empty GUID is not valid for request ID");
+            return TypedResults.BadRequest(new ApiErrorResponse
+            {
+                Code = "ValidationError",
+                Message = "Empty GUID is not valid for request ID",
+                TraceId = services.UserHttpContext.TraceId
+            });
 
         var command = new CreateOrderCommand(/* ... */ requestId: requestId);
         var result = await services.Mediator.Send(command);
-        return result.ToHttpResult();
+        return result.ToHttpResult(services.UserHttpContext.TraceId);   // 200 OK or 400 ApiErrorResponse
     }
 
-    public static async Task<Results<Ok<OrderViewModel>, NotFound>> GetOrderByIdAsync(
+    public static async Task<Results<Ok<OrderViewModel>, NotFound<ApiErrorResponse>>> GetOrderByIdAsync(
         Guid id,
         [AsParameters] OrdersServices services)
     {
         var result = await services.Mediator.Send(new GetOrderByIdQuery(id));
-        return result.IsFailure
-            ? TypedResults.NotFound()
-            : TypedResults.Ok(result.Value);
+
+        if (result.IsFailure)
+            return TypedResults.NotFound(new ApiErrorResponse
+            {
+                Code = "NotFound",
+                Message = "Order not found.",
+                TraceId = services.UserHttpContext.TraceId
+            });
+
+        return TypedResults.Ok(result.Value);
     }
 }
+```
+
+Map the group in `Program.cs` with versioning and authorization:
+
+```csharp
+app.NewVersionedApi("orders")
+   .MapOrdersApiV1()
+   .RequireAuthorization();          // or per-endpoint .RequireAuthorization(OrdersAuthorizationPolicies.Write)
 ```
 
 ### API Services class
@@ -754,9 +818,10 @@ public class OrdersServices(
 
 - Use `[FromHeader(Name = "x-requestid")]` for idempotent commands
 - Validate `requestId != Guid.Empty` before sending
-- Use `result.ToHttpResult()` to convert `Result<T>` to HTTP responses automatically
-- Duplicate requests return `200 OK` with same body — never `409 Conflict`
-- Create a service-specific `{Service}Services` class extending `ApiServices`
+- Use `result.ToHttpResult(traceId)` to convert `Result<T>` to HTTP responses (`200 OK` / `400 Bad Request` with `ApiErrorResponse`); map other status codes (e.g. `404`) explicitly in the endpoint
+- Duplicate requests return `200 OK` with the value from `CreateResultForDuplicateRequest()` — never `409 Conflict` (it is not a replay of the original body)
+- Create a service-specific `{Service}Services` class extending `ApiServices` (`Mediator`, `Logger`, `UserHttpContext`)
+- Unhandled exceptions are converted by `ExceptionHandlingMiddleware` (`DomainValidationException` → `400`, others → `500`)
 
 ---
 
@@ -779,7 +844,8 @@ public class CreateOrderCommandValidator : AbstractValidator<CreateOrderCommand>
 - Validators go in `Application/Validators/`
 - Use FluentValidation's `AbstractValidator<T>`
 - Validators are auto-discovered from the assembly registered via `AddValidatorsFromAssembly`
-- Validation runs inside the transaction (after `TransactionBehavior`, before handler)
+- Validation runs inside the transaction (after `TransactionBehavior`, before handler) and only if the service calls `WithValidation(typeof(ValidationBehavior<,>))`
+- Failures return `Result.ValidationFailure` (→ `400` with per-property `errors`); for non-`Result` responses a `DomainValidationException` is thrown
 
 ---
 
@@ -863,6 +929,8 @@ public class Order : Entity, IAggregateRoot { ... }
 // ❌ WRONG — TransactionBehavior manages this
 await using var tx = await _context.Database.BeginTransactionAsync();
 ```
+
+The only exception is Identity, where business data lives in `IdentityContext` (outside the pipeline's `ITransactionalUnitOfWork`) and must use `ResilientTransaction.New(_identityContext)`.
 
 ### Never publish to event bus directly from handlers
 

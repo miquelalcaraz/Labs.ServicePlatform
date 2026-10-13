@@ -13,7 +13,7 @@ namespace Qlt.Domain.SeedWork
     /// <summary>
     /// Placeholder POCO for audit log entries.
     /// Pending redesign: automatic capture via EF ChangeTracker + IUserHttpContext.
-    /// See docs/21-audit-log-proposal.md for the design proposal.
+    /// See docs/backlog/audit-log-proposal.md for the design proposal.
     /// </summary>
     public class AuditLog
     {
