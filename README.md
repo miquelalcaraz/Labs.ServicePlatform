@@ -23,6 +23,44 @@ The blocks are exercised by a [sample B2B domain](docs/features/README.md) (cust
 
 ## 🧭 Design Principle
 
+```mermaid
+%%{init: {"themeVariables": {"fontSize": "12px"}, "flowchart": {"nodeSpacing": 15, "rankSpacing": 30, "padding": 6}}}%%
+flowchart TB
+    subgraph S["Business services · what teams write"]
+        direction LR
+        H["Aggregates · Commands · Queries<br/>Domain & integration event handlers"]
+    end
+
+    subgraph A["Contracts · stable abstractions"]
+        direction LR
+        A1["ICommand / IQuery<br/>Result · Error"]
+        A2["IDomainEventHandler<br/>IIntegrationEventHandler"]
+        A3["IRepository · IUnitOfWork<br/>IEventBusOutboxService"]
+    end
+
+    subgraph P["Platform logic · applied automatically"]
+        direction LR
+        P1["Pipeline<br/>logging · validation · transaction"]
+        P2["Idempotency<br/>commands & consumers"]
+        P3["Outbox &<br/>domain event dispatch"]
+        P4["Telemetry"]
+    end
+
+    subgraph T["Technology adapters · swappable"]
+        direction LR
+        T1["Azure Service Bus / RabbitMQ"]
+        T2["EF Core + SQL Server"]
+        T3["Redis"]
+        T4["OpenTelemetry"]
+    end
+
+    S -- "depends only on" --> A
+    P -. "implements & decorates" .-> A
+    P -- "uses" --> T
+```
+
+Business code talks only to contracts. The platform implements and decorates those contracts — pipeline, idempotency, outbox, telemetry — and is the only layer that touches concrete technology, which can be swapped underneath.
+
 > **"Platform evolves, services sleep peacefully."**
 
 The building blocks were designed before every technology decision was final (event bus transport, persistence backend, caching). Instead of betting on one, each concern sits behind an abstraction, and business services depend **only** on those abstractions:
