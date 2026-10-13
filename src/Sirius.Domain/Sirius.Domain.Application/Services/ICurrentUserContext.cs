@@ -1,66 +1,64 @@
-﻿namespace Sirius.Domain.Services;
+namespace Sirius.Domain.Services;
 
 /// <summary>
 /// Represents the caller of the current request: authenticated identity and tenancy scope,
-/// plus request-tracing metadata. Identity fields must be resolved once at the API/Blazor
-/// boundary and passed explicitly into commands/queries — never injected into an Application-layer
-/// command handler, domain event handler, integration event handler, or background worker, since
-/// those run outside an HTTP request and <see cref="IsAuthenticated"/> would be false there.
+/// plus request-tracing metadata. Every member degrades to its empty value outside an HTTP request.
+/// Identity fields must be resolved at the API boundary and passed explicitly into commands/queries;
+/// handlers, event consumers and background workers must not read them, since they may run without
+/// an HTTP request. Request-tracing members (<see cref="RequestId"/>, <see cref="CorrelationId"/>,
+/// <see cref="TraceId"/>) may be read by cross-cutting pipeline behaviors.
 /// </summary>
 public interface ICurrentUserContext
 {
     /// <summary>
-    /// True when the current scope has an authenticated HTTP user. False for background/worker
-    /// scopes (watchdogs, integration event consumers) where there is no HTTP request at all.
+    /// True when the current scope has an authenticated HTTP user; false when unauthenticated
+    /// or outside an HTTP request.
     /// </summary>
     bool IsAuthenticated { get; }
 
     /// <summary>
-    /// The authenticated user id ("sub" claim). <see cref="Guid.Empty"/> when not authenticated.
+    /// The authenticated user id ("sub" claim). <see cref="Guid.Empty"/> when the claim is missing or not a valid GUID.
     /// </summary>
     Guid UserId { get; }
 
     /// <summary>
-    /// The authenticated user's display name.
+    /// The authenticated user's name (<c>Identity.Name</c>), or <see langword="null"/> when unavailable.
     /// </summary>
     string? UserName { get; }
 
     /// <summary>
-    /// The tenant scope ("tenantid" claim), when present.
+    /// The tenant scope ("tenantid" claim), or <see langword="null"/> when missing or not a valid GUID.
     /// </summary>
     Guid? TenantId { get; }
 
     /// <summary>
-    /// The organization scope ("organizationid" claim), when present.
+    /// The organization scope ("organizationid" claim), or <see langword="null"/> when missing or not a valid GUID.
     /// </summary>
     Guid? OrganizationId { get; }
 
     /// <summary>
-    /// The normalized caller role ("role" claim).
+    /// The caller role ("role" claim), or <see langword="null"/> when missing.
     /// </summary>
     string? Role { get; }
 
     /// <summary>
-    /// The membership scope ("scopecode" claim: "Tenant" or "Company"). Default-implemented as
-    /// <see langword="null"/> so existing implementers (Web API adapter, test doubles) do not need
-    /// changes — currently only meaningful to Blazor frontend consumers.
+    /// The membership scope ("Tenant" or "Company"). Default-implemented as <see langword="null"/>;
+    /// the Web API implementation does not populate it.
     /// </summary>
     string? ScopeCode => null;
 
     /// <summary>
-    /// Gets the unique identifier for the current request.
-    /// Used for idempotency and request tracking.
+    /// The unique identifier of the current request ("x-requestid" header), used for idempotency and request tracking.
     /// </summary>
     string? RequestId { get; }
 
     /// <summary>
-    /// Gets the correlation identifier that spans multiple requests/operations.
-    /// Used for distributed tracing across services.
+    /// The correlation identifier spanning multiple requests/operations ("x-correlationid" header), used for distributed tracing.
     /// </summary>
     string? CorrelationId { get; }
 
     /// <summary>
-    /// Gets the trace identifier for the current request. Degrades to null outside an HTTP request.
+    /// The trace identifier of the current HTTP request (<c>HttpContext.TraceIdentifier</c>).
     /// </summary>
     string? TraceId { get; }
 }

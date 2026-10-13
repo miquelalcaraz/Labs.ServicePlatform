@@ -72,7 +72,7 @@ public static async Task<Results<Ok<bool>, BadRequest<ApiErrorResponse>>> Create
     var command = new CreateCompanyCommand(request.TenantId, request.LegalName, /* ... */ requestId: requestId);
     var result = await services.Mediator.Send(command);
 
-    return result.ToHttpResult(services.UserHttpContext.TraceId);   // 200 OK or 400 ApiErrorResponse
+    return result.ToHttpResult(services.CurrentUser.TraceId);   // 200 OK or 400 ApiErrorResponse
 }
 ```
 

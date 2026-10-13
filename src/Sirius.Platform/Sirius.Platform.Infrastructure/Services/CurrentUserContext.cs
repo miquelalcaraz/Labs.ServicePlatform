@@ -6,6 +6,10 @@ using Sirius.Domain.Services;
 
 namespace Sirius.Platform.Services;
 
+/// <summary>
+/// <see cref="ICurrentUserContext"/> implementation that reads the caller's claims and tracing headers
+/// from the current <see cref="HttpContext"/>. Registered by <c>AddApiServiceDefaults()</c>.
+/// </summary>
 public class CurrentUserContext(IHttpContextAccessor context) : ICurrentUserContext
 {
     public bool IsAuthenticated

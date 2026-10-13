@@ -114,7 +114,7 @@ The four tiers group projects by dependency role. The full dependency rules and 
 | `Platform.Telemetry` | OpenTelemetry sources and meters | [Telemetry](06-telemetry.md) |
 | `Platform.ServiceDefaults` | Aspire defaults, JWT auth, OpenAPI | [Configuration](../developer-guide/01-service-configuration.md) |
 | `Platform.WebApi` | `Result` → HTTP, exception middleware | [Pipeline](02-command-pipeline.md#http-mapping) |
-| `Platform.Infrastructure` | Current user context (`IUserHttpContext`) | [Configuration](../developer-guide/01-service-configuration.md) |
+| `Platform.Infrastructure` | Current user context (`CurrentUserContext` : `ICurrentUserContext`) | [Configuration](../developer-guide/01-service-configuration.md) |
 
 ### Swap points
 
