@@ -27,13 +27,6 @@ namespace Sirius.BackOfficeApp.Services
 
         public bool IsInRole(params string[] roles)
         {
-#if DEBUG
-            if (Principal?.FindFirst("email")?.Value == "admin")
-            {
-                return true;
-            }
-#endif
-
             if (roles.Contains("Everybody"))
             {
                 return true;

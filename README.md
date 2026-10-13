@@ -247,6 +247,7 @@ This is an evolving reference, not a finished product. Known limitations of the 
 - **Authorization** — there is no generic authorization behavior in the pipeline; endpoints use ASP.NET Core authorization policies.
 - **Delivery guarantees** — the outbox and idempotent consumers protect the implemented paths; they do not provide end-to-end exactly-once delivery.
 - **Sample shortcuts** — emails are only logged, the activation link carries no confirmation token, and APIs disable audience validation. See [Simplifications in the sample](docs/features/02-onboarding-activation-workflow.md#simplifications-in-the-sample).
+- **Development-only security settings** — IdentityServer clients use hard-coded secrets and `RequirePkce = false`, the Scalar UI clients use the implicit flow, JWT bearer validation runs with `RequireHttpsMetadata = false`, and the BackOffice client also allows a fixed `https://localhost:5001` redirect URI. They keep the local setup simple; a real deployment needs PKCE, secrets from a vault and HTTPS metadata.
 
 ---
 
