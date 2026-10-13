@@ -79,22 +79,24 @@ The full rationale, decision framework and ADRs are in [Principles & ADRs](docs/
 
 ## 🧱 Building Blocks
 
-| Project | Responsibility |
-|---|---|
-| `Domain.Core` | DDD seed work: `Entity` (domain events, `CreatedAt`/`UpdatedAt`, `RowVersion`), `ValueObject`, `IAggregateRoot`, `IRepository`, `IUnitOfWork`, `IDomainEvent` |
-| `Domain.Application` | Cross-cutting MediatR behaviors: `LoggingBehavior`, `ValidationBehavior` (FluentValidation) |
-| `Platform.Core` | `Result` / `Result<T>` and `Error` (railway-oriented results) |
-| `Platform.Messaging.Abstractions` | Contracts: `ICommand<T>`, `IQuery<T>`, `IDomainEventHandler<T>`, `IIntegrationEventHandler<T>`, `IIdempotencyService`, `IEventBusOutboxService`, `IntegrationEvent` |
-| `Platform.Messaging` | Persistence-ignorant logic: `IdempotencyBehavior`, telemetry behaviors/decorators, `IdempotentCommand<T>`, outbox/idempotency POCOs |
-| `Platform.Messaging.EntityFramework` | `AddSiriusMediator`, `TransactionBehavior`, `DomainEventProcessorBehavior`, `IntegrationEventProcessorBehavior`, EF idempotency, outbox services and `OutboxProcessor` — generic over any `DbContext` |
-| `Platform.Messaging.Redis` | Redis fast path for idempotency checks; the EF idempotency service decorates it and remains the source of truth |
-| `Platform.Persistence.EntityFramework` | EF Core abstractions: `ITransactionalUnitOfWork`, `IDomainEntityChangeTracker`, fluent context configuration |
-| `Platform.Persistence.EntityFramework.Relational` | `SiriusDBContext` (write) and `SiriusReadDbContext` (read-only), entity configurations, `Repository<T>`, `ResilientTransaction`, migrations |
-| `Platform.EventBus` | `IEventBus` abstraction and subscription builder |
-| `Platform.EventBus.ServiceBus` | Azure Service Bus implementation (default) |
-| `Platform.EventBus.RabbitMQ` | RabbitMQ implementation (alternative, see limitations) |
-| `Platform.Telemetry` | OpenTelemetry activity sources, meters and helpers |
-| `Platform.ServiceDefaults` / `Platform.WebApi` / `Platform.Infrastructure` | Aspire service defaults, JWT authentication, OpenAPI + Scalar, `Result` → HTTP mapping, exception middleware, `IUserHttpContext` |
+| Project | Responsibility | Docs |
+|---|---|---|
+| `Domain.Core` | DDD seed work: entities, value objects, domain events | [Domain events](docs/architecture/03-domain-events-consistency.md) |
+| `Domain.Application` | Logging and validation behaviors | [Pipeline](docs/architecture/02-command-pipeline.md) |
+| `Platform.Core` | `Result` / `Error` (railway-oriented) | [Pipeline](docs/architecture/02-command-pipeline.md) |
+| `Platform.Messaging.Abstractions` | Command, query, event and service contracts | [Layers](docs/architecture/01-messaging-persistence-layers.md) |
+| `Platform.Messaging` | Idempotency and telemetry behaviors, POCOs | [Idempotency](docs/architecture/04-idempotency.md) |
+| `Platform.Messaging.EntityFramework` | `AddSiriusMediator`, transactions, outbox | [Outbox](docs/architecture/05-transactional-outbox.md) |
+| `Platform.Messaging.Redis` | Redis fast path for idempotency | [Idempotency](docs/architecture/04-idempotency.md) |
+| `Platform.Persistence.EntityFramework` | EF Core abstractions (unit of work) | [Layers](docs/architecture/01-messaging-persistence-layers.md) |
+| `Platform.Persistence.EntityFramework.Relational` | Write/read `DbContext`s, mappings, migrations | [Read model](docs/architecture/08-cqrs-read-model.md) |
+| `Platform.EventBus` | `IEventBus` abstraction | [Event bus](docs/architecture/07-event-bus.md) |
+| `Platform.EventBus.ServiceBus` | Azure Service Bus transport (default) | [Event bus](docs/architecture/07-event-bus.md) |
+| `Platform.EventBus.RabbitMQ` | RabbitMQ transport (alternative) | [Event bus](docs/architecture/07-event-bus.md) |
+| `Platform.Telemetry` | OpenTelemetry sources and meters | [Telemetry](docs/architecture/06-telemetry.md) |
+| `Platform.ServiceDefaults` | Aspire defaults, JWT auth, OpenAPI | [Configuration](docs/developer-guide/01-service-configuration.md) |
+| `Platform.WebApi` | `Result` → HTTP, exception middleware | [Pipeline](docs/architecture/02-command-pipeline.md#http-mapping) |
+| `Platform.Infrastructure` | Current user context (`IUserHttpContext`) | [Configuration](docs/developer-guide/01-service-configuration.md) |
 
 ### The command pipeline
 
