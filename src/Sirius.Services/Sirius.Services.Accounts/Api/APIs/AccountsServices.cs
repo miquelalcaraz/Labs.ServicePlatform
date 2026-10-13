@@ -8,9 +8,9 @@ namespace Sirius.Services.Accounts.APIs
 {
     public class AccountsServices(
                     IMediator mediator,
-                    ICurrentUserContext userHttpContext,
+                    ICurrentUserContext currentUser,
                     ILogger<AccountsServices> logger
-        ) : ApiServices<AccountsServices>(mediator, userHttpContext, logger)
+        ) : ApiServices<AccountsServices>(mediator, currentUser, logger)
     {
     }
 
