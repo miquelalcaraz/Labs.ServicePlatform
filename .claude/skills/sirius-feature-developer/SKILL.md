@@ -60,7 +60,7 @@ These come from real pitfalls in this codebase; the reason matters more than the
 
 - **Commands flush, they don't commit.** Call `UnitOfWork.SaveChangesAsync()`; `TransactionBehavior` commits. Never open transactions manually (except Identity's `ResilientTransaction`).
 - **A failed `Result` still commits** (known gap). Check business preconditions *before* mutating entities; throw a domain exception when partial changes must be discarded.
-- **Integration events come from domain event handlers, not command handlers** — the aggregate decides when something happened; the outbox row is written atomically in the same transaction.
+- **Integration events come from domain event handlers, not command handlers** — the aggregate decides when something happened; the outbox row is written atomically in the same transaction. (Identity is the exception: it has no aggregates raising domain events, so its command handlers write to the outbox directly.)
 - **Never publish to `IEventBus` directly** — always the outbox.
 - **Integration event handlers are thin translators**: inject only `IMediator` + `ILogger`, map to an `ICommand<T>`, log the failure. Business logic lives in the command handler so it gets the full pipeline.
 - **Queries use the read context** (`{Service}ReadContext`, no tracking by default), and their handlers live in `Infrastructure/Persistence/Queries`.

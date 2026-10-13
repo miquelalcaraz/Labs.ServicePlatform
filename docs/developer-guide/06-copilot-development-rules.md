@@ -990,6 +990,8 @@ public class OrderCreatedDomainEventHandler : IDomainEventHandler<OrderCreatedDo
 
 **Why:** The aggregate owns the decision of when to publish. Domain event handlers run inside the same transaction (via `DomainEventProcessorBehavior`), so the outbox entry is committed atomically. This keeps command handlers focused on orchestration and keeps the integration event trigger close to the domain logic that produces it.
 
+**Exception — Identity:** its business data (`IdentityContext`) has no DDD aggregates raising domain events, so `ProvisionCustomerAdminCommandHandler` and `ConfirmEmailCommandHandler` call `AddAndSaveEventAsync` directly, on the `IdentityLogsContext` transaction (see [Handler Template (Identity — Dual DbContext)](#handler-template-identity--dual-dbcontext)).
+
 ### Never put business logic in integration event handlers
 
 ```csharp
@@ -1021,7 +1023,7 @@ public class OrderCompletedIntegrationEventHandler
         _logger.LogInformation("Received OrderCompleted for {OrderId}.", @event.OrderId);
 
         var result = await _mediator.Send(
-            new ProcessCompletedOrderCommand(@event.OrderId, @event.CustomerId));
+            new ProcessCompletedOrderCommand(@event.OrderId, @event.CustomerId, @event.Total));
 
         if (result.IsFailure)
             _logger.LogWarning("ProcessCompletedOrder failed: {Error}", result.Error.Message);

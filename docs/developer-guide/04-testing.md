@@ -147,8 +147,8 @@ dotnet run --project tests/Services/Services.FunctionalTests
 dotnet test tests/Platform/Platform.UnitTests --filter "FullyQualifiedName~IdempotencyEfServiceTests"
 dotnet run --project tests/Services/Services.FunctionalTests -- --filter-class "Services.FunctionalTests.Accounts.AccountsApiTests"
 
-# With coverage (unit tests)
-dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
+# With coverage (unit and integration tests, coverlet.collector)
+dotnet test tests/Platform/Platform.UnitTests --collect:"XPlat Code Coverage"
 ```
 
 ---
