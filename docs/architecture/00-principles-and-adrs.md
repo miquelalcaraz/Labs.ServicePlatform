@@ -514,28 +514,6 @@ public async Task Handle(CompanyCreatedDomainEvent evt, CancellationToken ct)
 
 ---
 
-### ADR-006: A Failed Result Rolls Back the Transaction and Discards the Idempotency Key
-**Decision:** `TransactionBehavior` rolls back its transaction when the command returns a failed `Result` (validation or business error), and `IdempotencyBehavior` undoes `MarkAsProcessingAsync` through a new `IIdempotencyService.DiscardAsync(key)` method instead of calling `MarkAsCompletedAsync`. `DiscardAsync` is also called (best effort, original exception rethrown) when the command throws.
-
-**Context:**
-- `TransactionBehavior` used to commit whenever no exception was thrown, so a `Result.Failure` committed the `IdempotencyEntry` too.
-- A client retrying with the same `x-requestid` got `CreateResultForDuplicateRequest()` (usually success) although the original request had failed.
-
-**Rationale:**
-- Railway-oriented programming: a failed command must leave no side effects, the same as a thrown exception.
-- Idempotency records **successful** processing. A failed request must be retryable with the same key.
-- The rollback covers the database. `DiscardAsync` covers what the transaction cannot undo: the Redis `processing` key and the entry still in the change tracker (also when the command runs inside a transaction owned by an outer scope).
-
-**Impact:**
-- ⚠️ **CONTRACT** `IIdempotencyService` gains `DiscardAsync`. It is implemented by `IdempotencyRedisService` (deletes the key, failures are non-fatal) and `IdempotencyEfService` (detaches the tracked entry, then delegates). Implementations outside the repository must add it; no service changes were needed.
-- ✅ Telemetry: the `Transaction {Command}` activity is tagged `transaction.rolled_back` / `transaction.rollback_reason`, and `application.transactions.duration` is recorded with `success = false`.
-- ✅ No integration events are published after a rollback (no committed transaction id).
-- ⚠️ A failed nested command does not roll back the outer transaction (see [Known gaps](../developer-guide/05-known-gaps.md#failed-nested-command-is-not-rolled-back)).
-
-**Date:** 2026-10-13
-
----
-
 ## 📚 Reference Documentation
 
 For detailed patterns implementation, see:

@@ -295,6 +295,8 @@ A nested command (sent while a transaction is already active, e.g. from an integ
 
 **Why `AddSiriusMediator` instead of raw `AddMediatR`?** The order of platform behaviors is load-bearing (idempotency outside the transaction, outbox publishing after commit, domain events inside the transaction). Centralizing it prevents services from getting it wrong.
 
+**Why does a failed `Result` roll back the transaction?** Railway-oriented programming: a failed command must leave no side effects, the same as a thrown exception. Idempotency records only **successful** processing, so a failed request stays retryable with the same `x-requestid`. The rollback covers the database; `IIdempotencyService.DiscardAsync` covers what the transaction cannot undo — the Redis `processing` key and the `IdempotencyEntry` still in the change tracker (see [Idempotency](04-idempotency.md#pipeline-flow)).
+
 **Why separate telemetry behaviors for commands and queries?** Distinct counters (`application.command_handlers.processed` vs `application.query_handlers.processed`) and histograms for independent read vs write monitoring.
 
 **Why query handlers in Infrastructure?** They depend on the concrete read `DbContext`, an infrastructure concern. Query records (`IQuery<T>`) and view models live in Application as pure contracts.

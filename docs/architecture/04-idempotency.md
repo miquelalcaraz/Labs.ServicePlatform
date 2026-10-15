@@ -129,7 +129,7 @@ flowchart TB
 
 A request is only recorded as processed when it **succeeds**:
 
-- **Failed `Result`** (validation or business error): `TransactionBehavior` rolls the transaction back, and `IdempotencyBehavior` calls `DiscardAsync`, which deletes the Redis key and detaches the entry from the change tracker. A retry with the same `x-requestid` is processed again instead of being answered as a duplicate.
+- **Failed `Result`** (validation or business error): `TransactionBehavior` rolls the transaction back, and `IdempotencyBehavior` calls `DiscardAsync`, which deletes the Redis key and detaches the entry from the change tracker. A retry with the same `x-requestid` is processed as a new request.
 - **Exception**: the transaction rolls back, so no entry is persisted in the database, and `IdempotencyBehavior` calls `DiscardAsync` before rethrowing. The discard is best effort: if it fails, a warning is logged and the original exception is rethrown. If the exception happens after the commit (e.g. while publishing integration events), the entry is already in the database, so a retry is still detected as a duplicate through the database fallback of `ExistsAsync`.
 
 ### API Response for Duplicates

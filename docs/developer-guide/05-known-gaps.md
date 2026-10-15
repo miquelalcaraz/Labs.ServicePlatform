@@ -255,5 +255,3 @@ Emails are only logged and the activation link carries no confirmation token. Se
 | No query abstractions (CQRS) | `IQuery<T>`, `IQueryHandler<T,R>`, `TelemetryQueryBehavior` implemented in `Platform.Messaging.Abstractions` and `Platform.Messaging` | ✅ |
 | Repository nullable safety | `IRepository<T>.GetAsync` and `Repository<T>.GetAsync` return `Task<T?>` | ✅ |
 | Manual pipeline registration | `AddSiriusMediator` registers behaviors in a fixed order plus all telemetry | ✅ |
-| Failed `Result` is committed | `TransactionBehavior` rolls back when the command returns a failed `Result`; `IdempotencyBehavior` calls `IIdempotencyService.DiscardAsync` (deletes the Redis key, detaches the `IdempotencyEntry`), so the same `x-requestid` can be retried | 2026-10-13 |
-| Redis `processing` key survives failures | `IdempotencyBehavior` also calls `DiscardAsync` (best effort, original exception rethrown) when the command throws, so a retry within `ProcessingTtl` is no longer answered as a duplicate | 2026-10-15 |
