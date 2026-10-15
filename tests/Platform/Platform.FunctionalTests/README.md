@@ -4,7 +4,7 @@
 
 End-to-end tests for the Sirius building blocks, run against real infrastructure provisioned with Aspire. They validate the platform patterns independently of any business service (Accounts, Identity, Notifications):
 
-- **Idempotency** — duplicate requests (same `x-requestid`) are detected and do not create side effects
+- **Idempotency** — duplicate requests (same `x-requestid`) are detected and do not create side effects; failed requests are not recorded and can be retried
 - **Domain events** — dispatched inside the command transaction
 - **Transactional outbox** — integration events are stored in `OutboxMessage` in the same transaction as the business change
 
@@ -20,7 +20,7 @@ A minimal ASP.NET Core Web API (`tests/Platform/Platform.TestWebApi`) wired with
 - **`TestEntity`** — aggregate root that raises domain events
 - **Commands** — `CreateTestEntityCommand`, `UpdateTestEntityCommand`, plus `CreateTestEntityCommandValidator`
 - **Domain event handler** — `TestEntityCreatedDomainEventHandler` writes `TestEntityCreatedIntegrationEvent` to the outbox
-- **`TestController`** — `POST api/test` and `PUT api/test/{id}`
+- **`TestController`** — `POST api/test` and `PUT api/test/{id:guid}`; failures return `400` with the `Error`
 
 ### BuildingBlocksFixture
 
@@ -34,7 +34,7 @@ A minimal ASP.NET Core Web API (`tests/Platform/Platform.TestWebApi`) wired with
 
 | Class | Tests | Validates |
 |---|---|---|
-| `IdempotencyTests` | `DuplicateRequest_ShouldReturnSuccess_WithoutCreatingDuplicateEntity`, `DifferentRequests_ShouldCreateDifferentEntities` | `IdempotencyBehavior` returns `200 OK` for a duplicate without creating a second entity |
+| `IdempotencyTests` | `DuplicateRequest_ShouldReturnSuccess_WithoutCreatingDuplicateEntity`, `DifferentRequests_ShouldCreateDifferentEntities`, `RetryAfterValidationFailure_WithSameRequestId_ShouldProcessRequest`, `FailedCommand_ShouldNotPersistIdempotencyEntry` | `IdempotencyBehavior` returns `200 OK` for a duplicate without creating a second entity; a failed command (validation or handler `Result`) persists no `IdempotencyEntry`, so a retry with the same `x-requestid` is processed |
 | `DomainEventsTests` | `CreateEntity_ShouldDispatchDomainEvent_AndGenerateIntegrationEvent` | Command → domain event → integration event in the outbox |
 | `OutboxPatternTests` | `CreateEntity_ShouldStoreIntegrationEventInOutbox` | `TestEntityCreatedIntegrationEvent` is persisted in `OutboxMessage` |
 

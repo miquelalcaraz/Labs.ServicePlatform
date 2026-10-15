@@ -147,7 +147,7 @@ public bool HasChanges() => ChangeTracker.HasChanges();
 
 **What**: A dedicated database table recording transaction metadata (TransactionId, StartedAt, CompletedAt, UserId, EntitiesAffected, CommandName, Succeeded).
 
-**Why it was deferred**: `TransactionBehavior` already records `transaction.id`, `transaction.duration_ms`, `transaction.success` and `transaction.entities_affected` as activity tags and histogram metrics (see [06 — Telemetry](../architecture/06-telemetry.md)). A separate table would duplicate this with higher write overhead.
+**Why it was deferred**: `TransactionBehavior` already records `transaction.id`, `transaction.duration_ms`, `transaction.success`, `transaction.entities_affected` and `transaction.rolled_back` as activity tags and histogram metrics (see [06 — Telemetry](../architecture/06-telemetry.md)). A separate table would duplicate this with higher write overhead.
 
 **When to implement**: If compliance or regulatory requirements demand a persistent, queryable audit trail that outlives telemetry retention, or if OpenTelemetry infrastructure is not available in a deployment. Entity-level auditing is covered separately in the [Audit Log proposal](audit-log-proposal.md).
 

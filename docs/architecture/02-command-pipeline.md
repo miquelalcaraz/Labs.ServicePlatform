@@ -152,9 +152,9 @@ MediatR executes `IPipelineBehavior<,>` in registration order (first registered 
 flowchart TB
     REQ([Request]) --> L
     L["1 · LoggingBehavior<br/><i>optional — timer, RequestId/CorrelationId, slow #gt; 500 ms</i>"] --> I
-    I["2 · IdempotencyBehavior<br/><i>IIdempotentRequest only — duplicate check, mark as processing</i>"] --> IE
+    I["2 · IdempotencyBehavior<br/><i>IIdempotentRequest only — duplicate check, mark as processing; complete on success, discard on failure</i>"] --> IE
     IE["3 · IntegrationEventProcessorBehavior<br/><i>after next(): publish outbox for the transaction</i>"] --> T
-    T["4 · TransactionBehavior<br/><i>ICommandRequest only — execution strategy + BEGIN/COMMIT</i>"] --> V
+    T["4 · TransactionBehavior<br/><i>ICommandRequest only — execution strategy + BEGIN/COMMIT, ROLLBACK on failed Result</i>"] --> V
     V["5 · ValidationBehavior<br/><i>optional — FluentValidation</i>"] --> DE
     DE["6 · DomainEventProcessorBehavior<br/><i>after next(): dispatch domain events (cascading)</i>"] --> TC
     TC["7 · TelemetryCommandBehavior<br/><i>ICommand / ICommand#lt;T#gt; only</i>"] --> TQ
@@ -309,7 +309,7 @@ A nested command (sent while a transaction is already active, e.g. from an integ
 
 | Area | Details |
 |---|---|
-| Failed nested command is not rolled back | A command that runs inside a transaction it does not own (e.g. sent from an integration event handler) is not rolled back when it returns a failed `Result`. Its idempotency entry is discarded, but other changes it tracked are committed if the outer handler continues. No handler triggers this today. |
+| Failed nested command is not rolled back | A command that runs inside a transaction it does not own (e.g. sent from an integration event handler) is not rolled back when it returns a failed `Result`; the owner commits everything tracked. Accounts relies on this to persist a `Failed` process state, but any partial change made before the failure is committed too ([details](../developer-guide/05-known-gaps.md#failed-nested-command-is-not-rolled-back)). |
 | Telemetry scope | Command/query telemetry behaviors are innermost; their duration covers the handler only (not validation, transaction or domain event dispatch). |
 | HTTP status mapping | `ToHttpResult()` maps every failure (including `Error.NotFound`, `Error.Conflict`, `Error.Unauthorized`) to `400 Bad Request`. |
 | Authorization behavior | No authorization behavior in the pipeline; authorization is enforced at endpoint level (policies). |

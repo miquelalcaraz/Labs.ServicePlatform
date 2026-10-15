@@ -50,11 +50,18 @@ sequenceDiagram
         DEP->>DEP: dispatch domain events (may add OutboxMessages, modify aggregates)
     end
     DEP-->>TX: Result
-    TX->>DB: CommitTransactionAsync() — final SaveChanges + ATOMIC COMMIT
-    TX-->>IEP: Result
-    IEP->>IEP: publish OutboxMessages of the transaction to the event bus
-    IEP-->>IDM: Result
-    IDM->>IDM: MarkAsCompleted (cache)
+    alt Result.IsSuccess
+        TX->>DB: CommitTransactionAsync() — final SaveChanges + ATOMIC COMMIT
+        TX-->>IEP: Result
+        IEP->>IEP: publish OutboxMessages of the transaction to the event bus
+        IEP-->>IDM: Result
+        IDM->>IDM: MarkAsCompleted (cache)
+    else Result.IsFailure
+        TX->>DB: ROLLBACK
+        TX-->>IEP: Result (nothing to publish)
+        IEP-->>IDM: Result
+        IDM->>DB: DiscardAsync (detach IdempotencyEntry, delete cache key)
+    end
     IDM-->>LOG: Result (log completion, warn if > 500 ms)
 ```
 
@@ -194,6 +201,7 @@ Consequences for developers:
 - Use `ICommand<T>` (not `IdempotentCommand<T>`) — the decorator already guarantees idempotency per handler.
 - Business data, idempotency entry and outbox messages are still committed atomically.
 - Integration events emitted by these commands are published with up to one polling interval (default 30 s) of delay.
+- A failed `Result` from a nested command does **not** roll back: the decorator owns the transaction and commits whatever was tracked when the integration event handler returns normally. Accounts relies on this to persist a process's `Failed` state (see [Failures and Retries](../features/02-onboarding-activation-workflow.md#failures-and-retries)). To discard the changes instead, throw from the integration event handler.
 
 ---
 
@@ -211,11 +219,11 @@ Long-running domain event handlers extend transaction duration. Keep handlers un
 
 If ANY domain event handler throws, the ENTIRE transaction rolls back. This is by design (atomic consistency). If the aggregate must survive handler failures, use an integration event instead.
 
-### Returning a Failed Result Does NOT Roll Back
+### Returning a Failed Result Rolls Back
 
-`TransactionBehavior` only rolls back on exceptions. If a validator or handler returns `Result.Failure(...)`, the transaction is **committed** with whatever was tracked — including the idempotency entry. Consequences:
-- Do not add entities to the context and then return a failure; validate first or throw.
-- A retry with the same `x-requestid` after a failed `Result` is answered as a duplicate (see [Known Gaps](05-known-gaps.md)).
+When `TransactionBehavior` owns the transaction and a validator or handler returns `Result.Failure(...)`, the transaction is **rolled back**: business data, outbox messages and the idempotency entry are discarded, and nothing is published. `IdempotencyBehavior` also discards the idempotency key (Redis key and tracked entry), so a retry with the same `x-requestid` is processed as a new request.
+
+Nested commands are the exception: the outer scope owns the transaction and decides (see [Commands Triggered by Integration Events](#commands-triggered-by-integration-events)).
 
 ### AddAndSaveEventAsync Requires Active Transaction
 
@@ -228,7 +236,7 @@ If ANY domain event handler throws, the ENTIRE transaction rolls back. This is b
 | Scenario | Result |
 |----------|--------|
 | Command handler throws | Transaction ROLLBACK. Nothing persisted. Client receives `500` via `ExceptionHandlingMiddleware`. |
-| Validator fails / handler returns failed `Result` | Transaction COMMITTED (idempotency entry persisted). Client receives `400`. |
+| Validator fails / handler returns failed `Result` | Transaction ROLLBACK. Nothing persisted, idempotency key discarded (the same `x-requestid` can be retried). Client receives `400`. |
 | Domain event handler throws | Transaction ROLLBACK. Everything reverted (aggregate + outbox + idempotency). |
 | CommitTransactionAsync fails | Transaction ROLLBACK and exception rethrown. The execution strategy only retries when SQL retry-on-failure is configured (it is not today). |
 | Integration event publish fails (after commit) | Aggregate IS committed. OutboxMessage status = `FailedToPublish`. `OutboxProcessor` retries. |
@@ -247,4 +255,5 @@ If ANY domain event handler throws, the ENTIRE transaction rolls back. This is b
 | CommitTransactionAsync | ✅ (final flush + commit) | |
 | IntegrationEventProcessorBehavior | | ✅ |
 | IdempotencyBehavior.MarkAsCompleted (cache) | | ✅ |
+| IdempotencyBehavior.DiscardAsync (failed `Result` or exception) | | ✅ (after rollback) |
 | OutboxProcessor (background) | | ✅ |

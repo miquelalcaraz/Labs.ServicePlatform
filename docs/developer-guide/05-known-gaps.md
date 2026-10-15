@@ -87,12 +87,12 @@ The previous gap relies on the outbox rows still being unflushed when `Integrati
 
 ### Failed Nested Command Is Not Rolled Back
 
-**Severity**: Low (latent — no handler triggers it today)  
+**Severity**: Low (latent)  
 **Area**: `TransactionBehavior`, `IdempotencyIntegrationEventEfDecorator`
 
-`TransactionBehavior` rolls back only the transactions it owns. A command sent from an integration event handler runs inside the transaction opened by `IdempotencyIntegrationEventEfDecorator`, so when it returns a failed `Result` nothing is rolled back: `IdempotencyBehavior` discards its idempotency entry, but any other change the command tracked before failing is committed if the handler continues. Commands usually fail before changing state (validation, business checks), which keeps this latent.
+`TransactionBehavior` rolls back only the transactions it owns. A command sent from an integration event handler runs inside the transaction opened by `IdempotencyIntegrationEventEfDecorator`, so when it returns a failed `Result` nothing is rolled back and the decorator commits everything tracked when the handler returns normally. Accounts relies on this on purpose to persist a process's `Failed` state ([Failures and Retries](../features/02-onboarding-activation-workflow.md#failures-and-retries)). The risk is a command that modifies entities and then fails for another reason: those partial changes are committed too. Command handlers avoid it by checking preconditions before mutating state.
 
-**Planned**: Let integration event handlers act on the failed `Result` (throw to roll back the owned transaction), or clear the failed command's tracked changes.
+**Planned**: Make the choice explicit — integration event handlers throw when the changes of a failed command must be discarded, or the failed command's tracked changes are cleared selectively.
 
 ---
 

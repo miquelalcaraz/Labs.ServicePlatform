@@ -98,7 +98,7 @@ Policies are declared in `Accounts.API/Program.cs` with role requirements (`Acco
 | `Accounts.Activation.Retry` | ✅ | | ✅ | ✅ |
 | `Accounts.Activation.Resend` | ✅ | | ✅ | ✅ |
 
-The matrix is covered by positive and negative functional tests (`BackOfficeOnboardingAuthorizationTests`, `BackOfficeActivationAuthorizationTests`), which use the `X-Test-Role` header of the test `AutoAuthorizeMiddleware`.
+The matrix is covered by positive and negative functional tests (`OnboardingAuthorizationTests`, `ActivationAuthorizationTests`), which use the `X-Test-Role` header of the test `AutoAuthorizeMiddleware`.
 
 ---
 

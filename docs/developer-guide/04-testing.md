@@ -81,7 +81,7 @@ Each test must:
 | Application — validators | FluentValidation rules | `StartCustomerOnboardingCommandValidatorTests` |
 | Application — domain event handlers | Outbox calls with the right integration event | `CompanyCreatedDomainEventHandlerTests` |
 | Infrastructure — integration event handlers | Thin translator sends the right command via mocked `IMediator` | `UserActivatedIntegrationEventHandlerTests` |
-| API | Endpoints, authorization policies, HTTP status codes | `BackOfficeOnboardingApiTests`, `BackOfficeOnboardingAuthorizationTests` |
+| API | Endpoints, authorization policies, HTTP status codes | `OnboardingApiTests`, `OnboardingAuthorizationTests` |
 
 ### Coverage Focus
 
@@ -161,6 +161,8 @@ dotnet test tests/Platform/Platform.UnitTests --collect:"XPlat Code Coverage"
 tests/Platform/
 ├── Platform.UnitTests/
 │   ├── Behaviors/
+│   │   ├── IdempotencyBehaviorTests.cs
+│   │   ├── TransactionBehaviorTests.cs
 │   │   └── ValidationBehaviorTests.cs
 │   ├── Core/
 │   │   ├── ErrorTests.cs
@@ -283,19 +285,21 @@ Test counts are `[Fact]` / `[Theory]` methods (theories count once).
 |-----------|---------|------:|--------|
 | Result / Error / ValidationError | `Platform.UnitTests` | 44 | ✅ Complete |
 | ValidationBehavior | `Platform.UnitTests` | 8 | ✅ Complete |
-| IdempotencyEfService | `Platform.UnitTests` | 12 | ✅ Complete |
+| TransactionBehavior | `Platform.UnitTests` | 9 | ✅ Complete |
+| IdempotencyBehavior | `Platform.UnitTests` | 6 | ✅ Complete |
+| IdempotencyEfService | `Platform.UnitTests` | 16 | ✅ Complete |
 | EfIdempotencyBuilder | `Platform.UnitTests` | 4 | ✅ Complete |
 | IdempotencyIntegrationEventEfDecorator | `Platform.UnitTests` | 9 | ✅ Complete |
 | IdempotencyIntegrationEventDecorator (Redis) | `Platform.UnitTests` | 6 | ✅ Complete |
 | OutboxMessageService (concurrency) | `Platform.UnitTests` | 15 | ✅ Complete |
-| IdempotencyRedisService | `Platform.UnitTests` | 11 | ✅ Complete |
+| IdempotencyRedisService | `Platform.UnitTests` | 13 | ✅ Complete |
 | EntityAudit (integration) | `Platform.IntegrationTests` | 7 | ✅ Complete |
 | OutboxConcurrency (integration) | `Platform.IntegrationTests` | 10 | ✅ Complete |
 | ServiceBusEventBus (integration) | `Platform.IntegrationTests` | 6 | ✅ Complete |
 | DomainEvents (functional) | `Platform.FunctionalTests` | 1 | ✅ Complete |
-| Idempotency (functional) | `Platform.FunctionalTests` | 2 | ✅ Complete |
+| Idempotency (functional) | `Platform.FunctionalTests` | 4 | ✅ Complete |
 | OutboxPattern (functional) | `Platform.FunctionalTests` | 1 | ✅ Complete |
-| TransactionBehavior / DomainEventProcessor / IntegrationEventProcessor (unit) | — | 0 | 🟡 Covered only functionally |
+| DomainEventProcessor / IntegrationEventProcessor (unit) | — | 0 | 🟡 Covered only functionally |
 | OutboxProcessor, RabbitMqEventBus | — | 0 | 🟡 Pending |
 
 ### Services

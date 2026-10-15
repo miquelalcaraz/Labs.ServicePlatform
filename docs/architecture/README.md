@@ -132,11 +132,11 @@ The four tiers group projects by dependency role. The full dependency rules and 
 
 | Pattern | Status | Notes |
 |---------|--------|-------|
-| Single-Transaction Pipeline | 🟡 Implemented, known gaps | Command + domain events + idempotency entry + outbox in one atomic transaction; a failed `Result` still commits |
+| Single-Transaction Pipeline | 🟡 Implemented, known gaps | Command + domain events + idempotency entry + outbox in one atomic transaction, rolled back on a failed `Result`; a failed nested command does not roll back the outer transaction |
 | Pipeline Behavior Chain | ✅ Implemented | Order centralized in `AddSiriusMediator`; one responsibility per behavior |
 | Transactional Outbox | 🟡 Implemented, known gaps | Inline publishing + background processor with atomic claim; stuck `InProgress` rows are not recovered |
 | Domain Events (within transaction) | ✅ Implemented | Cascading support, handlers can modify aggregates |
-| Idempotency (Command) | 🟡 Implemented, known gaps | Redis fast path + EF source of truth; failed `Result` and Redis `processing` key can mark retries as duplicates |
+| Idempotency (Command) | 🟡 Implemented, known gaps | Redis fast path + EF source of truth; only successful requests are recorded (failed ones stay retryable); entries are never purged |
 | Idempotent Consumer (Integration Events) | ✅ Implemented | Automatic per-handler decorators via Scrutor, transactional with EF |
 | Result Pattern (ROP) | ✅ Implemented | Map/Bind/Match + ValidationFailure factories; HTTP mapping is 200/400 only |
 | CQRS | ✅ Implemented | Commands (`ICommand<T>`) and queries (`IQuery<T>`) with read-only `DbContext` |

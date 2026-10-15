@@ -288,7 +288,7 @@ public class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand, boo
 - Always return `Result<T>`, never throw exceptions for expected failures
 - Override `CreateResultForDuplicateRequest()` to return a meaningful value (e.g., `true` for creation commands) — the default returns `Result.Success(default)`
 - Use `[DataContract]` / `[DataMember]` for serialization support
-- A failed `Result` does **not** roll back: `TransactionBehavior` commits anything tracked (including the idempotency entry). Check business preconditions **before** adding or modifying entities, and throw (domain exception) when partial changes must be discarded
+- A failed `Result` rolls back the transaction when `TransactionBehavior` owns it, and the idempotency key is discarded, so the client can retry with the same `x-requestid`. In nested commands (sent from integration event handlers) the decorator owns the transaction and commits whatever was tracked when the handler returns normally; check business preconditions **before** modifying entities, and throw from the integration event handler when the changes must be discarded
 
 ---
 
