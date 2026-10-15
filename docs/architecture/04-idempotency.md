@@ -122,7 +122,7 @@ flowchart TB
     FR -- yes --> DS["DiscardAsync(key)<br/>Redis: delete key<br/>EF: detach IdempotencyEntry"]
     G --> R([return response])
     DS --> R
-    F -. exception .-> X["log error and rethrow<br/>(transaction rolled back → no DB entry)"]
+    F -. exception .-> X["DiscardAsync(key) (best effort)<br/>log error and rethrow<br/>(transaction rolled back → no DB entry)"]
 ```
 
 `IdempotencyBehavior` sits **outside** `TransactionBehavior`, but the entry it adds to the change tracker is flushed by the handler's `SaveChangesAsync()` / the final save in `CommitTransactionAsync()`, so it is committed atomically with the business data.
@@ -130,7 +130,7 @@ flowchart TB
 A request is only recorded as processed when it **succeeds**:
 
 - **Failed `Result`** (validation or business error): `TransactionBehavior` rolls the transaction back, and `IdempotencyBehavior` calls `DiscardAsync`, which deletes the Redis key and detaches the entry from the change tracker. A retry with the same `x-requestid` is processed again instead of being answered as a duplicate.
-- **Exception**: the transaction rolls back, so no entry is persisted in the database (see [Known Gaps](#known-gaps) for the Redis key).
+- **Exception**: the transaction rolls back, so no entry is persisted in the database, and `IdempotencyBehavior` calls `DiscardAsync` before rethrowing. The discard is best effort: if it fails, a warning is logged and the original exception is rethrown. If the exception happens after the commit (e.g. while publishing integration events), the entry is already in the database, so a retry is still detected as a duplicate through the database fallback of `ExistsAsync`.
 
 ### API Response for Duplicates
 
@@ -290,5 +290,4 @@ Table `IdempotencyEntry` in the **default schema of the owning context** (e.g. `
 
 | Area | Details |
 |---|---|
-| `processing` key after an exception | `MarkAsProcessingAsync` writes the Redis `processing` key before the handler runs. It is removed when the command returns a failed `Result`, but not when it throws. `ExistsAsync` only checks key existence, so a retry within `ProcessingTtl` after an exception is answered as a duplicate. |
 | No cleanup job | `IdempotencyEntry` rows are never purged; the `ProcessedAt` index exists to support a future retention job. |

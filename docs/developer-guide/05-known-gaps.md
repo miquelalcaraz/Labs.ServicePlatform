@@ -6,7 +6,6 @@ Current known limitations and planned improvements across the platform. Items ar
 
 | Gap | Severity | Area |
 |---|---|---|
-| [Redis `processing` key survives exceptions](#redis-processing-key-survives-exceptions) | Medium | Idempotency |
 | [Stuck `InProgress` outbox rows](#stuck-inprogress-outbox-rows) | Medium | Outbox |
 | [Authorization behavior](#authorization-behavior) | Medium | Pipeline Behaviors |
 | [Service Bus startup failure does not stop the host](#service-bus-startup-failure-does-not-stop-the-host) | Medium | Event Bus |
@@ -32,17 +31,6 @@ Current known limitations and planned improvements across the platform. Items ar
 ---
 
 ## Active Gaps
-
-### Redis `processing` Key Survives Exceptions
-
-**Severity**: Medium  
-**Area**: `IdempotencyBehavior`, `IdempotencyRedisService`
-
-`MarkAsProcessingAsync` writes `idempotency:{scope}:{id}` with value `processing` (TTL `ProcessingTtl`, 30 s) before the handler runs. `IdempotencyBehavior` removes it with `DiscardAsync` when the command returns a failed `Result`, but not when the command throws. `ExistsAsync` only checks key existence, so a retry within the TTL after an exception is treated as a duplicate.
-
-**Planned**: Call `DiscardAsync` on exceptions too (best effort, without hiding the original exception).
-
----
 
 ### Stuck InProgress Outbox Rows
 
@@ -268,3 +256,4 @@ Emails are only logged and the activation link carries no confirmation token. Se
 | Repository nullable safety | `IRepository<T>.GetAsync` and `Repository<T>.GetAsync` return `Task<T?>` | ✅ |
 | Manual pipeline registration | `AddSiriusMediator` registers behaviors in a fixed order plus all telemetry | ✅ |
 | Failed `Result` is committed | `TransactionBehavior` rolls back when the command returns a failed `Result`; `IdempotencyBehavior` calls `IIdempotencyService.DiscardAsync` (deletes the Redis key, detaches the `IdempotencyEntry`), so the same `x-requestid` can be retried | 2026-10-13 |
+| Redis `processing` key survives failures | `IdempotencyBehavior` also calls `DiscardAsync` (best effort, original exception rethrown) when the command throws, so a retry within `ProcessingTtl` is no longer answered as a duplicate | 2026-10-15 |

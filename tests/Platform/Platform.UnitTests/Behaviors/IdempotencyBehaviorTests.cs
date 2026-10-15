@@ -68,6 +68,37 @@ public class IdempotencyBehaviorTests
     }
 
     [Fact]
+    public async Task Handle_WhenHandlerThrows_DiscardsKeyAndRethrows()
+    {
+        var command = new TestIdempotentCommand(Guid.NewGuid());
+        var key = IdempotencyKey.ForRequest(command.RequestId);
+
+        var act = () => CreateBehavior().Handle(
+            command,
+            _ => throw new InvalidOperationException("boom"),
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("boom");
+        _idempotencyService.Verify(s => s.DiscardAsync(key), Times.Once);
+        _idempotencyService.Verify(s => s.MarkAsCompletedAsync(It.IsAny<IdempotencyKey>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenHandlerThrowsAndDiscardFails_RethrowsOriginalException()
+    {
+        var command = new TestIdempotentCommand(Guid.NewGuid());
+        _idempotencyService.Setup(s => s.DiscardAsync(It.IsAny<IdempotencyKey>()))
+            .ThrowsAsync(new TimeoutException("discard failed"));
+
+        var act = () => CreateBehavior().Handle(
+            command,
+            _ => throw new InvalidOperationException("boom"),
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("boom");
+    }
+
+    [Fact]
     public async Task Handle_WhenNoIdempotencyService_CallsHandler()
     {
         var behavior = new IdempotencyBehavior<TestIdempotentCommand, Result<bool>>(

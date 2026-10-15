@@ -515,7 +515,7 @@ public async Task Handle(CompanyCreatedDomainEvent evt, CancellationToken ct)
 ---
 
 ### ADR-006: A Failed Result Rolls Back the Transaction and Discards the Idempotency Key
-**Decision:** `TransactionBehavior` rolls back its transaction when the command returns a failed `Result` (validation or business error), and `IdempotencyBehavior` undoes `MarkAsProcessingAsync` through a new `IIdempotencyService.DiscardAsync(key)` method instead of calling `MarkAsCompletedAsync`.
+**Decision:** `TransactionBehavior` rolls back its transaction when the command returns a failed `Result` (validation or business error), and `IdempotencyBehavior` undoes `MarkAsProcessingAsync` through a new `IIdempotencyService.DiscardAsync(key)` method instead of calling `MarkAsCompletedAsync`. `DiscardAsync` is also called (best effort, original exception rethrown) when the command throws.
 
 **Context:**
 - `TransactionBehavior` used to commit whenever no exception was thrown, so a `Result.Failure` committed the `IdempotencyEntry` too.
