@@ -11,6 +11,14 @@
 		<ProjectReference Include="..\..\..\Sirius.Platform\Sirius.Platform.Core\Platform.Core.csproj" />
 	</ItemGroup>
 
- 
-	
+	<ItemGroup>
+		<PackageReference Include="Nerdbank.GitVersioning" Version="3.10.94">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+
+
+
 </Project>

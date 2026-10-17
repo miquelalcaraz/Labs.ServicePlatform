@@ -18,11 +18,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="DomainEventHandlers\" />
-		<Folder Include="Queries\" />
-		<Folder Include="Validators\" />
-		<Folder Include="Diagnostics\" />
+		<PackageReference Include="Nerdbank.GitVersioning" Version="3.10.94">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 	</ItemGroup>
+
 	
- 
 </Project>

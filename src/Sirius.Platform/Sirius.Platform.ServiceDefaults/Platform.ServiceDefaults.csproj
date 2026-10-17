@@ -6,6 +6,8 @@
 		<Nullable>enable</Nullable>
 		<RootNamespace>Sirius.Platform</RootNamespace>
 		<IsAspireSharedProject>true</IsAspireSharedProject>
+		<IsPackable>true</IsPackable>
+		<PackageId>Sirius.Platform.ServiceDefaults</PackageId>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -20,10 +22,13 @@
 		<PackageReference Include="Asp.Versioning.Http" Version="10.2.3" />
 
 		<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
+		<PackageReference Include="Microsoft.OpenApi" Version="2.12.2" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.13" />
 
 
 		<PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0" />
 		<PackageReference Include="Microsoft.Extensions.ServiceDiscovery" Version="10.11.0" />
+		<PackageReference Include="StackExchange.Redis" Version="3.4.5" />
 		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.20.0" />
 		<PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.15.0-beta.1" />
 		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.20.0" />
@@ -33,7 +38,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Sirius.Platform.Telemetry\Platform.Telemetry.csproj" />
+		<ProjectReference Include="..\Sirius.Platform.Telemetry\Platform.Telemetry.csproj" />
 	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Nerdbank.GitVersioning" Version="3.10.94">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+
 
 </Project>

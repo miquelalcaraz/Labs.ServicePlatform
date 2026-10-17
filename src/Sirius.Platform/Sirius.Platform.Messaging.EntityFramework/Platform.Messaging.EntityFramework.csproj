@@ -4,13 +4,24 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<RootNamespace>Sirius.Platform.Messaging</RootNamespace>
 		<IsAotCompatible>true</IsAotCompatible>
+		<IsPackable>true</IsPackable>
+		<PackageId>Sirius.Platform.Messaging.EntityFramework</PackageId>
 	</PropertyGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\Sirius.Platform.EventBus\Platform.EventBus.csproj" />
-	  <ProjectReference Include="..\Sirius.Platform.Messaging\Platform.Messaging.csproj" />
-	  <ProjectReference Include="..\Sirius.Platform.Persistence.EntityFramework\Platform.Persistence.EntityFramework.csproj" />
-	  <ProjectReference Include="..\Sirius.Platform.Telemetry\Platform.Telemetry.csproj" />
+		<ProjectReference Include="..\Sirius.Platform.EventBus\Platform.EventBus.csproj" />
+		<ProjectReference Include="..\Sirius.Platform.Messaging\Platform.Messaging.csproj" />
+		<ProjectReference Include="..\Sirius.Platform.Persistence.EntityFramework\Platform.Persistence.EntityFramework.csproj" />
+		<ProjectReference Include="..\Sirius.Platform.Telemetry\Platform.Telemetry.csproj" />
 	</ItemGroup>
- 
+
+	<ItemGroup>
+		<PackageReference Include="Nerdbank.GitVersioning" Version="3.10.94">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+
+
 </Project>

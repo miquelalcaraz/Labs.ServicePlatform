@@ -5,15 +5,26 @@
 		<RootNamespace>Sirius.Platform.EventBus</RootNamespace>
 		<IsAotCompatible>true</IsAotCompatible>
 		<EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+		<IsPackable>true</IsPackable>
+		<PackageId>Sirius.Platform.EventBus.ServiceBus</PackageId>
 	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Aspire.Azure.Messaging.ServiceBus" Version="13.6.1" />
-    <PackageReference Include="AspNetCore.HealthChecks.AzureServiceBus" Version="9.0.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Aspire.Azure.Messaging.ServiceBus" Version="13.6.1" />
+		<PackageReference Include="AspNetCore.HealthChecks.AzureServiceBus" Version="9.0.0" />
+	</ItemGroup>
 
-  <ItemGroup> 
-    <ProjectReference Include="..\Sirius.Platform.EventBus\Platform.EventBus.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\Sirius.Platform.EventBus\Platform.EventBus.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Nerdbank.GitVersioning" Version="3.10.94">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+
 
 </Project>

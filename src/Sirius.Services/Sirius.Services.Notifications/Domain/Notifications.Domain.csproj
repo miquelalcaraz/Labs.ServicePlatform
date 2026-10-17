@@ -5,11 +5,7 @@
 		<Nullable>enable</Nullable>
 		<RootNamespace>Sirius.Services.Notifications.Domain</RootNamespace>
 	</PropertyGroup>
-	<ItemGroup>
-	  <Compile Remove="Models\OrganizationAggregate\**" />
-	  <EmbeddedResource Remove="Models\OrganizationAggregate\**" />
-	  <None Remove="Models\OrganizationAggregate\**" />
-	</ItemGroup>
+ 
 
 	<ItemGroup>
 		<ProjectReference Include="..\..\..\Sirius.Domain\Sirius.Domain.Core\Domain.Core.csproj" />
@@ -17,10 +13,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="Events\" />
-		<Folder Include="Exceptions\" />
-		<Folder Include="Models\" />
-		<Folder Include="Services\" />
+		<PackageReference Include="Nerdbank.GitVersioning" Version="3.10.94">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 	</ItemGroup>
 	
 </Project>

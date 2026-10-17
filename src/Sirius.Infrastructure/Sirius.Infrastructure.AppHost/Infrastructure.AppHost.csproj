@@ -22,6 +22,9 @@
 		<ProjectReference Include="..\Sirius.Infrastructure.Bff.BackOffice\Infrastructure.Bff.BackOffice.csproj" />
 		<ProjectReference Include="..\Sirius.Infrastructure.Identity\Infrastructure.Identity.csproj" />
 		<ProjectReference Include="..\..\Sirius.Services\Sirius.Services.Accounts\Api\Accounts.API.csproj" />
+		<!-- Pinned: patched transitive dependencies (GHSA-qhrr-8q5h-9q3h, GHSA-846f-f764-76mx) -->
+		<PackageReference Include="MessagePack" Version="2.5.307" />
+		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
 	</ItemGroup>
 
 </Project>

@@ -5,19 +5,26 @@
 		<Nullable>enable</Nullable>
 		<RootNamespace>Sirius.Platform.Persistence</RootNamespace>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<IsPackable>true</IsPackable>
+		<PackageId>Sirius.Platform.Persistence.EntityFramework</PackageId>
 	</PropertyGroup>
+
 	<ItemGroup>
 		<PackageReference Include="MediatR" Version="14.2.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.13" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.13" /> 
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.13" />
 	</ItemGroup>
 	<ItemGroup>
-	  <ProjectReference Include="..\..\Sirius.Domain\Sirius.Domain.Core\Domain.Core.csproj" />
-	  <ProjectReference Include="..\Sirius.Platform.Core\Platform.Core.csproj" />
-	  <ProjectReference Include="..\Sirius.Platform.Telemetry\Platform.Telemetry.csproj" />
+		<ProjectReference Include="..\..\Sirius.Domain\Sirius.Domain.Core\Domain.Core.csproj" />
+		<ProjectReference Include="..\Sirius.Platform.Core\Platform.Core.csproj" />
+		<ProjectReference Include="..\Sirius.Platform.Telemetry\Platform.Telemetry.csproj" />
 	</ItemGroup>
 	<ItemGroup>
-	  <Folder Include="Extensions\" />
+		<PackageReference Include="Nerdbank.GitVersioning" Version="3.10.94">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 	</ItemGroup>
- 
+
+
 </Project>

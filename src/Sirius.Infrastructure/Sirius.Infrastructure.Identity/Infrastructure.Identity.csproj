@@ -5,10 +5,13 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<RootNamespace>Sirius.Infrastructure.Identity</RootNamespace>
 		<Nullable>enable</Nullable>
+		<EnableSdkContainerSupport>true</EnableSdkContainerSupport>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Duende.IdentityServer" Version="8.0.10" />
+		<!-- Pinned: patched transitive dependency (GHSA-846f-f764-76mx) -->
+		<PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
 		<PackageReference Include="Duende.IdentityServer.AspNetIdentity" Version="8.0.10" />
 		<PackageReference Include="Duende.IdentityServer.EntityFramework" Version="8.0.10" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.13" />
@@ -27,11 +30,27 @@
 	<ItemGroup>
 		<ProjectReference Include="..\..\Sirius.Contracts\Sirius.Contracts.Accounts\Contracts.Accounts.csproj" />
 		<ProjectReference Include="..\..\Sirius.Contracts\Sirius.Contracts.Identity\Contracts.Identity.csproj" />
+		<ProjectReference Include="..\..\Sirius.Contracts\Sirius.Contracts.Notifications\Contracts.Notifications.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\..\Sirius.Platform\Sirius.Platform.Messaging.EntityFramework\Platform.Messaging.EntityFramework.csproj" />
 		<ProjectReference Include="..\..\Sirius.Platform\Sirius.Platform.Persistence.EntityFramework.Relational\Platform.Persistence.EntityFramework.Relational.csproj" />
 		<ProjectReference Include="..\..\Sirius.Platform\Sirius.Platform.ServiceDefaults\Platform.ServiceDefaults.csproj" />
 		<ProjectReference Include="..\..\Sirius.Platform\Sirius.Platform.EventBus.ServiceBus\Platform.EventBus.ServiceBus.csproj" />
 		<ProjectReference Include="..\..\Sirius.Domain\Sirius.Domain.Application\Domain.Application.csproj" />
 	</ItemGroup>
+
+
+
+	<ItemGroup>
+		<PackageReference Include="Nerdbank.GitVersioning" Version="3.10.94">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+
+
 
 </Project>

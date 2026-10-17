@@ -4,16 +4,9 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<RootNamespace>Sirius.Platform.Messaging</RootNamespace>
 		<IsAotCompatible>true</IsAotCompatible>
+		<IsPackable>true</IsPackable>
+		<PackageId>Sirius.Platform.Messaging.Abstractions</PackageId>
 	</PropertyGroup>
-
-	<ItemGroup>
-	  <Compile Remove="Context\**" />
-	  <Compile Remove="Inbox\**" />
-	  <EmbeddedResource Remove="Context\**" />
-	  <EmbeddedResource Remove="Inbox\**" />
-	  <None Remove="Context\**" />
-	  <None Remove="Inbox\**" />
-	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="MediatR" Version="14.2.0" />
@@ -21,8 +14,17 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\..\Sirius.Domain\Sirius.Domain.Core\Domain.Core.csproj" />
-	  <ProjectReference Include="..\Sirius.Platform.Core\Platform.Core.csproj" />
+		<ProjectReference Include="..\..\Sirius.Domain\Sirius.Domain.Core\Domain.Core.csproj" />
+		<ProjectReference Include="..\Sirius.Platform.Core\Platform.Core.csproj" />
 	</ItemGroup>
- 
+
+	<ItemGroup>
+		<PackageReference Include="Nerdbank.GitVersioning" Version="3.10.94">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+
+
+
 </Project>
