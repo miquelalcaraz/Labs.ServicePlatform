@@ -8,12 +8,7 @@
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Remove="Persistence\**" />
-    <EmbeddedResource Remove="Persistence\**" />
-    <None Remove="Persistence\**" />
-  </ItemGroup>
-
+ 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="10.1.0">
       <PrivateAssets>all</PrivateAssets>
