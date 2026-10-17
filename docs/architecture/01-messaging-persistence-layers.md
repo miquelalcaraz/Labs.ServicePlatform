@@ -36,7 +36,7 @@ Pure contracts without infrastructure dependencies. Root namespace: `Sirius.Plat
 - **Domain events**: `IDomainEventHandler<TEvent>` (MediatR adapter over `Domain.Core.IDomainEvent`)
 - **Integration events**: `IntegrationEvent` (base record with `Id` and `CreationDate`), `IIntegrationEventHandler<TEvent>`, `IDecoratedHandler<TEvent>`
 - **Idempotency model**: `IdempotencyKey` (`ForRequest`, `ForEvent`), `IdempotencyScope` (`Request`, `Event`)
-- **Services**: `IIdempotencyService` (`ExistsAsync`, `MarkAsProcessingAsync`, `MarkAsCompletedAsync`), `IEventBusOutboxService` (`AddAndSaveEventAsync`, `PublishEventsThroughEventBusAsync`)
+- **Services**: `IIdempotencyService` (`ExistsAsync`, `MarkAsProcessingAsync`, `MarkAsCompletedAsync`, `DiscardAsync`), `IEventBusOutboxService` (`AddAndSaveEventAsync`, `PublishEventsThroughEventBusAsync`)
 
 **Dependencies:** MediatR, Microsoft.Extensions.Options, Domain.Core, Platform.Core
 

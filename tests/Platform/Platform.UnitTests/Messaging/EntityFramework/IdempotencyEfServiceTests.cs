@@ -231,6 +231,67 @@ public class IdempotencyEfServiceTests : IDisposable
         _mockInner.Verify(c => c.MarkAsCompletedAsync(key), Times.Once);
     }
 
+    [Fact]
+    public async Task DiscardAsync_DelegatesToInnerAndDetachesTrackedEntry()
+    {
+        var key = IdempotencyKey.ForRequest(Guid.NewGuid());
+        var service = CreateService();
+
+        await service.MarkAsProcessingAsync(key, "TestCommand");
+
+        _context.ChangeTracker.Entries<IdempotencyEntry>()
+            .Should().ContainSingle(e => e.Entity.Id == key.Id);
+
+        await service.DiscardAsync(key);
+
+        _mockInner.Verify(c => c.DiscardAsync(key), Times.Once);
+        _context.ChangeTracker.Entries<IdempotencyEntry>()
+            .Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DiscardAsync_WhenNoTrackedEntry_DoesNotThrow()
+    {
+        var key = IdempotencyKey.ForRequest(Guid.NewGuid());
+        var service = CreateService();
+
+        var act = () => service.DiscardAsync(key);
+
+        await act.Should().NotThrowAsync();
+        _mockInner.Verify(c => c.DiscardAsync(key), Times.Once);
+    }
+
+    [Fact]
+    public async Task DiscardAsync_OnlyDetachesMatchingEntry()
+    {
+        var discardedKey = IdempotencyKey.ForRequest(Guid.NewGuid());
+        var keptKey = IdempotencyKey.ForEvent(Guid.NewGuid(), "MyHandler");
+        var service = CreateService();
+
+        await service.MarkAsProcessingAsync(discardedKey, "TestCommand");
+        await service.MarkAsProcessingAsync(keptKey, "TestEvent");
+
+        await service.DiscardAsync(discardedKey);
+
+        _context.ChangeTracker.Entries<IdempotencyEntry>()
+            .Should().ContainSingle(e => e.Entity.Id == keptKey.Id);
+    }
+
+    [Fact]
+    public async Task Standalone_DiscardAsync_EntryIsNotPersistedOnSave()
+    {
+        var key = IdempotencyKey.ForRequest(Guid.NewGuid());
+        var service = CreateStandaloneService();
+
+        await service.MarkAsProcessingAsync(key, "TestCommand");
+        await service.DiscardAsync(key);
+        await _context.SaveChangesAsync();
+
+        var exists = await _context.Set<IdempotencyEntry>().AnyAsync(e => e.Id == key.Id);
+
+        exists.Should().BeFalse();
+    }
+
     private IdempotencyEfService<TestDbContext> CreateService()
     {
         return new IdempotencyEfService<TestDbContext>(

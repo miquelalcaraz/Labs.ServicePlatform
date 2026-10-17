@@ -152,9 +152,9 @@ MediatR executes `IPipelineBehavior<,>` in registration order (first registered 
 flowchart TB
     REQ([Request]) --> L
     L["1 · LoggingBehavior<br/><i>optional — timer, RequestId/CorrelationId, slow #gt; 500 ms</i>"] --> I
-    I["2 · IdempotencyBehavior<br/><i>IIdempotentRequest only — duplicate check, mark as processing</i>"] --> IE
+    I["2 · IdempotencyBehavior<br/><i>IIdempotentRequest only — duplicate check, mark as processing; complete on success, discard on failure</i>"] --> IE
     IE["3 · IntegrationEventProcessorBehavior<br/><i>after next(): publish outbox for the transaction</i>"] --> T
-    T["4 · TransactionBehavior<br/><i>ICommandRequest only — execution strategy + BEGIN/COMMIT</i>"] --> V
+    T["4 · TransactionBehavior<br/><i>ICommandRequest only — execution strategy + BEGIN/COMMIT, ROLLBACK on failed Result</i>"] --> V
     V["5 · ValidationBehavior<br/><i>optional — FluentValidation</i>"] --> DE
     DE["6 · DomainEventProcessorBehavior<br/><i>after next(): dispatch domain events (cascading)</i>"] --> TC
     TC["7 · TelemetryCommandBehavior<br/><i>ICommand / ICommand#lt;T#gt; only</i>"] --> TQ
@@ -194,12 +194,19 @@ sequenceDiagram
         H-->>DEP: Result
         DEP->>DEP: dispatch domain events until none remain
         DEP-->>TX: Result
-        TX->>DB: CommitTransactionAsync() (final SaveChanges + COMMIT)
-        DB-->>TX: LastCommittedTransactionId set
-        TX-->>IEP: Result
-        IEP->>IEP: PublishEventsThroughEventBusAsync(transactionId)
-        IEP-->>IDM: Result
-        IDM->>IDM: MarkAsCompletedAsync (cache)
+        alt Result.IsSuccess
+            TX->>DB: CommitTransactionAsync() (final SaveChanges + COMMIT)
+            DB-->>TX: LastCommittedTransactionId set
+            TX-->>IEP: Result
+            IEP->>IEP: PublishEventsThroughEventBusAsync(transactionId)
+            IEP-->>IDM: Result
+            IDM->>IDM: MarkAsCompletedAsync (cache)
+        else Result.IsFailure (validation or business error)
+            TX->>DB: ROLLBACK
+            TX-->>IEP: Result (failure)
+            IEP-->>IDM: Result (nothing to publish)
+            IDM->>DB: DiscardAsync (detach IdempotencyEntry, delete cache key)
+        end
     end
     IDM-->>LOG: Result
     LOG-->>API: Result
@@ -272,8 +279,11 @@ public interface IDomainEntityChangeTracker
 1. `TransactionBehavior` returns immediately for non-commands. If a transaction is already active it tags the activity as nested and just calls `next()`.
 2. Otherwise it runs inside `CreateExecutionStrategy().ExecuteAsync(...)` and calls `BeginTransactionAsync()`.
 3. Inner pipeline runs: validation → command handler → `SaveChangesAsync()` → domain event dispatch.
-4. `TransactionBehavior` records `GetPendingChangesCount()` and calls `CommitTransactionAsync()`, which applies audit timestamps, performs a final `SaveChangesAsync()`, commits, and sets `LastCommittedTransactionId`. Any failure rolls back and rethrows.
-5. `IntegrationEventProcessorBehavior` reads the transaction ID and publishes the outbox events for that transaction.
+4. If the response is a failed `Result` (validation or business error), `TransactionBehavior` rolls the transaction back and returns the failure: nothing written by the handler — business data, outbox rows or the `IdempotencyEntry` — is persisted. The activity is tagged `transaction.rolled_back = true` (see [Telemetry](06-telemetry.md)).
+5. Otherwise it records `GetPendingChangesCount()` and calls `CommitTransactionAsync()`, which applies audit timestamps, performs a final `SaveChangesAsync()`, commits, and sets `LastCommittedTransactionId`. An exception rolls back and rethrows.
+6. `IntegrationEventProcessorBehavior` reads the transaction ID and publishes the outbox events for that transaction. After a rollback there is no current transaction and `LastCommittedTransactionId` is not set, so nothing is published.
+
+A nested command (sent while a transaction is already active, e.g. from an integration event handler) never commits or rolls back on its own; the owner of the transaction decides. See [Known Gaps](#known-gaps).
 
 `SiriusDBContext.SaveChangesAsync` also sets `CreatedAt` (added) / `UpdatedAt` (modified) on every `Entity` and converts unique-constraint violations into `UniqueConstraintViolationException`.
 
@@ -284,6 +294,8 @@ public interface IDomainEntityChangeTracker
 **Why `ICommandRequest` marker?** C# lacks open generic pattern matching. The marker enables `request is not ICommandRequest` for zero-reflection filtering. `IIdempotentRequest` follows the same idea for idempotency.
 
 **Why `AddSiriusMediator` instead of raw `AddMediatR`?** The order of platform behaviors is load-bearing (idempotency outside the transaction, outbox publishing after commit, domain events inside the transaction). Centralizing it prevents services from getting it wrong.
+
+**Why does a failed `Result` roll back the transaction?** Railway-oriented programming: a failed command must leave no side effects, the same as a thrown exception. Idempotency records only **successful** processing, so a failed request stays retryable with the same `x-requestid`. The rollback covers the database; `IIdempotencyService.DiscardAsync` covers what the transaction cannot undo — the Redis `processing` key and the `IdempotencyEntry` still in the change tracker (see [Idempotency](04-idempotency.md#pipeline-flow)).
 
 **Why separate telemetry behaviors for commands and queries?** Distinct counters (`application.command_handlers.processed` vs `application.query_handlers.processed`) and histograms for independent read vs write monitoring.
 
@@ -297,7 +309,7 @@ public interface IDomainEntityChangeTracker
 
 | Area | Details |
 |---|---|
-| Failed `Result` is committed | `TransactionBehavior` commits whenever no exception is thrown. A validation or business failure returned as `Result.Failure` still commits the transaction — including the `IdempotencyEntry` added by `IdempotencyBehavior` — so a retry with the same `RequestId` is treated as a duplicate. |
+| Failed nested command is not rolled back | A command that runs inside a transaction it does not own (e.g. sent from an integration event handler) is not rolled back when it returns a failed `Result`; the owner commits everything tracked. Accounts relies on this to persist a `Failed` process state, but any partial change made before the failure is committed too ([details](../developer-guide/05-known-gaps.md#failed-nested-command-is-not-rolled-back)). |
 | Telemetry scope | Command/query telemetry behaviors are innermost; their duration covers the handler only (not validation, transaction or domain event dispatch). |
 | HTTP status mapping | `ToHttpResult()` maps every failure (including `Error.NotFound`, `Error.Conflict`, `Error.Unauthorized`) to `400 Bad Request`. |
 | Authorization behavior | No authorization behavior in the pipeline; authorization is enforced at endpoint level (policies). |

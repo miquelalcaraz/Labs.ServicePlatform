@@ -59,7 +59,7 @@ Identity is the exception: one monolithic project with two DbContexts — busine
 These come from real pitfalls in this codebase; the reason matters more than the rule:
 
 - **Commands flush, they don't commit.** Call `UnitOfWork.SaveChangesAsync()`; `TransactionBehavior` commits. Never open transactions manually (except Identity's `ResilientTransaction`).
-- **A failed `Result` still commits** (known gap). Check business preconditions *before* mutating entities; throw a domain exception when partial changes must be discarded.
+- **A failed `Result` rolls back — unless the command is nested.** API commands: `TransactionBehavior` rolls back and the idempotency key is discarded, so the client can retry with the same `x-requestid`. Commands sent from integration event handlers run inside the decorator's transaction, which commits whatever was tracked when the handler returns normally (Accounts uses this to persist a `Failed` process state). Check business preconditions *before* mutating entities; throw from the integration event handler when the changes must be discarded.
 - **Integration events come from domain event handlers, not command handlers** — the aggregate decides when something happened; the outbox row is written atomically in the same transaction. (Identity is the exception: it has no aggregates raising domain events, so its command handlers write to the outbox directly.)
 - **Never publish to `IEventBus` directly** — always the outbox.
 - **Integration event handlers are thin translators**: inject only `IMediator` + `ILogger`, map to an `ICommand<T>`, log the failure. Business logic lives in the command handler so it gets the full pipeline.

@@ -305,7 +305,6 @@ docs/                          → Architecture, developer guide, sample feature
 
 This is an evolving reference, not a finished product. The main open gaps:
 
-- **Failed results commit** — a command that returns a failed `Result` still commits its idempotency entry, so a retry with the same `x-requestid` is answered as a duplicate. ([details](docs/developer-guide/05-known-gaps.md#failed-result-is-committed))
 - **Outbox recovery** — events left `InProgress` by a stopped process are not reclaimed. ([details](docs/developer-guide/05-known-gaps.md#stuck-inprogress-outbox-rows))
 - **RabbitMQ delivery** — failed messages are acknowledged and lost; Azure Service Bus (the default) retries and dead-letters them. ([details](docs/developer-guide/05-known-gaps.md#rabbitmq-transport-robustness))
 - **Development-only security** — hard-coded client secrets, no PKCE and no audience validation keep the local setup simple. ([details](docs/developer-guide/05-known-gaps.md#development-only-security-settings))

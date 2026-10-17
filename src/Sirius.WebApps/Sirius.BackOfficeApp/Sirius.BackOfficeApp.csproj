@@ -15,10 +15,10 @@
 
 	<ItemGroup>
 		<PackageReference Include="Asp.Versioning.Http.Client" Version="10.2.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.12" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.13" />
 		<PackageReference Include="Aspire.StackExchange.Redis.OutputCaching" Version="13.6.1" />
-		<PackageReference Include="Microsoft.AspNetCore.HeaderPropagation" Version="10.0.12" />
-		<PackageReference Include="Radzen.Blazor" Version="12.1.2" />
+		<PackageReference Include="Microsoft.AspNetCore.HeaderPropagation" Version="10.0.13" />
+		<PackageReference Include="Radzen.Blazor" Version="12.1.4" />
 	</ItemGroup>
 
 </Project>

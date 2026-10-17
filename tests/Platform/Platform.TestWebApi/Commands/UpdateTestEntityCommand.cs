@@ -7,7 +7,7 @@ using Sirius.Platform.Messaging.Commands;
 
 namespace Platform.TestWebApi.Commands;
 
-public record UpdateTestEntityCommand(int EntityId, int NewValue, Guid RequestId) : IIdempotentCommand<bool>
+public record UpdateTestEntityCommand(Guid EntityId, int NewValue, Guid RequestId) : IIdempotentCommand<bool>
 {
     Result<bool> IIdempotentCommand<bool>.CreateResultForDuplicateRequest()
     {
@@ -27,7 +27,7 @@ public class UpdateTestEntityCommandHandler : ICommandHandler<UpdateTestEntityCo
     public async Task<Result<bool>> Handle(UpdateTestEntityCommand command, CancellationToken cancellationToken)
     {
         var entity = await _context.TestEntities
-            .FirstOrDefaultAsync(e => e.Id.GetHashCode() == command.EntityId, cancellationToken);
+            .FirstOrDefaultAsync(e => e.Id == command.EntityId, cancellationToken);
 
         if (entity is null)
             return Result.Failure<bool>(Error.NotFound.WithMessage("Entity not found"));

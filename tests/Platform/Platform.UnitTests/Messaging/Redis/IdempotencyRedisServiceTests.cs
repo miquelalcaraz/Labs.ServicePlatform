@@ -179,6 +179,36 @@ public class IdempotencyRedisServiceTests
     }
 
     [Fact]
+    public async Task DiscardAsync_DeletesKeyFromRedis()
+    {
+        var key = IdempotencyKey.ForRequest(Guid.NewGuid());
+        var service = CreateService();
+
+        await service.DiscardAsync(key);
+
+        _mockDatabase.Verify(db => db.KeyDeleteAsync(
+            It.Is<RedisKey>(k => k == $"idempotency:request:{key.Id}"),
+            It.IsAny<CommandFlags>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task DiscardAsync_WhenRedisFails_DoesNotThrow()
+    {
+        var key = IdempotencyKey.ForRequest(Guid.NewGuid());
+        _mockDatabase.Setup(db => db.KeyDeleteAsync(
+            It.IsAny<RedisKey>(),
+            It.IsAny<CommandFlags>()))
+            .ThrowsAsync(new TimeoutException("Redis timeout"));
+
+        var service = CreateService();
+
+        var act = async () => await service.DiscardAsync(key);
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact]
     public void Constructor_WithNullRedis_ThrowsArgumentNullException()
     {
         var act = () => new IdempotencyRedisService(

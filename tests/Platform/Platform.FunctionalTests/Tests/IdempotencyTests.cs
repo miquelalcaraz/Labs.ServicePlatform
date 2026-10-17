@@ -9,6 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Platform.TestWebApi.Controllers;
 using Platform.TestWebApi.Infrastructure;
 
+using Sirius.Platform.Messaging.Models;
+
 namespace Platform.FunctionalTests.Tests;
 
 [Collection("BuildingBlocks")]
@@ -101,5 +103,60 @@ public sealed class IdempotencyTests
         var value2 = doc2.RootElement.GetProperty("value").GetInt32();
 
         Assert.NotEqual(value1, value2);
+    }
+
+    [Fact]
+    public async Task RetryAfterValidationFailure_WithSameRequestId_ShouldProcessRequest()
+    {
+        var requestId = Guid.NewGuid();
+        var entityName = $"RetryAfterFailure_{requestId:N}";
+
+        var invalidResponse = await PostCreateAsync(new CreateTestEntityRequest(string.Empty, 7), requestId);
+        Assert.Equal(HttpStatusCode.BadRequest, invalidResponse.StatusCode);
+
+        var retryResponse = await PostCreateAsync(new CreateTestEntityRequest(entityName, 7), requestId);
+        Assert.Equal(HttpStatusCode.OK, retryResponse.StatusCode);
+
+        using var scope = _webApplicationFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+
+        var entitiesCount = await dbContext.TestEntities
+            .CountAsync(e => e.Name == entityName, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, entitiesCount);
+    }
+
+    [Fact]
+    public async Task FailedCommand_ShouldNotPersistIdempotencyEntry()
+    {
+        var requestId = Guid.NewGuid();
+
+        var content = new StringContent(
+            JsonSerializer.Serialize(new UpdateTestEntityRequest(99)),
+            Encoding.UTF8,
+            "application/json");
+        content.Headers.Add("x-requestid", requestId.ToString());
+
+        var response = await _httpClient.PutAsync($"api/test/{Guid.NewGuid()}", content, TestContext.Current.CancellationToken);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        using var scope = _webApplicationFactory.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+
+        var entryExists = await dbContext.Set<IdempotencyEntry>()
+            .AnyAsync(e => e.Id == requestId, TestContext.Current.CancellationToken);
+
+        Assert.False(entryExists);
+    }
+
+    private Task<HttpResponseMessage> PostCreateAsync(CreateTestEntityRequest request, Guid requestId)
+    {
+        var content = new StringContent(
+            JsonSerializer.Serialize(request),
+            Encoding.UTF8,
+            "application/json");
+        content.Headers.Add("x-requestid", requestId.ToString());
+
+        return _httpClient.PostAsync("api/test", content, TestContext.Current.CancellationToken);
     }
 }

@@ -174,7 +174,7 @@ Command handlers that apply an external response to a process catch `AccountDoma
 | `ConfirmActivationDeliveryCommand` | `CustomerActivationProcess.Fail(...)` | `ActivationDeliveredProcessingError` |
 | `CompleteActivationOnUserActivatedCommand` | `CustomerActivationProcess.Fail(...)` | `UserActivatedProcessingError` |
 
-Because the failure is returned as a `Result` (not thrown), the transaction commits the `Failed` state and the message is completed — the process is parked for a manual retry. Infrastructure exceptions, in contrast, roll back and the message is redelivered by the bus.
+These commands are sent from integration event handlers, so they run nested inside the transaction opened by the idempotency decorator. Because the failure is returned as a `Result` (not thrown) and the integration event handler returns normally, the decorator commits the `Failed` state and the message is completed — the process is parked for a manual retry. Infrastructure exceptions, in contrast, roll back and the message is redelivered by the bus.
 
 ```mermaid
 flowchart LR

@@ -23,4 +23,10 @@ public interface IIdempotencyService
     /// Finalizes the key after a successful commit (e.g., upgrades cache state from processing to completed).
     /// </summary>
     Task MarkAsCompletedAsync(IdempotencyKey key);
+
+    /// <summary>
+    /// Discards a key previously marked as processing when the operation failed and must not be persisted,
+    /// so the same request can be safely retried.
+    /// </summary>
+    Task DiscardAsync(IdempotencyKey key);
 }

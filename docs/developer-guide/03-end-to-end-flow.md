@@ -85,20 +85,27 @@ public static async Task<Results<Ok<bool>, BadRequest<ApiErrorResponse>>> Create
 
 ### 3. TransactionBehavior
 
-Begins the database transaction inside the EF execution strategy, executes the inner pipeline, and commits atomically:
+Begins the database transaction inside the EF execution strategy, executes the inner pipeline, and commits atomically — or rolls back when the response is a failed `Result`:
 
 ```csharp
 await strategy.ExecuteAsync(async () =>
 {
     await using var transaction = await _dbTransaction.BeginTransactionAsync();
     response = await next(cancellationToken);
+
+    if (response is Result { IsFailure: true })
+    {
+        await transaction.RollbackAsync(cancellationToken);
+        return;
+    }
+
     await _dbTransaction.CommitTransactionAsync(transaction);
 });
 ```
 
 ### 4. ValidationBehavior
 
-Runs `CreateCompanyCommandValidator` (tenant, names, tax id format, tax number type, country...). On failure returns `Result.ValidationFailure` → `400 Bad Request` with per-property errors.
+Runs `CreateCompanyCommandValidator` (tenant, names, tax id format, tax number type, country...). On failure returns `Result.ValidationFailure` → the transaction is rolled back, the idempotency key is discarded, and the API returns `400 Bad Request` with per-property errors.
 
 ### 5. CommandHandler
 
@@ -180,7 +187,7 @@ Notifications transaction (same database, schema `Notifications`):
 
 | Failure Point | Aggregate Persisted? | Outbox Persisted? | Event Published? |
 |---|:---:|:---:|:---:|
-| Validation fails / handler returns failed `Result` | ❌ (nothing added) | ❌ | ❌ — but the idempotency entry IS committed |
+| Validation fails / handler returns failed `Result` | ❌ (rolled back) | ❌ | ❌ (idempotency key discarded — the same `x-requestid` can be retried) |
 | CommandHandler throws | ❌ | ❌ | ❌ |
 | Domain event handler throws | ❌ | ❌ | ❌ |
 | CommitAsync fails | ❌ | ❌ | ❌ |

@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Yarp.ReverseProxy" version="2.3.0" />
-    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery.Yarp" version="10.10.0" />
+    <PackageReference Include="Microsoft.Extensions.ServiceDiscovery.Yarp" version="10.11.0" />
     <PackageReference Include="AspNetCore.HealthChecks.Uris" version="9.0.0" />
   </ItemGroup>
 
